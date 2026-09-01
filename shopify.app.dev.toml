@@ -1,0 +1,27 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "373d0e6133dd7a8d52fc07883e736d71"
+application_url = "https://shopify.dev/apps/default-app-home"
+embedded = false
+name = "easyflow-cod"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_customers,read_orders,read_products"
+
+[auth]
+redirect_urls = [
+  "https://test.easyflow.ma/stores/connect/shopify/callback",
+  "http://127.0.0.1:8000/stores/connect/shopify/callback"
+]
+
+[webhooks]
+api_version = "2026-07"
+
+  [webhooks.privacy_compliance]
+  customer_deletion_url = "https://test.easyflow.ma/webhooks/shopify/customers/redact"
+  customer_data_request_url = "https://test.easyflow.ma/webhooks/shopify/customers/data-request"
+  shop_deletion_url = "https://test.easyflow.ma/webhooks/shopify/shop/redact"
+
+[build]
+automatically_update_urls_on_dev = true

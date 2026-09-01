@@ -1,0 +1,47 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+#
+# `shopify app deploy` pushes this file and OVERWRITES the Partner Dashboard
+# values, so this is the source of truth. client_id is public (Shopify puts it
+# in the OAuth URL) — the secret lives only in .env and must never appear here.
+#
+# Note: client_id and scopes are duplicated in .env (SHOPIFY_CLIENT_ID,
+# SHOPIFY_SCOPES) because the CLI can't read env vars and Laravel can't read
+# this file. Change one, change the other — drifting scopes means requesting
+# permissions at OAuth that the app isn't configured for.
+
+client_id = "ebec89fd82e920840ab62354268767a2"
+name = "EasyFlow"
+application_url = "https://test.easyflow.ma"
+embedded = false
+handle = "easyflow-cod"
+
+[webhooks]
+api_version = "2026-07"
+
+  [webhooks.privacy_compliance]
+  customer_deletion_url = "https://test.easyflow.ma/webhooks/shopify/customers/redact"
+  customer_data_request_url = "https://test.easyflow.ma/webhooks/shopify/customers/data-request"
+  shop_deletion_url = "https://test.easyflow.ma/webhooks/shopify/shop/redact"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+#
+# Deliberately minimal — app review requires every requested scope to be
+# exercised by the app, so scopes are added when the feature that uses them
+# ships, not before.
+#
+# read_customers is required despite the orders query being the only caller:
+# Order.customer returns a Customer object, and the Customer object itself
+# requires that scope. Without it the field resolves to null and confirmation
+# agents lose the name/phone they call the client on.
+scopes = "read_orders,read_products,read_customers"
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [
+  "https://test.easyflow.ma/stores/connect/shopify/callback"
+]
+
+[pos]
+embedded = false

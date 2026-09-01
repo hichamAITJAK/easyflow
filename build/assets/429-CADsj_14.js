@@ -1,0 +1,1 @@
+import{a as e,i as t}from"./utils-Bz38dxTL.js";import n from"./error-page-DG6wrHQD.js";var r=e(),i=t();function a(){let e=(0,r.c)(1),t;return e[0]===Symbol.for(`react.memo_cache_sentinel`)?(t=(0,i.jsx)(n,{status:429,title:`Too many requests`,message:`You've made too many requests. Please wait a moment and try again.`}),e[0]=t):t=e[0],t}export{a as default};

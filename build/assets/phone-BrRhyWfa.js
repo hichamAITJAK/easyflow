@@ -1,0 +1,1 @@
+import{t as e}from"./createLucideIcon-DI-aGzc1.js";var t=e(`MessageCircle`,[[`path`,{d:`M7.9 20A9 9 0 1 0 4 16.1L2 22Z`,key:`vv11sd`}]]),n=`212`;function r(e){let t=e.replace(/\D/g,``);if(t===``)return null;let r=t;return r.startsWith(`00212`)?r=r.slice(5):r.startsWith(`212`)?r=r.slice(3):r.startsWith(`0`)&&(r=r.slice(1)),r.length===9?n+r:null}export{t as n,r as t};

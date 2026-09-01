@@ -1,0 +1,438 @@
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@import "shadcn/tailwind.css";
+
+@import "@fontsource-variable/inter";
+
+@import "@fontsource-variable/space-grotesk";
+
+@import "@fontsource-variable/geist";
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+    --font-sans:
+        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+
+    --shadow-surface: var(--surface-shadow);
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-destructive-text: var(--destructive-text);
+
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-success-text: var(--success-text);
+
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-warning-text: var(--warning-text);
+
+    --color-info: var(--info);
+    --color-info-foreground: var(--info-foreground);
+    --color-info-text: var(--info-text);
+
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-surface-border: var(--surface-border);
+
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --color-chart-6: var(--chart-6);
+    --color-chart-7: var(--chart-7);
+    --color-chart-8: var(--chart-8);
+
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/*
+ * Quiet pass — realigns to DESIGN.md's Geist system (near-black ink on
+ * near-white canvas, hairline borders, one restrained accent blue) after the
+ * prior teal/high-chroma pass drifted from it. Neutrals are true grays (zero
+ * chroma) instead of hue-tinted; primary drops from ~0.15-0.18 chroma to
+ * 0.15 only on the accent itself, with every other surface at 0 chroma.
+ * Semantic success is kept as its own low-chroma green rather than aliased
+ * to the accent blue (DESIGN.md's marketing-page shortcut) — the two
+ * independent status tracks (confirmation vs. delivery, see PRODUCT.md)
+ * need visually distinct positive signals on dashboards.
+ */
+
+:root {
+    --background:
+        oklch(0.985 0.004 260);
+    --foreground:
+        oklch(0.145 0.005 260);
+    --card:
+        oklch(1 0.002 260);
+    --card-foreground:
+        oklch(0.145 0.005 260);
+    --popover:
+        oklch(1 0.002 260);
+    --popover-foreground:
+        oklch(0.145 0.005 260);
+    --primary:
+        oklch(0.52 0.2 264);
+    --primary-foreground:
+        oklch(0.985 0.002 260);
+    --secondary:
+        oklch(0.97 0.005 260);
+    --secondary-foreground:
+        oklch(0.205 0.006 260);
+    --muted:
+        oklch(0.97 0.005 260);
+    --muted-foreground:
+        oklch(0.556 0.008 260);
+    --accent:
+        oklch(0.97 0.005 260);
+    --accent-foreground:
+        oklch(0.205 0.006 260);
+    --destructive:
+        oklch(0.577 0.245 27.325);
+    --destructive-foreground: oklch(1 0 0);
+    --success: oklch(0.588 0.11 155);
+    --success-foreground: oklch(1 0 0);
+    --warning: oklch(0.784 0.13 73);
+    --warning-foreground: oklch(0.205 0 0);
+    /* Text-safe counterparts. --success/--warning/--destructive are tuned as
+       *fills* carrying their own foreground, and are not all legible as ink:
+       measured on --card, success is 3.93:1 and warning 2.01:1, both failing
+       AA body text at 4.5:1.
+
+       These are darkened until they clear 4.5:1 not just on --card but on a
+       10% tint of their own hue, which is the harder case — that tint is what
+       the profit/loss bands use, and it darkens the background just enough to
+       sink the lighter values. Chroma rises slightly as lightness drops so
+       the hue still reads as green/red/amber. Use these wherever the semantic
+       colour is the text itself rather than a background. */
+    --success-text: oklch(0.52 0.12 155);
+    --warning-text: oklch(0.52 0.11 73);
+    --destructive-text: oklch(0.53 0.23 27.325);
+    --info-text: oklch(0.5 0.19 258.247);
+    --info: oklch(0.573 0.214 258.247);
+    --info-foreground: oklch(1 0 0);
+    --border:
+        oklch(0.93 0.006 260);
+    --input:
+        oklch(0.93 0.006 260);
+    --ring:
+        oklch(0.52 0.2 264);
+    /* Elevated surfaces (Card, Popover, Dialog): shadow instead of a hairline
+       in light mode, hairline instead of shadow in dark mode — shadows don't
+       read against a dark canvas. See --surface-border/--surface-shadow use
+       on those components. */
+    --surface-border: transparent;
+    --surface-shadow: 0 0.7px 2px 0 rgb(0 0 0 / 0.2), 0 2px 8px -2px rgb(0 0 0 / 0.08);
+    /* Chart series palette (approved brand set). Hex sources:
+       #f05100 / #009588 / #104e64 / #fcbb00 / #f99c00.
+       Caveat (measured): chart-1 and chart-2 share luminance (1.04:1) —
+       never adjacent in a stacked bar or as neighbouring donut slices
+       without a stroke separator. */
+    --chart-1: oklch(0.602 0.107 184.1);
+    --chart-2: oklch(0.647 0.207 39.2);
+    --chart-3: oklch(0.397 0.07 227.2);
+    --chart-4: oklch(0.83 0.171 83.2);
+    --chart-5: oklch(0.77 0.169 68);
+    --chart-6: oklch(0.65 0.09 293);
+    --chart-7: oklch(0.6 0.09 221.723);
+    --chart-8: oklch(0.7 0.02 0);
+    --radius:
+        0.625rem;
+    --sidebar:
+        oklch(0.99 0.003 260);
+    --sidebar-foreground:
+        oklch(0.145 0.005 260);
+    --sidebar-primary:
+        oklch(0.52 0.2 264);
+    --sidebar-primary-foreground:
+        oklch(0.985 0.002 260);
+    --sidebar-accent:
+        oklch(0.97 0.005 260);
+    --sidebar-accent-foreground:
+        oklch(0.205 0.006 260);
+    --sidebar-border:
+        oklch(0.93 0.006 260);
+    --sidebar-ring:
+        oklch(0.52 0.2 264);
+}
+
+.dark {
+    --background:
+        oklch(0.145 0 0);
+    --foreground:
+        oklch(0.985 0 0);
+    --card:
+        oklch(0.185 0 0);
+    --card-foreground:
+        oklch(0.985 0 0);
+    --popover:
+        oklch(0.185 0 0);
+    --popover-foreground:
+        oklch(0.985 0 0);
+    --primary:
+        oklch(0.55 0.19 264);
+    --primary-foreground:
+        oklch(0.985 0 0);
+    --secondary:
+        oklch(0.269 0 0);
+    --secondary-foreground:
+        oklch(0.985 0 0);
+    --muted:
+        oklch(0.269 0 0);
+    --muted-foreground:
+        oklch(0.708 0 0);
+    --accent:
+        oklch(0.269 0 0);
+    --accent-foreground:
+        oklch(0.985 0 0);
+    --destructive:
+        oklch(0.704 0.191 22.216);
+    --destructive-foreground: oklch(1 0 0);
+    --success: oklch(0.68 0.12 155);
+    --success-foreground: oklch(0.145 0 0);
+    --warning: oklch(0.82 0.12 73);
+    --warning-foreground: oklch(0.145 0 0);
+    /* On a dark canvas the fill tokens are already light enough to read as
+       ink (measured 6.82:1 and 10.50:1 on --card, and still ~5.7:1 on their
+       own 10% tint), so the text variants are the same colour rather than a
+       mechanically inverted ramp. */
+    --success-text: var(--success);
+    --warning-text: var(--warning);
+    --destructive-text: var(--destructive);
+    --info-text: var(--info);
+    --info: oklch(0.685 0.19 258.247);
+    --info-foreground: oklch(0.145 0 0);
+    --border:
+        oklch(1 0 0 / 10%);
+    --input:
+        oklch(1 0 0 / 15%);
+    --ring:
+        oklch(0.55 0.19 264);
+    --surface-border: oklch(0.27 0 0);
+    --surface-shadow: none;
+    /* Same hues as light mode, lightness lifted so every series clears a
+       dark canvas — chart-3 (#104e64 navy) is 2.15:1 against near-black
+       at its light-mode value, effectively invisible. */
+    --chart-1: oklch(0.72 0.11 184.1);
+    --chart-2: oklch(0.7 0.19 39.2);
+    --chart-3: oklch(0.68 0.09 227.2);
+    --chart-4: oklch(0.85 0.17 83.2);
+    --chart-5: oklch(0.8 0.17 68);
+    --chart-6: oklch(0.72 0.1 293);
+    --chart-7: oklch(0.68 0.1 221.723);
+    --chart-8: oklch(0.6 0.02 0);
+    --sidebar:
+        oklch(0.205 0 0);
+    --sidebar-foreground:
+        oklch(0.985 0 0);
+    --sidebar-primary:
+        oklch(0.55 0.19 264);
+    --sidebar-primary-foreground:
+        oklch(0.985 0 0);
+    --sidebar-accent:
+        oklch(0.269 0 0);
+    --sidebar-accent-foreground:
+        oklch(0.985 0 0);
+    --sidebar-border:
+        oklch(1 0 0 / 10%);
+    --sidebar-ring:
+        oklch(0.55 0.19 264);
+}
+
+/*
+ * Re-derives the theme's --color-* indirection tokens locally, so nesting
+ * `.dark` on an element other than :root (e.g. a forced-dark section inside
+ * an otherwise light page) actually re-themes its subtree. Without this,
+ * --color-background (etc.) stays resolved to the value computed at :root.
+ */
+.theme-scope {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-destructive-text: var(--destructive-text);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-success-text: var(--success-text);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-warning-text: var(--warning-text);
+    --color-info: var(--info);
+    --color-info-foreground: var(--info-foreground);
+    --color-info-text: var(--info-text);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+}
+
+/*
+ * Traveling-dot pulse used on integration "connected" screens to visualize
+ * data now flowing from the external platform into EasyFlow. Paired with
+ * motion-safe: at the call site so prefers-reduced-motion gets the static
+ * (evenly-lit) resting frame instead.
+ */
+@keyframes conbird-flow {
+    0%,
+    100% {
+        opacity: 0.3;
+        transform: scale(0.7);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/*
+ ---break---
+ */
+
+@theme inline {
+    --font-sans:
+        'Inter Variable', sans-serif;
+    --font-heading:
+        var(--font-sans);
+    --color-sidebar-ring:
+        var(--sidebar-ring);
+    --color-sidebar-border:
+        var(--sidebar-border);
+    --color-sidebar-accent-foreground:
+        var(--sidebar-accent-foreground);
+    --color-sidebar-accent:
+        var(--sidebar-accent);
+    --color-sidebar-primary-foreground:
+        var(--sidebar-primary-foreground);
+    --color-sidebar-primary:
+        var(--sidebar-primary);
+    --color-sidebar-foreground:
+        var(--sidebar-foreground);
+    --color-sidebar:
+        var(--sidebar);
+    --color-chart-5:
+        var(--chart-5);
+    --color-chart-4:
+        var(--chart-4);
+    --color-chart-3:
+        var(--chart-3);
+    --color-chart-2:
+        var(--chart-2);
+    --color-chart-1:
+        var(--chart-1);
+    --color-ring:
+        var(--ring);
+    --color-input:
+        var(--input);
+    --color-border:
+        var(--border);
+    --color-destructive:
+        var(--destructive);
+    --color-accent-foreground:
+        var(--accent-foreground);
+    --color-accent:
+        var(--accent);
+    --color-muted-foreground:
+        var(--muted-foreground);
+    --color-muted:
+        var(--muted);
+    --color-secondary-foreground:
+        var(--secondary-foreground);
+    --color-secondary:
+        var(--secondary);
+    --color-primary-foreground:
+        var(--primary-foreground);
+    --color-primary:
+        var(--primary);
+    --color-popover-foreground:
+        var(--popover-foreground);
+    --color-popover:
+        var(--popover);
+    --color-card-foreground:
+        var(--card-foreground);
+    --color-card:
+        var(--card);
+    --color-foreground:
+        var(--foreground);
+    --color-background:
+        var(--background);
+    --radius-sm:
+        calc(var(--radius) * 0.6);
+    --radius-md:
+        calc(var(--radius) * 0.8);
+    --radius-lg:
+        var(--radius);
+    --radius-xl:
+        calc(var(--radius) * 1.4);
+    --radius-2xl:
+        calc(var(--radius) * 1.8);
+    --radius-3xl:
+        calc(var(--radius) * 2.2);
+    --radius-4xl:
+        calc(var(--radius) * 2.6);
+}
