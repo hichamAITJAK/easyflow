@@ -46,6 +46,15 @@ class LoginResponse implements LoginResponseContract
             return redirect()->intended(route('super-admin.businesses.index'));
         }
 
+        // A fulfilment agent's whole job is the scan workspace, and the
+        // tenant dashboard shows them nothing they can act on. Sent
+        // without ->intended() on purpose: the stored intended URL is
+        // usually a page this role can't open, which would bounce them
+        // into a 403 immediately after a successful login.
+        if ($user->role === UserRole::FULFILMENT_AGENT) {
+            return redirect()->route('fulfillment.index');
+        }
+
         return redirect()->intended(Fortify::redirects('login'));
     }
 }

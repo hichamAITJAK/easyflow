@@ -5,6 +5,8 @@ use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\Commissions\CommissionEntryController;
 use App\Http\Controllers\Customers\CustomerController;
 use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\Fulfillment\FulfillmentWebController;
+use App\Http\Controllers\DeliveryCouriers\DeliveryAccountController;
 use App\Http\Controllers\DeliveryCouriers\DeliveryCourrierConnectionController;
 use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\Orders\ParcelController;
@@ -27,7 +29,9 @@ use App\Http\Controllers\SuperAdmin\QueueController;
 use App\Http\Controllers\SuperAdmin\SubscriptionRequestController;
 use App\Http\Controllers\Tools\ProfitCalculatorController;
 use App\Http\Controllers\Users\UserController;
+use App\Enums\UserRole;
 use App\Http\Middleware\EnsureActiveSubscription;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'))->name('home');
@@ -113,7 +117,16 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
 });
 
 Route::middleware(['auth', 'verified', 'can:access-tenant-app', EnsureActiveSubscription::class])->group(function () {
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // A fulfilment agent is sent to their workspace rather than refused.
+    // The dashboard is the app's default landing spot, so it is what a
+    // stale bookmark, a shared link or Fortify's own fallback redirect
+    // lands on — a 403 there reads as a broken account, while a redirect
+    // simply puts them where they were going.
+    Route::get('dashboard', function (Request $request, DashboardController $controller) {
+        return $request->user()->role === UserRole::FULFILMENT_AGENT
+            ? redirect()->route('fulfillment.index')
+            : $controller->index($request);
+    })->name('dashboard');
 
     Route::resource('users', UserController::class)
         ->except(['show'])
@@ -142,6 +155,13 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app', EnsureActiveSubs
 
             Route::get('/{store}/connected', [StoreController::class, 'connected'])->name('connected');
 
+            // Optional onboarding step after a store connects: pick a
+            // delivery courier and the pickup city. Separate from the
+            // account-wide delivery-couriers screen, which manages the same
+            // accounts outside any one store's connect flow.
+            Route::get('/{store}/courier', [DeliveryAccountController::class, 'create'])->name('courier');
+            Route::post('/{store}/courier', [DeliveryAccountController::class, 'store'])->name('courier.store');
+
             // Declared before the {store} delete so the literal segment is
             // matched first. Re-enters the platform's own auth flow for a
             // store whose credentials stopped working.
@@ -159,7 +179,23 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app', EnsureActiveSubs
         });
     });
 
-    Route::prefix('orders')->name('orders.')->group(function () {
+    // The scan-driven warehouse workspace (UC-16/UC-17). Sits outside the
+    // 'can:manage-users' admin block above because a fulfilment agent has
+    // no admin rights; 'handle-fulfilment' is its own gate.
+    //
+    // The data actions are XHR, not Inertia visits: a warehouse agent scans
+    // a parcel every few seconds, and a full page reload per scan would
+    // tear down the live camera stream between each one.
+    Route::prefix('fulfillment')->name('fulfillment.')->middleware('can:handle-fulfilment')->group(function () {
+        Route::get('/', [FulfillmentWebController::class, 'index'])->name('index');
+        Route::get('/summary', [FulfillmentWebController::class, 'summary'])->name('summary');
+        Route::post('/scan', [FulfillmentWebController::class, 'scan'])->name('scan');
+        Route::post('/confirm', [FulfillmentWebController::class, 'confirm'])->name('confirm');
+        Route::get('/activity', [FulfillmentWebController::class, 'activity'])->name('activity');
+        Route::post('/undo', [FulfillmentWebController::class, 'undo'])->name('undo');
+    });
+
+    Route::prefix('orders')->name('orders.')->middleware('can:use-operations-app')->group(function () {
         Route::get('/', [OrderController::class, 'index'])->name('index');
         Route::post('/sync', [OrderController::class, 'sync'])->name('sync');
         Route::post('/', [OrderController::class, 'store'])->name('store');
@@ -192,11 +228,11 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app', EnsureActiveSubs
         });
     });
 
-    Route::prefix('parcels')->name('parcels.')->group(function () {
+    Route::prefix('parcels')->name('parcels.')->middleware('can:use-operations-app')->group(function () {
         Route::get('/', [ParcelController::class, 'index'])->name('index');
     });
 
-    Route::prefix('products')->name('products.')->group(function () {
+    Route::prefix('products')->name('products.')->middleware('can:use-operations-app')->group(function () {
         // Read-only: agents see the catalogue, scoped to their AgentScope
         // grants by the controller. Everything that writes sits behind
         // `manage-products` below.
@@ -217,7 +253,7 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app', EnsureActiveSubs
         });
     });
 
-    Route::prefix('customers')->name('customers.')->group(function () {
+    Route::prefix('customers')->name('customers.')->middleware('can:use-operations-app')->group(function () {
         Route::get('/', [CustomerController::class, 'index'])->name('index');
         Route::get('/blacklist', [CustomerController::class, 'blacklist'])->name('blacklist');
 

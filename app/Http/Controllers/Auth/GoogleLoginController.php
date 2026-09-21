@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Actions\Fortify\DetermineAccountBlockReason;
+use App\Enums\LoginContext;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
@@ -162,6 +163,15 @@ class GoogleLoginController extends Controller
             $request->session()->forget('url.intended');
 
             return redirect()->route('super-admin.businesses.index');
+        }
+
+        // Likewise a fulfilment agent, whose only web surface is the scan
+        // workspace — a stored intended URL would point at a page that
+        // logs them straight back out.
+        if ($user->role === UserRole::FULFILMENT_AGENT) {
+            $request->session()->forget('url.intended');
+
+            return redirect()->route('fulfillment.index');
         }
 
         return redirect()->intended(route('dashboard'));

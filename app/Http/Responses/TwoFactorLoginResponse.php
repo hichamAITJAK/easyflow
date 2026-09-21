@@ -3,6 +3,7 @@
 namespace App\Http\Responses;
 
 use App\Actions\Fortify\DetermineAccountBlockReason;
+use App\Enums\LoginContext;
 use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Contracts\Auth\StatefulGuard;
@@ -39,6 +40,15 @@ class TwoFactorLoginResponse implements TwoFactorLoginResponseContract
             $request->session()->forget('url.intended');
 
             return redirect()->route('super-admin.businesses.index');
+        }
+
+        // Likewise a fulfilment agent, whose only web surface is the scan
+        // workspace — a stored intended URL would point at a page that
+        // logs them straight back out.
+        if ($user->role === UserRole::FULFILMENT_AGENT) {
+            $request->session()->forget('url.intended');
+
+            return redirect()->route('fulfillment.index');
         }
 
         return redirect()->intended(Fortify::redirects('login'));

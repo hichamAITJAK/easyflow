@@ -11,10 +11,10 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 class AccountStatusController extends Controller
 {
     private const REASONS = [
-        'mobile-only-role' => [
-            'title' => 'Use the mobile app to sign in',
-            'message' => 'Fulfilment agents work from the EasyFlow mobile app. Sign in there with the same email and password.',
-        ],
+        // 'mobile-only-role' => [
+        //     'title' => 'Use the mobile app to sign in',
+        //     'message' => 'Fulfilment agents work from the EasyFlow mobile app. Sign in there with the same email and password.',
+        // ],
         'user-disabled' => [
             'title' => 'Your account has been disabled',
             'message' => 'An administrator has disabled your account. Contact your workspace admin if you think this is a mistake.',

@@ -47,7 +47,7 @@ class OrderSyncService
     public function syncStore(Store $store): int
     {
         try {
-            $orders = $this->manager->ecomPlatformForStore($store)->loadOrders(null);
+            $orders = $this->manager->ecomPlatformForStore($store)->loadOrders($store->created_at);
         } catch (InvalidArgumentException) {
             return 0;
         } catch (Throwable $exception) {
@@ -124,7 +124,7 @@ class OrderSyncService
      */
     private function rejectOrdersBefore(Store $store, array $orders): array
     {
-        $cutoff = null;
+        $cutoff = $store->created_at;
 
         if ($cutoff === null) {
             return $orders;

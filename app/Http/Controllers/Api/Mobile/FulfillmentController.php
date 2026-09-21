@@ -10,6 +10,7 @@ use App\Services\Operations\Orders\OrderService;
 use App\Support\TrackingNumberExtractor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Log;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -80,7 +81,7 @@ class FulfillmentController extends Controller
         $data = $request->validate([
             'qr_value' => ['required', 'string'],
         ]);
-
+        Log::info($data['qr_value']);
         $order = $this->findOrder($request, $data['qr_value']);
 
         return response()->json([

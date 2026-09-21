@@ -11,7 +11,7 @@
 
 client_id = "ebec89fd82e920840ab62354268767a2"
 name = "EasyFlow"
-application_url = "https://test.easyflow.ma"
+application_url = "https://karim.easyflow.ma"
 embedded = false
 handle = "easyflow-cod"
 
@@ -19,9 +19,9 @@ handle = "easyflow-cod"
 api_version = "2026-07"
 
   [webhooks.privacy_compliance]
-  customer_deletion_url = "https://test.easyflow.ma/webhooks/shopify/customers/redact"
-  customer_data_request_url = "https://test.easyflow.ma/webhooks/shopify/customers/data-request"
-  shop_deletion_url = "https://test.easyflow.ma/webhooks/shopify/shop/redact"
+  customer_deletion_url = "https://karim.easyflow.ma/webhooks/shopify/customers/redact"
+  customer_data_request_url = "https://karim.easyflow.ma/webhooks/shopify/customers/data-request"
+  shop_deletion_url = "https://karim.easyflow.ma/webhooks/shopify/shop/redact"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
@@ -40,7 +40,7 @@ use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
-  "https://test.easyflow.ma/stores/connect/shopify/callback"
+  "https://karim.easyflow.ma/stores/connect/shopify/callback"
 ]
 
 [pos]

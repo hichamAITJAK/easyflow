@@ -162,9 +162,26 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('manage-platform', fn (User $user): bool => $user->role === UserRole::SUPER_ADMIN);
 
+        // The scan-driven fulfilment workspace (UC-16/UC-17). Admins get it
+        // too so they can cover the warehouse or verify a scan without
+        // borrowing an agent's account.
+        Gate::define('handle-fulfilment', fn (User $user): bool => in_array(
+            $user->role,
+            [UserRole::ADMIN, UserRole::FULFILMENT_AGENT],
+            true,
+        ));
+
         // The tenant app (dashboard, orders, stores, ...) is off-limits to a
         // super admin — they have no business_id and belong in /super-admin.
         Gate::define('access-tenant-app', fn (User $user): bool => $user->role !== UserRole::SUPER_ADMIN);
+
+        // The ordinary operational screens — dashboard, orders, products,
+        // customers. A fulfilment agent works a single scan workspace and
+        // has no business browsing these: their order visibility is scoped
+        // to assignments they never receive, so without this they would get
+        // an empty list rather than a refusal, which reads as a bug. They
+        // keep their own commission entries, which are gated separately.
+        Gate::define('use-operations-app', fn (User $user): bool => $user->role !== UserRole::FULFILMENT_AGENT);
     }
 
     /**

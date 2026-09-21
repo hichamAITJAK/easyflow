@@ -5,6 +5,7 @@ import {
     Package,
     PackageSearch,
     ScaleIcon,
+    ScanLine,
     ShieldBan,
     ShoppingCart,
     Store,
@@ -20,6 +21,7 @@ import {
     index as customersIndex,
 } from '@/routes/customers';
 import { index as deliveryCouriersIndex } from '@/routes/delivery-couriers';
+import { index as fulfillmentIndex } from '@/routes/fulfillment';
 import { index as ordersIndex } from '@/routes/orders';
 import { index as parcelsIndex } from '@/routes/parcels';
 import { index as productsIndex } from '@/routes/products';
@@ -99,7 +101,20 @@ export const mainNavItems: NavItem[] = [
 ];
 
 // Nav items not listed here are visible to every authenticated role.
+//
+// A fulfilment agent is left out of every entry: their sidebar is built
+// from FULFILMENT_NAV_ITEMS below instead, because the sidebar items they
+// would otherwise inherit (Orders, Parcels, Products, Customers) either
+// 403 or — worse — render permanently empty, since order visibility for
+// that role scopes to assignments they are never given.
 export const navItemRoles: Partial<Record<string, UserRole[]>> = {
+    Dashboard: ['super_admin', 'admin', 'confirmation_agent'],
+    Orders: ['super_admin', 'admin', 'confirmation_agent'],
+    Parcels: ['super_admin', 'admin', 'confirmation_agent'],
+    Products: ['super_admin', 'admin', 'confirmation_agent'],
+    Customers: ['super_admin', 'admin', 'confirmation_agent'],
+    Blacklist: ['super_admin', 'admin', 'confirmation_agent'],
+    Commissions: ['super_admin', 'admin', 'confirmation_agent'],
     Team: ['super_admin', 'admin'],
     Stores: ['super_admin', 'admin'],
     'Delivery Couriers': ['super_admin', 'admin'],
@@ -108,7 +123,30 @@ export const navItemRoles: Partial<Record<string, UserRole[]>> = {
     'Profit Calculator': ['super_admin', 'admin'],
 };
 
+/**
+ * The fulfilment agent's sidebar: the scan workspace they work from, and
+ * their own commission entries. Kept as its own list rather than a filter
+ * over mainNavItems because only one of its destinations appears there at
+ * all — the workspace is not part of the ordinary operations nav.
+ */
+const FULFILMENT_NAV_ITEMS: NavItem[] = [
+    {
+        title: 'Fulfilment',
+        href: fulfillmentIndex(),
+        icon: ScanLine,
+    },
+    {
+        title: 'Commissions',
+        href: commissionEntriesIndex(),
+        icon: Wallet,
+    },
+];
+
 export function getVisibleNavItems(role?: UserRole | null): NavItem[] {
+    if (role === 'fulfilment_agent') {
+        return FULFILMENT_NAV_ITEMS;
+    }
+
     return mainNavItems.filter((item) => {
         const allowedRoles = navItemRoles[item.title];
 

@@ -32,10 +32,11 @@ class EnsureAccountStillUsable
             return $next($request);
         }
 
-        // Mobile requests carry the MOBILE context so a fulfilment agent
-        // isn't bounced out of the app they're meant to use — the web-only
-        // role rule must not apply there. Decided from the URL because the
-        // mobile API is its own route file under that prefix.
+        // Mobile requests still carry the MOBILE context. No role is barred
+        // by surface any more (see DetermineAccountBlockReason), so this no
+        // longer changes the outcome, but the distinction is kept because
+        // the context is part of that action's contract and the mobile auth
+        // controllers pass it explicitly.
         $context = $request->is('api/mobile/*')
             ? LoginContext::MOBILE
             : LoginContext::WEB;

@@ -9,16 +9,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('a newly registered business gets business-wide targets', function () {
-    $this->post(route('register'), [
-        'name' => 'Owner',
-        'business_name' => 'Fresh Business',
-        'email' => 'owner@example.com',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
-    ]);
-
-    $business = Business::where('name', 'Fresh Business')->firstOrFail();
+test('a newly created business gets business-wide targets', function () {
+    // Drives the seeder directly rather than through self-registration:
+    // signup is closed, so business creation is the only path that still
+    // reaches this.
+    $business = Business::factory()->create(['name' => 'Fresh Business']);
+    app(PerformanceTargetSeeder::class)->seed($business);
 
     $targets = PerformanceTarget::where('business_id', $business->id)
         ->whereNull('user_id')

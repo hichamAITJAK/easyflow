@@ -27,7 +27,7 @@ agents.
 | **Owner** | Web (full access), Mobile (Admin navigator) | Full tenant access: stores, users, rules, billing, all orders |
 | **Manager** | Web (scoped access), Mobile (Admin navigator) | Same as Owner except billing/tenant settings; manages agents and assignment/commission rules |
 | **Confirmation agent** | Web (scoped), Mobile (Confirmation navigator) | Only orders assigned to them (or within their store/product scope) |
-| **Fulfillment agent** | Mobile (Fulfillment navigator) only | Only confirmed orders ready to ship, across all stores in the tenant — no web access needed |
+| **Fulfillment agent** | Mobile (Fulfillment navigator), Web (scan workspace) | Only confirmed orders ready to ship, across all stores in the tenant — no access to any other web screen |
 
 On mobile, **Owner and Manager share the same navigator** ("Admin"),
 differentiated internally by permission checks, not separate app builds.
@@ -201,10 +201,18 @@ displays the variance (expected vs. actual) for reconciliation. This is a
 report + a manual entry point — it does not require a live payout API from
 the courier.
 
-### 6.4 Fulfillment (mobile, scan-driven)
+### 6.4 Fulfillment (scan-driven)
+
+Available on both the mobile Fulfillment navigator and a web workspace at
+`/fulfillment`, which a fulfillment agent lands on directly at login. The
+web version exists because a warehouse phone's browser reads barcodes
+through the camera without anything to install, and because a packing
+bench's USB/Bluetooth handheld scanner types into a focused input. Both
+clients call the same endpoints and share one copy of the scan rules (see
+section 7.3), so neither can permit a transition the other forbids.
 
 **UC-16: Fulfillment queue**
-Actor: Fulfillment agent (mobile only). A single list of all orders with
+Actor: Fulfillment agent. A single list of all orders with
 `confirmation_status = submitted_to_courier`, ready to ship, aggregated
 across every store in the tenant — not scoped to one store. This is
 intentionally a different scope model than confirmation agents use.

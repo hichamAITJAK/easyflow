@@ -11,7 +11,7 @@ scopes = "read_customers,read_orders,read_products"
 
 [auth]
 redirect_urls = [
-  "https://test.easyflow.ma/stores/connect/shopify/callback",
+  "https://karim.easyflow.ma/stores/connect/shopify/callback",
   "http://127.0.0.1:8000/stores/connect/shopify/callback"
 ]
 
@@ -19,9 +19,9 @@ redirect_urls = [
 api_version = "2026-07"
 
   [webhooks.privacy_compliance]
-  customer_deletion_url = "https://test.easyflow.ma/webhooks/shopify/customers/redact"
-  customer_data_request_url = "https://test.easyflow.ma/webhooks/shopify/customers/data-request"
-  shop_deletion_url = "https://test.easyflow.ma/webhooks/shopify/shop/redact"
+  customer_deletion_url = "https://karim.easyflow.ma/webhooks/shopify/customers/redact"
+  customer_data_request_url = "https://karim.easyflow.ma/webhooks/shopify/customers/data-request"
+  shop_deletion_url = "https://karim.easyflow.ma/webhooks/shopify/shop/redact"
 
 [build]
 automatically_update_urls_on_dev = true

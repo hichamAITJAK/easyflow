@@ -125,7 +125,7 @@ test('a confirmation agent only sees orders assigned to them, not unassigned or 
     );
 });
 
-test('a fulfilment agent never reaches the web orders list at all', function () {
+test('a fulfilment agent is forbidden the web orders list', function () {
     $admin = makeBusinessUser();
     makeOrder($admin->business_id, ['assigned_agent_id' => null]);
 
@@ -134,11 +134,12 @@ test('a fulfilment agent never reaches the web orders list at all', function () 
         'business_id' => $admin->business_id,
     ]);
 
-    // Mobile-only role: EnsureAccountStillUsable signs them out of the web
-    // app rather than rendering an empty list for them.
+    // The role may use the web app (the scan workspace and their own
+    // commission entries), so they are no longer signed out of it wholesale
+    // — the orders list is simply not theirs to read.
     $this->actingAs($fulfilmentAgent)
         ->get(route('orders.index'))
-        ->assertRedirect(route('account-status', ['reason' => 'mobile-only-role']));
+        ->assertForbidden();
 });
 
 test('an admin sees every order regardless of assignment', function () {

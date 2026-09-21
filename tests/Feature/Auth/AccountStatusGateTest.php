@@ -96,7 +96,7 @@ test('active users of an active business can log in normally', function () {
     $response->assertRedirect(route('dashboard', absolute: false));
 });
 
-test('fulfilment agents are blocked from the web app at login', function () {
+test('fulfilment agents log in to the scan workspace rather than the web app', function () {
     $business = Business::create([
         'name' => 'Test Business',
         'slug' => 'test-business-4',
@@ -114,8 +114,33 @@ test('fulfilment agents are blocked from the web app at login', function () {
         'password' => 'password',
     ]);
 
-    $this->assertGuest();
-    $response->assertRedirect(route('account-status', ['reason' => 'mobile-only-role']));
+    $this->assertAuthenticated();
+    $response->assertRedirect(route('fulfillment.index'));
+});
+
+/**
+ * Logging in must not hand the role the rest of the web app. The agent
+ * stays signed in — the admin screens are closed by the route gates rather
+ * than by signing them out, which is what changed when the mobile-only
+ * rule was removed.
+ */
+test('a logged-in fulfilment agent is still refused the admin web pages', function () {
+    // makeBusinessUser rather than a bare Business: the operational screens
+    // sit behind EnsureActiveSubscription, which would redirect to the
+    // billing block before the role gate is ever consulted and hide what
+    // this test is actually asserting.
+    $user = makeBusinessUser(['role' => UserRole::FULFILMENT_AGENT]);
+
+    $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticated();
+
+    $this->get(route('orders.index'))->assertForbidden();
+
+    $this->assertAuthenticated();
 });
 
 test('fulfilment agents can still log in on the mobile api', function () {

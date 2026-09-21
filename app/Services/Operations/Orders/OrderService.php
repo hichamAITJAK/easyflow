@@ -259,7 +259,7 @@ class OrderService
      *
      * @throws InvalidArgumentException if transitioning to RETURNED_IN_TRANSIT without a reason code.
      */
-    public function updateDeliveryStatus(
+     public function updateDeliveryStatus(
         Order $order,
         OrderDeliveryStatus $newStatus,
         ?User $actor = null,
@@ -282,11 +282,17 @@ class OrderService
                 OrderDeliveryStatus::CANCELLED_AT_COURIER,
             ], true),
         ];
+        
 
+        
         if ($newStatus === OrderDeliveryStatus::RETURNED_IN_TRANSIT) {
             $attributes['return_reason_code'] = $returnReasonCode;
         } elseif ($newStatus === OrderDeliveryStatus::READY_FOR_PICKUP) {
             $attributes['ready_for_pickup_at'] = now();
+            $attributes['shipped_at'] = now();
+        } elseif ($newStatus === OrderDeliveryStatus::AWAITING_PICKUP) {
+            $attributes['ready_for_pickup_at'] = null;
+            $attributes['shipped_at'] = null;
         } elseif ($newStatus === OrderDeliveryStatus::RETURN_RECEIVED) {
             $attributes['return_received_at'] = now();
         }
