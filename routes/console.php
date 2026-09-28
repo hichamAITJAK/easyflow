@@ -44,10 +44,3 @@ Schedule::command('agents:award-bonuses')
 Schedule::command('stats:rebuild')
     ->dailyAt('03:00')
     ->withoutOverlapping();
-
-// Expires past-due trials/subscriptions and fires renewal reminders at the
-// configured thresholds. Early morning so the block/banner state is right
-// before merchants start their day.
-Schedule::command('subscriptions:check')
-    ->dailyAt('06:00')
-    ->withoutOverlapping();

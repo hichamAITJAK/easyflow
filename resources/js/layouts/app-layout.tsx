@@ -2,7 +2,6 @@ import { usePage } from '@inertiajs/react';
 import posthog from 'posthog-js';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
-import { SubscriptionBanner } from '@/components/subscription-banner';
 import AppHeaderLayout from '@/layouts/app/app-header-layout';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import type { BreadcrumbItem, PageProps } from '@/types';
@@ -57,7 +56,6 @@ export default function AppLayout({
 
     return (
         <AppLayoutTemplate breadcrumbs={breadcrumbs}>
-            <SubscriptionBanner />
             {children}
         </AppLayoutTemplate>
     );

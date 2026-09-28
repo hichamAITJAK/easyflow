@@ -3,12 +3,9 @@
 namespace Database\Seeders;
 
 use App\Enums\BusinessStatus;
-use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\Business;
-use App\Models\Plan;
-use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -67,54 +64,11 @@ class ShopifyReviewerSeeder extends Seeder
             password: $password,
         );
 
-        $subscription = $this->activateSubscription($business);
-
         $this->command->info('Shopify review accounts ready:');
         $this->command->line("  business_id : {$business->id}");
         $this->command->line("  admin       : {$admin->email}");
         $this->command->line("  agent       : {$agent->email}");
-        $this->command->line('  plan        : '.($subscription?->plan->name ?? 'NONE — run PlanSeeder first'));
-        $this->command->line('  expires     : '.($subscription?->ends_at?->toDateString() ?? '—'));
         $this->command->warn('Seed sample orders/products for this business before submitting — reviewers reject empty screens.');
-    }
-
-    /**
-     * Give the reviewer business a long-running active subscription.
-     *
-     * Without one the account lands on a paywall or account-status screen and
-     * the reviewer never reaches the app. The end date is deliberately far out
-     * so the account doesn't expire mid-review or before a later re-review.
-     *
-     * Marked as an internal comp rather than a payment: no money changed
-     * hands, and payment_method only offers bank transfer or cash.
-     */
-    private function activateSubscription(Business $business): ?Subscription
-    {
-        $plan = Plan::query()->where('is_active', true)->orderBy('id')->first();
-
-        if (! $plan instanceof Plan) {
-            $this->command->error('No active plan found. Run: php artisan db:seed --class=PlanSeeder');
-
-            return null;
-        }
-
-        $subscription = Subscription::withoutGlobalScopes()
-            ->firstOrNew(['business_id' => $business->id, 'plan_id' => $plan->id]);
-
-        $subscription->forceFill([
-            'reference_code' => $subscription->reference_code ?? Subscription::nextReferenceCode(),
-            'status' => SubscriptionStatus::ACTIVE,
-            'starts_at' => now(),
-            'ends_at' => now()->addYears(5),
-            'limits' => null,
-            'paid_amount' => '0.00',
-            'payment_reference' => null,
-            'submitted_at' => now(),
-            'rejection_reason' => null,
-            'notes' => 'Complimentary access for Shopify app review. Not a real payment.',
-        ])->save();
-
-        return $subscription->fresh('plan');
     }
 
     /**

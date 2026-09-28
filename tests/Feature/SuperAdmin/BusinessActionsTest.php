@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('shows a business detail page with its team, stores, and subscription', function () {
+it('shows a business detail page with its team and stores', function () {
     $business = Business::factory()->create(['name' => 'Atlas Trading']);
     User::factory()->count(2)->create(['business_id' => $business->id]);
 
@@ -20,9 +20,6 @@ it('shows a business detail page with its team, stores, and subscription', funct
             ->where('business.users_count', 2)
             ->has('users', 2)
             ->has('stores')
-            // The factory starts every business on a trial, so there is
-            // always a current subscription to show.
-            ->has('subscription')
         );
 });
 

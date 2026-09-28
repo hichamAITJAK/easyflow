@@ -39,18 +39,3 @@ export type CourierCityFilters = {
     per_page?: string;
     page?: string;
 };
-
-/** Feature ceilings a plan can set. A missing key means unlimited. */
-export type PlanLimits = Record<string, number | null>;
-
-export type CatalogPlan = {
-    id: number;
-    name: string;
-    slug: string;
-    price: string;
-    currency: string;
-    duration_days: number;
-    limits: PlanLimits | null;
-    is_active: boolean;
-    subscriptions_count?: number;
-};

@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Enums\UserRole;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Middleware;
@@ -45,39 +44,6 @@ class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'toast' => fn () => Inertia::getFlashed($request)['toast'] ?? null,
-            'subscription' => fn () => $this->subscriptionState($request),
-        ];
-    }
-
-    /**
-     * Compact subscription state for tenant users, used by the renewal /
-     * grace-period banners. Null for guests and super admins.
-     *
-     * @return array<string, mixed>|null
-     */
-    protected function subscriptionState(Request $request): ?array
-    {
-        $user = $request->user();
-
-        if ($user === null || $user->role === UserRole::SUPER_ADMIN || $user->business === null) {
-            return null;
-        }
-
-        $subscription = $user->business->usableSubscription();
-
-        if ($subscription === null) {
-            return null;
-        }
-
-        return [
-            'status' => $subscription->status->value,
-            'isTrial' => $subscription->plan_id === null,
-            'endsAt' => $subscription->ends_at?->toDateString(),
-            'daysRemaining' => $subscription->daysRemaining(),
-            'inGracePeriod' => $subscription->isInGracePeriod(),
-            'graceEndsAt' => $subscription->plan_id !== null && $subscription->ends_at !== null
-                ? $subscription->graceEndsAt()->toDateString()
-                : null,
         ];
     }
 }

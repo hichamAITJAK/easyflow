@@ -3,14 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Actions\Fortify\DetermineAccountBlockReason;
-use App\Enums\LoginContext;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Business;
 use App\Models\User;
 use App\Services\Operations\Performance\PerformanceTargetSeeder;
-use App\Services\SubscriptionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -93,15 +91,14 @@ class GoogleLoginController extends Controller
         return Inertia::render('auth/google-complete', [
             'name' => $pending['name'],
             'email' => $pending['email'],
-            'trialDays' => (int) config('subscription.trial_days'),
         ]);
     }
 
     /**
-     * Create the business, its admin (no local password), and the free
-     * trial — the Google twin of Fortify's CreateNewUser.
+     * Create the business and its admin (no local password) — the Google
+     * twin of Fortify's CreateNewUser.
      */
-    public function complete(Request $request, SubscriptionService $subscriptions): RedirectResponse
+    public function complete(Request $request): RedirectResponse
     {
         $pending = $request->session()->get(self::SESSION_KEY);
 
@@ -113,7 +110,7 @@ class GoogleLoginController extends Controller
             'business_name' => ['required', 'string', 'max:255'],
         ]);
 
-        $user = DB::transaction(function () use ($pending, $validated, $subscriptions) {
+        $user = DB::transaction(function () use ($pending, $validated) {
             $business = Business::create([
                 'name' => $validated['business_name'],
                 'slug' => Business::uniqueSlug($validated['business_name']),
@@ -130,8 +127,6 @@ class GoogleLoginController extends Controller
 
             // Google already verified this address.
             $user->forceFill(['email_verified_at' => now()])->save();
-
-            $subscriptions->startTrial($business);
 
             // Business-wide performance targets, so an agent created
             // without explicit targets is still measured against something.

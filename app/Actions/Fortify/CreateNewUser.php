@@ -10,7 +10,6 @@ use App\Models\Business;
 use App\Models\User;
 use App\Services\Operations\Performance\PerformanceTargetSeeder;
 use App\Services\PostHogService;
-use App\Services\SubscriptionService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
@@ -20,9 +19,8 @@ class CreateNewUser implements CreatesNewUsers
     use PasswordValidationRules, ProfileValidationRules;
 
     /**
-     * Validate and create a newly registered user, their business, and the
-     * free trial that gates the tenant app — the self-service twin of
-     * SuperAdmin\BusinessController@store.
+     * Validate and create a newly registered user and their business — the
+     * self-service twin of SuperAdmin\BusinessController@store.
      *
      * @param  array<string, string>  $input
      */
@@ -49,10 +47,6 @@ class CreateNewUser implements CreatesNewUsers
                 'role' => UserRole::ADMIN,
                 'status' => UserStatus::ACTIVE,
             ]);
-
-            // Every new business starts on the free trial — same hook the
-            // super admin onboarding flow uses.
-            app(SubscriptionService::class)->startTrial($business);
 
             // Business-wide performance targets, so an agent created
             // without explicit targets is still measured against something.

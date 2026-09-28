@@ -11,11 +11,11 @@ import type { PageProps } from '@/types';
 /**
  * The shell for the fulfilment workspace.
  *
- * Deliberately not AppLayout: that shell carries a sidebar, breadcrumbs
- * and a subscription banner built around navigating between admin
- * screens. A fulfilment agent has exactly one screen and works one-handed
- * while holding a parcel, so everything here is stripped back to a title
- * bar and the content — no navigation to get lost in, and no chrome
+ * Deliberately not AppLayout: that shell carries a sidebar and
+ * breadcrumbs built around navigating between admin screens. A
+ * fulfilment agent has exactly one screen and works one-handed while
+ * holding a parcel, so everything here is stripped back to a title bar
+ * and the content — no navigation to get lost in, and no chrome
  * competing with the scan button for thumb reach.
  */
 export default function FulfillmentLayout({ children }: { children: React.ReactNode }) {

@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\User;
@@ -19,7 +18,7 @@ test('registration screen can be rendered', function () {
     $response->assertOk();
 });
 
-test('registering creates a business admin and starts the free trial', function () {
+test('registering creates a business admin', function () {
     $response = $this->post(route('register.store'), [
         'business_name' => 'Atlas Store',
         'name' => 'Test User',
@@ -37,16 +36,8 @@ test('registering creates a business admin and starts the free trial', function 
         ->and($user->business->name)->toBe('Atlas Store')
         ->and($user->business->slug)->toBe('atlas-store');
 
-    $trial = $user->business->subscriptions()->sole();
-
-    expect($trial->status)->toBe(SubscriptionStatus::TRIALING)
-        ->and($trial->plan_id)->toBeNull()
-        ->and($trial->ends_at->isFuture())->toBeTrue()
-        ->and($trial->limits)->toBe(config('subscription.trial_limits'));
-
     $this->assertAuthenticatedAs($user);
 
-    // A fresh trial passes the subscription gate straight away.
     $this->get(route('dashboard'))->assertOk();
 });
 

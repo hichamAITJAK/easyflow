@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -191,35 +190,6 @@ class Business extends Model
     public function dailyStatsSummaries(): HasMany
     {
         return $this->hasMany(DailyStatsSummary::class);
-    }
-
-    /**
-     * Get every subscription cycle for this business (one row per cycle,
-     * so the full payment history is the relation itself).
-     *
-     * @return HasMany<Subscription, $this>
-     */
-    public function subscriptions(): HasMany
-    {
-        return $this->hasMany(Subscription::class);
-    }
-
-    /**
-     * Get the most recent subscription cycle, whatever its status.
-     *
-     * @return HasOne<Subscription, $this>
-     */
-    public function currentSubscription(): HasOne
-    {
-        return $this->hasOne(Subscription::class)->latestOfMany();
-    }
-
-    /**
-     * Get the subscription that currently grants tenant access, if any.
-     */
-    public function usableSubscription(): ?Subscription
-    {
-        return $this->subscriptions()->usable()->latest('id')->first();
     }
 
     /**

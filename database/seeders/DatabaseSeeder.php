@@ -26,6 +26,5 @@ class DatabaseSeeder extends Seeder
         $this->call(EcommercePlatformSeeder::class);
         $this->call(DeliveryCourrierSeeder::class);
         $this->call(DeliveryCourrierCitySeeder::class);
-        $this->call(PlanSeeder::class);
     }
 }

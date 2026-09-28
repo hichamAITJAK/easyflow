@@ -12,7 +12,6 @@ import { edit as editBusiness } from '@/routes/business';
 import { edit } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
 import { index as sessionsIndex } from '@/routes/sessions';
-import { edit as editSubscription } from '@/routes/subscription';
 import type { NavItem, PageProps } from '@/types';
 
 const sidebarNavItems: NavItem[] = [
@@ -38,15 +37,6 @@ const sidebarNavItems: NavItem[] = [
     },
 ];
 
-// Tenant-only: a super admin has no business, hence no subscription. The
-// route is gated by `can:access-tenant-app`, so showing it to a super admin
-// would be a link into a 403.
-const subscriptionNavItem: NavItem = {
-    title: 'Subscription',
-    href: editSubscription(),
-    icon: null,
-};
-
 // Admin-only: business-wide settings are gated by `can:manage-users`, so
 // showing this to an agent would be a link into a 403.
 const businessNavItem: NavItem = {
@@ -71,11 +61,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
 
     const navItems = isSuperAdmin
         ? sidebarNavItems
-        : [
-              ...sidebarNavItems,
-              ...(isAdmin ? [businessNavItem] : []),
-              subscriptionNavItem,
-          ];
+        : [...sidebarNavItems, ...(isAdmin ? [businessNavItem] : [])];
 
     return (
         <Shell>

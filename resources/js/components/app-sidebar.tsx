@@ -4,7 +4,6 @@ import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
-import { TrialUpgradeCard } from '@/components/trial-upgrade-card';
 import {
     Sidebar,
     SidebarContent,
@@ -54,7 +53,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <TrialUpgradeCard />
                 {/* <NavFooter items={footerNavItems} className="mt-auto" /> */}
                 <NavUser />
             </SidebarFooter>

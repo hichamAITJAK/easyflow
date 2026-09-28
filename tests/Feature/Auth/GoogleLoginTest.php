@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\User;
@@ -91,7 +90,7 @@ it('sends a brand-new google user to the complete-registration step', function (
     $this->get(route('auth.google.complete'))->assertOk();
 });
 
-it('creates the business, admin, and trial when registration is completed', function () {
+it('creates the business and admin when registration is completed', function () {
     fakeGoogleUser(email: 'new@example.com', name: 'New Merchant');
 
     $this->get(route('auth.google.callback'));
@@ -108,11 +107,6 @@ it('creates the business, admin, and trial when registration is completed', func
         ->and($user->password)->toBeNull()
         ->and($user->email_verified_at)->not->toBeNull()
         ->and($user->business->name)->toBe('Atlas Store');
-
-    $trial = $user->business->subscriptions()->sole();
-
-    expect($trial->status)->toBe(SubscriptionStatus::TRIALING)
-        ->and($trial->plan_id)->toBeNull();
 
     $this->assertAuthenticatedAs($user);
 

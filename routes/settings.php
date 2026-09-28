@@ -4,7 +4,6 @@ use App\Http\Controllers\Settings\BusinessController as BusinessSettingsControll
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Settings\SessionController;
-use App\Http\Controllers\Subscription\SubscriptionController;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
@@ -48,12 +47,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('settings/business', [BusinessSettingsController::class, 'update'])->name('business.update');
         Route::post('settings/business/profile', [BusinessSettingsController::class, 'updateProfile'])->name('business.profile.update');
     });
-
-    // Deliberately not behind EnsureActiveSubscription — a blocked business
-    // must still be able to read its subscription state and history.
-    Route::get('settings/subscription', [SubscriptionController::class, 'edit'])
-        ->middleware('can:access-tenant-app')
-        ->name('subscription.edit');
 });
 
 Route::get('.well-known/passkey-endpoints', function () {

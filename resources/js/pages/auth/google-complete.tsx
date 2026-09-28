@@ -14,13 +14,12 @@ import { Spinner } from '@/components/ui/spinner';
 type Props = {
     name: string;
     email: string;
-    trialDays: number;
 };
 
-export default function GoogleComplete({ name, email, trialDays }: Props) {
+export default function GoogleComplete({ name, email }: Props) {
     setLayoutProps({
         title: 'One last step',
-        description: `Signed in as ${email}. Name your business to start your ${trialDays}-day free trial.`,
+        description: `Signed in as ${email}. Name your business to get started.`,
     });
 
     return (
@@ -51,7 +50,7 @@ export default function GoogleComplete({ name, email, trialDays }: Props) {
                         <Field>
                             <Button type="submit" disabled={processing}>
                                 {processing && <Spinner />}
-                                Start free trial
+                                Create business
                                 {name ? `, ${name.split(' ')[0]}` : ''}
                             </Button>
                         </Field>

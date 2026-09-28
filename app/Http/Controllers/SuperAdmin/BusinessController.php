@@ -13,7 +13,6 @@ use App\Http\Requests\SuperAdmin\UpdateBusinessStatusRequest;
 use App\Models\Business;
 use App\Models\User;
 use App\Services\Operations\Performance\PerformanceTargetSeeder;
-use App\Services\SubscriptionService;
 use App\Support\PhoneNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -72,11 +71,11 @@ class BusinessController extends Controller
     /**
      * Store a newly onboarded business and its first admin user.
      */
-    public function store(StoreBusinessRequest $request, SubscriptionService $subscriptions): RedirectResponse
+    public function store(StoreBusinessRequest $request): RedirectResponse
     {
         $data = $request->validated();
 
-        DB::transaction(function () use ($data, $subscriptions) {
+        DB::transaction(function () use ($data) {
             $business = Business::create([
                 'name' => $data['business_name'],
                 'slug' => $this->uniqueSlug($data['business_name']),
@@ -94,10 +93,6 @@ class BusinessController extends Controller
 
             $admin->password = Hash::make($data['admin_password']);
             $admin->save();
-
-            // Every new business starts on the free trial — the same hook a
-            // future self-registration flow should call.
-            $subscriptions->startTrial($business);
 
             // Business-wide performance targets, so an agent created
             // without explicit targets is still measured against something.
@@ -126,9 +121,6 @@ class BusinessController extends Controller
                 ->with('platform:id,name,slug')
                 ->orderBy('name')
                 ->get(['id', 'platform_id', 'name', 'domain', 'connection_status', 'last_synced_at']),
-            'subscription' => $business->currentSubscription()
-                ->with('plan:id,name,price,currency')
-                ->first(),
         ]);
     }
 

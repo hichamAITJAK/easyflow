@@ -57,6 +57,12 @@ test('a fulfilment agent hitting the dashboard is forwarded to their workspace',
         ->assertRedirect(route('fulfillment.index'));
 });
 
+test('a super admin hitting the dashboard is forwarded to the platform panel', function () {
+    $this->actingAs(superAdmin())
+        ->get(route('dashboard'))
+        ->assertRedirect(route('super-admin.home'));
+});
+
 test('every other role still gets the dashboard itself', function (UserRole $role) {
     $user = makeBusinessUser(['role' => $role]);
 

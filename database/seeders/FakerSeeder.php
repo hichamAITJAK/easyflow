@@ -9,8 +9,6 @@ use App\Enums\OrderCancelReason;
 use App\Enums\OrderConfirmationStatus;
 use App\Enums\OrderDeliveryStatus;
 use App\Enums\OrderReturnReason;
-use App\Enums\SubscriptionPaymentMethod;
-use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Models\AgentScope;
 use App\Models\Business;
@@ -28,13 +26,11 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusEvent;
 use App\Models\PerformanceTarget;
-use App\Models\Plan;
 use App\Models\Product;
 use App\Models\ProductOption;
 use App\Models\ProductOptionValue;
 use App\Models\ProductVariant;
 use App\Models\Store;
-use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -124,7 +120,6 @@ class FakerSeeder extends Seeder
         $this->agents = [$agent, ...$extraAgents->all()];
         $this->fulfilmentAgents = [$fulfilment, ...$extraFulfilment->all()];
 
-        $this->seedSubscription($business);
         $this->seedStores($business);
         $this->seedDeliveryAccounts($business);
         $this->seedProducts($business);
@@ -136,45 +131,6 @@ class FakerSeeder extends Seeder
         $this->seedPerformanceTargets($business);
         $this->seedDailyStatsSummary($business);
         $this->seedDailyStatsReasons($business);
-    }
-
-    /**
-     * Give the demo business an active paid subscription.
-     *
-     * Without one the seeded logins land on the paywall / account-status
-     * screen instead of the dashboard, so none of the seeded data is
-     * reachable. Falls back to creating a plan when PlanSeeder hasn't run.
-     */
-    private function seedSubscription(Business $business): void
-    {
-        $plan = Plan::query()->where('is_active', true)->orderBy('id')->first();
-
-        if (! $plan instanceof Plan) {
-            $plan = Plan::create([
-                'name' => 'Standard',
-                'slug' => 'standard-yearly',
-                'price' => '2400.00',
-                'currency' => 'MAD',
-                'duration_days' => 365,
-                'limits' => null,
-                'is_active' => true,
-            ]);
-        }
-
-        Subscription::create([
-            'business_id' => $business->id,
-            'plan_id' => $plan->id,
-            'status' => SubscriptionStatus::ACTIVE,
-            'reference_code' => Subscription::nextReferenceCode(),
-            'starts_at' => Carbon::now()->subDays(30),
-            'ends_at' => Carbon::now()->addDays($plan->duration_days - 30),
-            'limits' => null,
-            'paid_amount' => $plan->price,
-            'payment_method' => SubscriptionPaymentMethod::BANK_TRANSFER,
-            'payment_reference' => 'DEMO-'.strtoupper(Str::random(8)),
-            'submitted_at' => Carbon::now()->subDays(30),
-            'notes' => 'Seeded demo subscription. Not a real payment.',
-        ]);
     }
 
     private function seedStores(Business $business): void

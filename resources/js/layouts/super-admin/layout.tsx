@@ -1,9 +1,7 @@
 import { Link } from '@inertiajs/react';
 import {
     Building2,
-    CreditCard,
     ListChecks,
-    Package,
     ShieldCheck,
     Store,
     Truck,
@@ -28,10 +26,8 @@ import {
 } from '@/components/ui/sidebar';
 import { index as businessesIndex } from '@/routes/super-admin/businesses';
 import { index as couriersIndex } from '@/routes/super-admin/couriers';
-import { index as plansIndex } from '@/routes/super-admin/plans';
 import { index as platformsIndex } from '@/routes/super-admin/platforms';
 import { index as queueIndex } from '@/routes/super-admin/queue';
-import { index as subscriptionsIndex } from '@/routes/super-admin/subscriptions';
 import type { NavItem } from '@/types';
 
 const navItems: NavItem[] = [
@@ -39,16 +35,6 @@ const navItems: NavItem[] = [
         title: 'Businesses',
         href: businessesIndex(),
         icon: Building2,
-    },
-    {
-        title: 'Subscriptions',
-        href: subscriptionsIndex(),
-        icon: CreditCard,
-    },
-    {
-        title: 'Plans',
-        href: plansIndex(),
-        icon: Package,
     },
     {
         title: 'Platforms',

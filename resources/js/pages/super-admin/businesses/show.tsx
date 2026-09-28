@@ -38,7 +38,6 @@ import {
 import type {
     Business,
     BusinessStatus,
-    BusinessSubscription,
     Store,
     User,
 } from '@/types';
@@ -78,12 +77,10 @@ export default function SuperAdminBusinessesShow({
     business,
     users,
     stores,
-    subscription,
 }: {
     business: Business;
     users: User[];
     stores: Store[];
-    subscription: BusinessSubscription | null;
 }) {
     const [statusIntent, setStatusIntent] =
         useState<BusinessStatusIntent | null>(null);
@@ -180,62 +177,6 @@ export default function SuperAdminBusinessesShow({
                     />
                     <Stat label="Orders" value={business.orders_count ?? 0} />
                 </div>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Subscription</CardTitle>
-                        <CardDescription>
-                            The most recent billing cycle for this tenant.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {subscription === null ? (
-                            <p className="text-sm text-muted-foreground">
-                                This business has no subscription on record.
-                            </p>
-                        ) : (
-                            <dl className="grid gap-4 sm:grid-cols-4">
-                                <div className="space-y-1">
-                                    <dt className="text-xs text-muted-foreground">
-                                        Plan
-                                    </dt>
-                                    <dd className="text-sm font-medium">
-                                        {subscription.plan?.name ??
-                                            'Free trial'}
-                                    </dd>
-                                </div>
-                                <div className="space-y-1">
-                                    <dt className="text-xs text-muted-foreground">
-                                        Status
-                                    </dt>
-                                    <dd className="text-sm font-medium capitalize">
-                                        {subscription.status}
-                                    </dd>
-                                </div>
-                                <div className="space-y-1">
-                                    <dt className="text-xs text-muted-foreground">
-                                        Started
-                                    </dt>
-                                    <dd className="text-sm">
-                                        {subscription.starts_at
-                                            ? formatDate(subscription.starts_at)
-                                            : '—'}
-                                    </dd>
-                                </div>
-                                <div className="space-y-1">
-                                    <dt className="text-xs text-muted-foreground">
-                                        Ends
-                                    </dt>
-                                    <dd className="text-sm">
-                                        {subscription.ends_at
-                                            ? formatDate(subscription.ends_at)
-                                            : '—'}
-                                    </dd>
-                                </div>
-                            </dl>
-                        )}
-                    </CardContent>
-                </Card>
 
                 <Card>
                     <CardHeader>

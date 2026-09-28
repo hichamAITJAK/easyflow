@@ -5,8 +5,6 @@ use App\Enums\UserRole;
 use App\Models\DeleveryCourrierCity;
 use App\Models\DeliveryCourrier;
 use App\Models\EcommercePlatform;
-use App\Models\Plan;
-use App\Models\Subscription;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
@@ -351,154 +349,11 @@ it('refuses to sync cities for a courier with no cities API', function () {
         ->assertStatus(422);
 });
 
-// -------------------------------------------------------------------- plans
-
-it('creates a plan with structured limits', function () {
-    $this->actingAs(superAdmin())
-        ->post(route('super-admin.plans.store'), [
-            'name' => 'Growth',
-            'slug' => 'growth',
-            'price' => '299.00',
-            'currency' => 'MAD',
-            'duration_days' => 30,
-            'is_active' => true,
-            'limits' => [
-                'max_stores' => 5,
-                'max_confirmation_agents' => 3,
-                // Blank means unlimited and should not be stored.
-                'daily_orders' => null,
-            ],
-        ])
-        ->assertRedirect(route('super-admin.plans.index'));
-
-    $plan = Plan::where('slug', 'growth')->firstOrFail();
-
-    expect($plan->limits)->toBe(['max_stores' => 5, 'max_confirmation_agents' => 3])
-        ->and($plan->is_active)->toBeTrue();
-});
-
-it('stores null limits when every ceiling is left blank', function () {
-    $this->actingAs(superAdmin())
-        ->post(route('super-admin.plans.store'), [
-            'name' => 'Unlimited',
-            'slug' => 'unlimited',
-            'price' => '999',
-            'currency' => 'MAD',
-            'duration_days' => 365,
-            'is_active' => true,
-            'limits' => ['max_stores' => null, 'daily_orders' => null],
-        ])
-        ->assertRedirect();
-
-    expect(Plan::where('slug', 'unlimited')->firstOrFail()->limits)->toBeNull();
-});
-
-it('rejects an unknown limit key so a typo cannot go silently unenforced', function () {
-    $this->actingAs(superAdmin())
-        ->post(route('super-admin.plans.store'), [
-            'name' => 'Typo',
-            'slug' => 'typo',
-            'price' => '10',
-            'currency' => 'MAD',
-            'duration_days' => 30,
-            'is_active' => true,
-            'limits' => ['max_storez' => 5],
-        ])
-        ->assertSessionHasErrors('limits');
-
-    expect(Plan::where('slug', 'typo')->exists())->toBeFalse();
-});
-
-it('rejects a duplicate plan slug but lets a plan keep its own', function () {
-    Plan::factory()->create(['slug' => 'taken']);
-    $plan = Plan::factory()->create(['slug' => 'mine', 'name' => 'Mine']);
-
-    $this->actingAs(superAdmin())
-        ->patch(route('super-admin.plans.update', $plan), [
-            'name' => 'Mine',
-            'slug' => 'taken',
-            'price' => '10',
-            'currency' => 'MAD',
-            'duration_days' => 30,
-            'is_active' => true,
-        ])
-        ->assertSessionHasErrors('slug');
-
-    $this->actingAs(superAdmin())
-        ->patch(route('super-admin.plans.update', $plan), [
-            'name' => 'Renamed',
-            'slug' => 'mine',
-            'price' => '10',
-            'currency' => 'MAD',
-            'duration_days' => 30,
-            'is_active' => true,
-        ])
-        ->assertSessionHasNoErrors();
-
-    expect($plan->fresh()->name)->toBe('Renamed');
-});
-
-it('toggles a plan between offered and hidden', function () {
-    $plan = Plan::factory()->create(['is_active' => true]);
-
-    $this->actingAs(superAdmin())
-        ->patch(route('super-admin.plans.toggle', $plan))
-        ->assertRedirect();
-
-    expect($plan->fresh()->is_active)->toBeFalse();
-
-    $this->actingAs(superAdmin())
-        ->patch(route('super-admin.plans.toggle', $plan))
-        ->assertRedirect();
-
-    expect($plan->fresh()->is_active)->toBeTrue();
-});
-
-it('deletes a plan that was never subscribed to', function () {
-    $plan = Plan::factory()->create();
-
-    $this->actingAs(superAdmin())
-        ->delete(route('super-admin.plans.destroy', $plan))
-        ->assertRedirect(route('super-admin.plans.index'));
-
-    expect(Plan::find($plan->id))->toBeNull();
-});
-
-it('refuses to delete a plan that has subscription history', function () {
-    $plan = Plan::factory()->create();
-    Subscription::factory()->active()->create([
-        'business_id' => makeBusinessUser()->business_id,
-        'plan_id' => $plan->id,
-    ]);
-
-    $this->actingAs(superAdmin())
-        ->delete(route('super-admin.plans.destroy', $plan))
-        ->assertRedirect();
-
-    // Deleting would orphan the subscription that points at it.
-    expect(Plan::find($plan->id))->not->toBeNull();
-});
-
-it('hides a deactivated plan from the tenant subscription page', function () {
-    $offered = Plan::factory()->create(['is_active' => true, 'name' => 'Offered']);
-    $hidden = Plan::factory()->create(['is_active' => true, 'name' => 'Hidden']);
-
-    $this->actingAs(superAdmin())->patch(route('super-admin.plans.toggle', $hidden));
-
-    // The end-to-end point of the toggle: tenants stop being offered it.
-    $this->actingAs(makeBusinessUser(['role' => UserRole::ADMIN]))
-        ->get(route('subscription.blocked'))
-        ->assertInertia(fn ($page) => $page
-            ->where('plans', fn ($plans) => collect($plans)->pluck('id')->all() === [$offered->id])
-        );
-});
-
 // ------------------------------------------------------------ authorization
 
 it('forbids non super admins from every catalog route', function () {
     $platform = EcommercePlatform::factory()->create();
     $courier = DeliveryCourrier::factory()->create(['slug' => Courier::SENDIT->value]);
-    $plan = Plan::factory()->create();
     $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
 
     $this->actingAs($admin)->get(route('super-admin.platforms.index'))->assertForbidden();
@@ -506,11 +361,6 @@ it('forbids non super admins from every catalog route', function () {
     $this->actingAs($admin)->get(route('super-admin.couriers.index'))->assertForbidden();
     $this->actingAs($admin)->get(route('super-admin.couriers.cities', $courier))->assertForbidden();
     $this->actingAs($admin)->post(route('super-admin.couriers.sync-cities', $courier))->assertForbidden();
-    $this->actingAs($admin)->get(route('super-admin.plans.index'))->assertForbidden();
-    $this->actingAs($admin)->post(route('super-admin.plans.store'), [])->assertForbidden();
-    $this->actingAs($admin)->patch(route('super-admin.plans.toggle', $plan))->assertForbidden();
-    $this->actingAs($admin)->delete(route('super-admin.plans.destroy', $plan))->assertForbidden();
 
-    expect(Plan::find($plan->id))->not->toBeNull()
-        ->and($platform->fresh()->name)->not->toBe('x');
+    expect($platform->fresh()->name)->not->toBe('x');
 });

@@ -6,7 +6,6 @@ use App\Models\EcommercePlatform;
 use App\Models\Order;
 use App\Models\Store;
 use App\Models\User;
-use App\Services\SubscriptionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -65,10 +64,6 @@ function makeBusinessUser(array $overrides = []): User
         'name' => 'Acme',
         'slug' => 'acme-'.uniqid(),
     ]);
-
-    // Mirror production onboarding: every business starts on a free trial,
-    // so tenant-app requests pass EnsureActiveSubscription.
-    app(SubscriptionService::class)->startTrial($business);
 
     return User::factory()->create([
         'business_id' => $business->id,

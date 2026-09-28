@@ -11,5 +11,4 @@ export type * from './product';
 export type * from './queue';
 export type * from './settlement';
 export type * from './store';
-export type * from './subscription';
 export type * from './ui';

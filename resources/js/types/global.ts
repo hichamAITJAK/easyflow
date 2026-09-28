@@ -1,5 +1,4 @@
 import type { Auth } from './auth';
-import type { SharedSubscriptionState } from './subscription';
 
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
@@ -10,5 +9,4 @@ export type PageProps<
     quote?: { message: string; author: string };
     status?: string;
     toast?: { type: 'success' | 'error'; message: string } | null;
-    subscription?: SharedSubscriptionState | null;
 };

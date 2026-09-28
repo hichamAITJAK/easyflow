@@ -35,10 +35,6 @@ createInertiaApp({
             // from the authenticated role, so no shell is stacked here.
             case name.startsWith('settings/'):
                 return SettingsLayout;
-            // Full-screen decision moment — deliberately outside the app
-            // shell so a blocked business isn't teased with dead nav.
-            case name === 'subscription/blocked':
-                return null;
             case name.startsWith('super-admin/'):
                 return null;
             default:

@@ -125,10 +125,6 @@ test('fulfilment agents log in to the scan workspace rather than the web app', f
  * rule was removed.
  */
 test('a logged-in fulfilment agent is still refused the admin web pages', function () {
-    // makeBusinessUser rather than a bare Business: the operational screens
-    // sit behind EnsureActiveSubscription, which would redirect to the
-    // billing block before the role gate is ever consulted and hide what
-    // this test is actually asserting.
     $user = makeBusinessUser(['role' => UserRole::FULFILMENT_AGENT]);
 
     $this->post(route('login.store'), [

@@ -1,6 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
-    ArrowRight,
     BarChart3,
     Check,
     LayoutDashboard,
@@ -25,7 +24,6 @@ import type { PageProps } from '@/types';
 const navLinks = [
     { label: 'Features', href: '#features' },
     { label: 'Integrations', href: '#integrations' },
-    { label: 'Pricing', href: '#pricing' },
 ];
 
 const coreFeatures = [
@@ -141,27 +139,13 @@ const useCases = [
     },
 ];
 
-const lifetimePlan = {
-    price: '$249',
-    priceNote: 'one-time payment',
-    features: [
-        'Unlimited stores',
-        'Unlimited couriers',
-        'Unlimited orders',
-        'Role-based team access',
-        'All future updates',
-        'Priority support',
-    ],
-};
-
 const footerColumns = [
     {
         title: 'Product',
         links: [
             { label: 'Features', href: '#features' },
             { label: 'Integrations', href: '#integrations' },
-            { label: 'Pricing', href: '#pricing' },
-        ],
+                ],
     },
     {
         title: 'Platform',
@@ -350,9 +334,6 @@ export default function Welcome() {
                                 <Link href={primaryHref}>
                                     {isAuthed ? primaryLabel : 'Get Started'}
                                 </Link>
-                            </Button>
-                            <Button asChild size="lg" variant="outline">
-                                <a href="#pricing">View Pricing</a>
                             </Button>
                         </Reveal>
                     </div>
@@ -630,65 +611,6 @@ export default function Welcome() {
                     </Reveal>
                 </section>
 
-                <section
-                    id="pricing"
-                    className="border-t border-border/60 px-6 py-24"
-                >
-                    <div className="mx-auto max-w-xl">
-                        <Reveal className="text-center">
-                            <SectionBadge>Lifetime Deal</SectionBadge>
-                            <h2 className="mt-4 text-3xl font-semibold tracking-tight">
-                                Pay once, own it forever
-                            </h2>
-                            <p className="mx-auto mt-3 max-w-md text-muted-foreground">
-                                No subscriptions, no renewals. One payment for
-                                full access to EasyFlow, for life.
-                            </p>
-                        </Reveal>
-
-                        <Reveal
-                            delay={150}
-                            className="mt-10 rounded-2xl border border-primary bg-primary p-8 text-primary-foreground shadow-xl"
-                        >
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-4xl font-semibold">
-                                    {lifetimePlan.price}
-                                </span>
-                                <span className="text-sm text-primary-foreground/80">
-                                    {lifetimePlan.priceNote}
-                                </span>
-                            </div>
-                            <p className="mt-2 text-sm text-primary-foreground/90">
-                                Every store, every courier, every teammate.
-                                Forever.
-                            </p>
-
-                            <ul className="mt-6 space-y-2">
-                                {lifetimePlan.features.map((feature) => (
-                                    <li
-                                        key={feature}
-                                        className="flex items-center gap-2 text-sm"
-                                    >
-                                        <Check className="size-4 shrink-0" />
-                                        {feature}
-                                    </li>
-                                ))}
-                            </ul>
-
-                            <Button
-                                asChild
-                                size="lg"
-                                variant="secondary"
-                                className="mt-8 w-full"
-                            >
-                                <Link href={primaryHref}>
-                                    Get Lifetime Access
-                                </Link>
-                            </Button>
-                        </Reveal>
-                    </div>
-                </section>
-
                 <section className="border-t border-border/60 px-6 py-24 text-center">
                     <Reveal>
                         <h2 className="text-3xl font-semibold tracking-tight text-balance">
@@ -704,12 +626,6 @@ export default function Welcome() {
                                 <Link href={primaryHref}>
                                     {isAuthed ? primaryLabel : 'Get Started'}
                                 </Link>
-                            </Button>
-                            <Button asChild size="lg" variant="outline">
-                                <a href="#pricing">
-                                    View Pricing
-                                    <ArrowRight className="size-4" />
-                                </a>
                             </Button>
                         </div>
                     </Reveal>

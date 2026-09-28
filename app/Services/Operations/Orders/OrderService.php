@@ -289,10 +289,17 @@ class OrderService
             $attributes['return_reason_code'] = $returnReasonCode;
         } elseif ($newStatus === OrderDeliveryStatus::READY_FOR_PICKUP) {
             $attributes['ready_for_pickup_at'] = now();
-            $attributes['shipped_at'] = now();
         } elseif ($newStatus === OrderDeliveryStatus::AWAITING_PICKUP) {
+            // Moving back to awaiting_pickup means the parcel is no longer
+            // staged, so the staging timestamp goes with it — otherwise an
+            // undone scan (FulfillmentController::undo) leaves an order that
+            // reads as "prepared at 14:32" while sitting in the queue.
+            //
+            // shipped_at is deliberately left alone: it records courier
+            // registration (set once in createShipment), which an undone
+            // warehouse scan does not reverse. Reports, daily stats and the
+            // parcels list all read it with that meaning.
             $attributes['ready_for_pickup_at'] = null;
-            $attributes['shipped_at'] = null;
         } elseif ($newStatus === OrderDeliveryStatus::RETURN_RECEIVED) {
             $attributes['return_received_at'] = now();
         }

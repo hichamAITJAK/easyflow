@@ -1,5 +1,3 @@
-import type { Plan, SubscriptionStatus } from './subscription';
-
 export type BusinessStatus = 'active' | 'suspended' | 'cancelled';
 
 export type Business = {
@@ -23,16 +21,4 @@ export type BusinessFilters = {
     sort?: string;
     direction?: string;
     per_page?: string;
-};
-
-/**
- * The subscription slice the super-admin business detail page shows — the
- * raw model with its plan, not the tenant-facing SubscriptionSummary.
- */
-export type BusinessSubscription = {
-    id: number;
-    status: SubscriptionStatus;
-    starts_at: string | null;
-    ends_at: string | null;
-    plan: Pick<Plan, 'id' | 'name' | 'price' | 'currency'> | null;
 };

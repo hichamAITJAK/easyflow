@@ -1,13 +1,14 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Auth\AccountStatusController;
 use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\Commissions\CommissionEntryController;
 use App\Http\Controllers\Customers\CustomerController;
 use App\Http\Controllers\Dashboard\DashboardController;
-use App\Http\Controllers\Fulfillment\FulfillmentWebController;
 use App\Http\Controllers\DeliveryCouriers\DeliveryAccountController;
 use App\Http\Controllers\DeliveryCouriers\DeliveryCourrierConnectionController;
+use App\Http\Controllers\Fulfillment\FulfillmentWebController;
 use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\Orders\ParcelController;
 use App\Http\Controllers\Products\ProductController;
@@ -20,17 +21,12 @@ use App\Http\Controllers\Stores\StoreController;
 use App\Http\Controllers\Stores\StoreepConnectionController;
 use App\Http\Controllers\Stores\WooCommerceConnectionController;
 use App\Http\Controllers\Stores\YouCanConnectionController;
-use App\Http\Controllers\Subscription\SubscriptionController;
 use App\Http\Controllers\SuperAdmin\BusinessController as SuperAdminBusinessController;
 use App\Http\Controllers\SuperAdmin\CourierController;
-use App\Http\Controllers\SuperAdmin\PlanController;
 use App\Http\Controllers\SuperAdmin\PlatformController;
 use App\Http\Controllers\SuperAdmin\QueueController;
-use App\Http\Controllers\SuperAdmin\SubscriptionRequestController;
 use App\Http\Controllers\Tools\ProfitCalculatorController;
 use App\Http\Controllers\Users\UserController;
-use App\Enums\UserRole;
-use App\Http\Middleware\EnsureActiveSubscription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -63,12 +59,6 @@ Route::prefix('super-admin')->name('super-admin.')->middleware(['auth', 'verifie
         Route::patch('/{business}/status', [SuperAdminBusinessController::class, 'updateStatus'])->name('status');
     });
 
-    Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
-        Route::get('/', [SubscriptionRequestController::class, 'index'])->name('index');
-        Route::patch('/{subscription}/approve', [SubscriptionRequestController::class, 'approve'])->name('approve');
-        Route::patch('/{subscription}/reject', [SubscriptionRequestController::class, 'reject'])->name('reject');
-    });
-
     // E-commerce platforms and delivery couriers are edit-only: their slugs
     // key the EcomPlatform/Courier enums that resolve each integration's
     // service class, so rows are created in code, not from the panel.
@@ -88,16 +78,6 @@ Route::prefix('super-admin')->name('super-admin.')->middleware(['auth', 'verifie
         Route::post('/{courier}/cities/sync', [CourierController::class, 'syncCities'])->name('sync-cities');
     });
 
-    Route::prefix('plans')->name('plans.')->group(function () {
-        Route::get('/', [PlanController::class, 'index'])->name('index');
-        Route::get('/create', [PlanController::class, 'create'])->name('create');
-        Route::post('/', [PlanController::class, 'store'])->name('store');
-        Route::get('/{plan}/edit', [PlanController::class, 'edit'])->name('edit');
-        Route::patch('/{plan}', [PlanController::class, 'update'])->name('update');
-        Route::patch('/{plan}/toggle', [PlanController::class, 'toggle'])->name('toggle');
-        Route::delete('/{plan}', [PlanController::class, 'destroy'])->name('destroy');
-    });
-
     // Queue health, read from the database queue tables. Not Horizon: the
     // PRD keeps the durable queue off Redis, which is all Horizon monitors.
     Route::prefix('queue')->name('queue.')->group(function () {
@@ -109,25 +89,22 @@ Route::prefix('super-admin')->name('super-admin.')->middleware(['auth', 'verifie
     });
 });
 
-// The block screen and the payment claim sit outside EnsureActiveSubscription
-// — a blocked business must still reach them to get unblocked.
+// The dashboard is the app's default landing spot — it is what "/", a stale
+// bookmark, a shared link and Fortify's own fallback redirect all land on.
+// So it sits outside the tenant gate and forwards by role instead of
+// refusing: a 403 here reads as a broken account, while a redirect simply
+// puts each role where they were going. Super admins have no business and
+// belong in the platform panel; fulfilment agents belong in their scan
+// workspace; everyone else gets the tenant dashboard itself.
+Route::middleware(['auth', 'verified'])->get('dashboard', function (Request $request, DashboardController $controller) {
+    return match ($request->user()->role) {
+        UserRole::SUPER_ADMIN => redirect()->route('super-admin.home'),
+        UserRole::FULFILMENT_AGENT => redirect()->route('fulfillment.index'),
+        default => $controller->index($request),
+    };
+})->name('dashboard');
+
 Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function () {
-    Route::get('subscription/blocked', [SubscriptionController::class, 'blocked'])->name('subscription.blocked');
-    Route::post('subscription/payment-requests', [SubscriptionController::class, 'store'])->name('subscription.payment-requests.store');
-});
-
-Route::middleware(['auth', 'verified', 'can:access-tenant-app', EnsureActiveSubscription::class])->group(function () {
-    // A fulfilment agent is sent to their workspace rather than refused.
-    // The dashboard is the app's default landing spot, so it is what a
-    // stale bookmark, a shared link or Fortify's own fallback redirect
-    // lands on — a 403 there reads as a broken account, while a redirect
-    // simply puts them where they were going.
-    Route::get('dashboard', function (Request $request, DashboardController $controller) {
-        return $request->user()->role === UserRole::FULFILMENT_AGENT
-            ? redirect()->route('fulfillment.index')
-            : $controller->index($request);
-    })->name('dashboard');
-
     Route::resource('users', UserController::class)
         ->except(['show'])
         ->middleware('can:manage-users');
