@@ -69,6 +69,22 @@ class User extends Authenticatable implements PasskeyUser
      *
      * @return BelongsTo<Business, $this>
      */
+    /**
+     * A super admin never belongs to a business. Enforced at save time
+     * rather than trusted to every caller: the users table cascade-deletes
+     * with its business, so a super admin that carries a business_id is
+     * destroyed the moment that business is removed — which is exactly
+     * the account that must survive it.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (User $user): void {
+            if ($user->role === UserRole::SUPER_ADMIN) {
+                $user->business_id = null;
+            }
+        });
+    }
+
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);

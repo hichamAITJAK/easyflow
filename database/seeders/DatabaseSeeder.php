@@ -2,11 +2,14 @@
 
 namespace Database\Seeders;
 
-use App\Enums\UserRole;
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+/**
+ * Production-safe: everything called here is reference data the platform
+ * cannot run without, and none of it touches a factory or Faker. Demo
+ * data lives in FakerSeeder, which is for development machines only.
+ */
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
@@ -16,13 +19,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->create([
-            'name' => 'Super Admin',
-            'email' => 'email@example.com',
-            'password' => 'password',
-            'role' => UserRole::SUPER_ADMIN,
-        ]);
-
+        $this->call(SuperAdminSeeder::class);
         $this->call(EcommercePlatformSeeder::class);
         $this->call(DeliveryCourrierSeeder::class);
         $this->call(DeliveryCourrierCitySeeder::class);

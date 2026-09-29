@@ -46,6 +46,16 @@ class UserFactory extends Factory
 
     // ─── Role states ───────────────────────────────────────────────────────────
 
+    /**
+     * The platform owner. Deliberately business-less: a super admin manages
+     * every business and belongs to none, so `business_id` is null rather
+     * than the factory's default throwaway business.
+     */
+    public function superAdmin(): static
+    {
+        return $this->state(['role' => UserRole::SUPER_ADMIN, 'business_id' => null]);
+    }
+
     public function admin(): static
     {
         return $this->state(['role' => UserRole::ADMIN]);
