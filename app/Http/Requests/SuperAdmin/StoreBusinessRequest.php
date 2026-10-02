@@ -4,6 +4,7 @@ namespace App\Http\Requests\SuperAdmin;
 
 use App\Enums\BusinessStatus;
 use App\Models\User;
+use App\Rules\UniqueUserPhone;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -32,7 +33,7 @@ class StoreBusinessRequest extends FormRequest
 
             'admin_name' => ['required', 'string', 'max:255'],
             'admin_email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class, 'email')],
-            'admin_phone' => ['nullable', 'string', 'max:30'],
+            'admin_phone' => ['nullable', 'string', 'max:30', new UniqueUserPhone],
             'admin_password' => ['required', 'string', Password::default(), 'confirmed'],
         ];
     }

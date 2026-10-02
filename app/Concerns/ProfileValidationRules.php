@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use App\Models\User;
+use App\Rules\UniqueUserPhone;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
@@ -26,9 +27,7 @@ trait ProfileValidationRules
                 'nullable',
                 'string',
                 'max:30',
-                $userId === null
-                    ? Rule::unique(User::class)
-                    : Rule::unique(User::class)->ignore($userId),
+                new UniqueUserPhone($userId),
             ],
             'avatar' => ['nullable', 'image', 'max:2048'],
             'avatar_preset' => [

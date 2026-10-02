@@ -12,6 +12,7 @@ use App\Enums\UserStatus;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\User;
+use App\Rules\UniqueUserPhone;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
@@ -44,9 +45,7 @@ trait UserValidationRules
                 'nullable',
                 'string',
                 'max:30',
-                $userId === null
-                    ? Rule::unique(User::class)
-                    : Rule::unique(User::class)->ignore($userId),
+                new UniqueUserPhone($userId),
             ],
             'role' => ['required', Rule::enum(UserRole::class)->only([
                 UserRole::ADMIN,
