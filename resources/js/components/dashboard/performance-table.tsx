@@ -109,6 +109,7 @@ function SortableHead({
     sort: { key: SortKey; desc: boolean };
     onSort: (key: SortKey) => void;
 }) {
+    const { t } = useTranslation();
     const active = sort.key === column;
     const SortIcon = active ? (sort.desc ? ArrowDown : ArrowUp) : ArrowUpDown;
 

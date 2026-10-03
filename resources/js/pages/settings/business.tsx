@@ -680,7 +680,7 @@ export default function BusinessSettings({
 BusinessSettings.layout = {
     breadcrumbs: [
         {
-            title: t('Business settings'),
+            title: 'Business settings',
             href: editBusiness(),
         },
     ],

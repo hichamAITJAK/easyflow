@@ -247,6 +247,7 @@ function OrderMetricCard({
     selected: boolean;
     onToggle: () => void;
 }) {
+    const { t } = useTranslation();
     const Icon = metric.icon;
 
     return (

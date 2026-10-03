@@ -92,6 +92,7 @@ function TotalAmount({ value }: { value: string }) {
  * (CopyShippingDetailsButton), reused here instead of duplicated.
  */
 function CopyButton({ value, label }: { value: string; label: string }) {
+    const { t } = useTranslation();
     const [copied, setCopied] = useState(false);
 
     return (

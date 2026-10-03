@@ -267,7 +267,7 @@ export default function Profile({
 Profile.layout = {
     breadcrumbs: [
         {
-            title: t('Profile settings'),
+            title: 'Profile settings',
             href: edit(),
         },
     ],

@@ -43,6 +43,7 @@ import {
     SelectItem,
     SelectTrigger,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatDateTime } from '@/lib/format';
 import type { Translator } from '@/lib/i18n';
 import {
@@ -102,6 +103,7 @@ function ConfirmationStatusPopover({
     order: Order;
     onCancel: (order: Order) => void;
 }) {
+    const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [updating, setUpdating] = useState(false);
 
@@ -160,6 +162,7 @@ function ConfirmationStatusPopover({
 }
 
 function CopyShippingDetailsButton({ order }: { order: Order }) {
+    const { t } = useTranslation();
     const [copied, setCopied] = useState(false);
     const copyText = `${order.customer_name ?? ''} | Phone: ${order.customer_phone ?? ''} | Address: ${order.customer_address ?? ''}${order.customer_city ? `, ${order.customer_city}` : ''}`.trim();
 
@@ -235,6 +238,7 @@ function AgentCell({
     agents: AgentOption[];
     getInitials: (name: string) => string;
 }) {
+    const { t } = useTranslation();
     const [updating, setUpdating] = useState(false);
     const agent = order.assigned_agent;
 

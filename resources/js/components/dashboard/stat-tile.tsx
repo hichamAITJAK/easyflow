@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatCompactNumber, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -96,6 +97,7 @@ export function StatTile({
      */
     rate?: number | null;
 }) {
+    const { t } = useTranslation();
 
     const { text, chip } = ACCENTS[accent ?? 'default'];
     const deltaIsGood =

@@ -158,6 +158,8 @@ export function HourlyRateBar({ data }: { data: HourlyRatePoint[] }) {
 
 /** Chart plus its methodology note; use this in cards. */
 export function HourlyRateBarWithNote({ data }: { data: HourlyRatePoint[] }) {
+    const { t } = useTranslation();
+
     return (
         <>
             <HourlyRateBar data={data} />
