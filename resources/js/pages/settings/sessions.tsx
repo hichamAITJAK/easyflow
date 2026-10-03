@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/empty';
 import { Field } from '@/components/ui/field';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/hooks/use-translation';
 import {
     destroy as destroySession,
     destroyDevice,
@@ -55,6 +56,8 @@ export default function Sessions({
     devices: MobileDevice[];
     usesDatabaseSessions: boolean;
 }) {
+    const { t } = useTranslation();
+
     const [confirmingSignOutAll, setConfirmingSignOutAll] = useState(false);
     const [password, setPassword] = useState('');
     const [passwordError, setPasswordError] = useState<string | undefined>();
@@ -82,27 +85,25 @@ export default function Sessions({
 
     return (
         <>
-            <Head title="Sessions" />
+            <Head title={t('Sessions')} />
 
             <div className="space-y-6">
                 <Heading
                     variant="small"
-                    title="Browsers"
-                    description="Devices signed in to the web app with your account."
+                    title={t('Browsers')}
+                    description={t('Devices signed in to the web app with your account.')}
                 />
 
                 {!usesDatabaseSessions ? (
                     <Alert>
                         <Info />
                         <AlertDescription>
-                            Browser sessions can't be listed while the app uses
-                            file-based sessions. Set SESSION_DRIVER=database to
-                            see and revoke them here.
+                            {t("Browser sessions can't be listed while the app uses file-based sessions. Set SESSION_DRIVER=database to see and revoke them here.")}
                         </AlertDescription>
                     </Alert>
                 ) : sessions.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                        No active browser sessions.
+                        {t('No active browser sessions.')}
                     </p>
                 ) : (
                     <div className="divide-y rounded-lg border">
@@ -134,10 +135,10 @@ export default function Sessions({
                                         )}
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                        {session.ipAddress ?? 'Unknown IP'} ·{' '}
+                                        {session.ipAddress ?? t('Unknown IP')} ·{' '}
                                         {session.isCurrent
-                                            ? 'Active now'
-                                            : `Last active ${session.lastActiveDiff}`}
+                                            ? t('Active now')
+                                            : t('Last active :when', { when: session.lastActiveDiff })}
                                     </p>
                                 </div>
 
@@ -166,7 +167,7 @@ export default function Sessions({
                         onClick={() => setConfirmingSignOutAll(true)}
                     >
                         <LogOut />
-                        Sign out other browsers
+                        {t('Sign out other browsers')}
                     </Button>
                 )}
             </div>
@@ -174,8 +175,8 @@ export default function Sessions({
             <div className="space-y-6">
                 <Heading
                     variant="small"
-                    title="Mobile devices"
-                    description="Phones and tablets signed in to the EasyFlow mobile app."
+                    title={t('Mobile devices')}
+                    description={t('Phones and tablets signed in to the EasyFlow mobile app.')}
                 />
 
                 {devices.length === 0 ? (
@@ -184,10 +185,9 @@ export default function Sessions({
                             <EmptyMedia variant="icon">
                                 <Smartphone />
                             </EmptyMedia>
-                            <EmptyTitle>No mobile devices</EmptyTitle>
+                            <EmptyTitle>{t('No mobile devices')}</EmptyTitle>
                             <EmptyDescription>
-                                Devices appear here after signing in to the
-                                mobile app.
+                                {t('Devices appear here after signing in to the mobile app.')}
                             </EmptyDescription>
                         </EmptyHeader>
                     </Empty>
@@ -209,8 +209,8 @@ export default function Sessions({
                                         </span>
                                         <p className="text-xs text-muted-foreground">
                                             {device.lastUsedDiff
-                                                ? `Last used ${device.lastUsedDiff}`
-                                                : 'Never used'}
+                                                ? t('Last used :when', { when: device.lastUsedDiff })
+                                                : t('Never used')}
                                             {device.createdDiff &&
                                                 ` · Added ${device.createdDiff}`}
                                         </p>
@@ -241,7 +241,7 @@ export default function Sessions({
                             }
                         >
                             <Trash2 />
-                            Sign out all devices
+                            {t('Sign out all devices')}
                         </Button>
                     </>
                 )}
@@ -259,14 +259,13 @@ export default function Sessions({
                 }}
             >
                 <DialogContent>
-                    <DialogTitle>Sign out other browsers?</DialogTitle>
+                    <DialogTitle>{t('Sign out other browsers?')}</DialogTitle>
                     <DialogDescription>
-                        Every browser except this one is signed out. Enter your
-                        password to confirm it's you.
+                        {t("Every browser except this one is signed out. Enter your password to confirm it's you.")}
                     </DialogDescription>
 
                     <Field>
-                        <Label htmlFor="password">Password</Label>
+                        <Label htmlFor="password">{t('Password')}</Label>
                         <PasswordInput
                             id="password"
                             value={password}

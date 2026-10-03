@@ -44,6 +44,7 @@ import {
     SelectTrigger,
 } from '@/components/ui/select';
 import { formatDateTime } from '@/lib/format';
+import type { Translator } from '@/lib/i18n';
 import {
     confirmationStatusColors,
     confirmationStatusLabels,
@@ -121,7 +122,7 @@ function ConfirmationStatusPopover({
                         {updating && (
                             <Loader2 className="mr-1 size-3 animate-spin" />
                         )}
-                        {confirmationStatusLabels[order.confirmation_status]}
+                        {t(confirmationStatusLabels[order.confirmation_status])}
                     </Badge>
                 </Button>
             </PopoverTrigger>
@@ -174,8 +175,8 @@ function CopyShippingDetailsButton({ order }: { order: Order }) {
                 toast.success('Shipping details copied to clipboard!');
                 setTimeout(() => setCopied(false), 2000);
             }}
-            title="Copy shipping details"
-            aria-label="Copy shipping details"
+            title={t('Copy shipping details')}
+            aria-label={t('Copy shipping details')}
             className="ml-1.5 text-muted-foreground"
         >
             {copied ? (
@@ -273,7 +274,7 @@ function AgentCell({
                 {updating ? (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Loader2 className="size-3.5 animate-spin" />
-                        <span>Updating…</span>
+                        <span>{t('Updating…')}</span>
                     </div>
                 ) : agent ? (
                     <div className="flex items-center gap-2">
@@ -289,11 +290,11 @@ function AgentCell({
                         <span>{agent.name}</span>
                     </div>
                 ) : (
-                    <span className="text-muted-foreground">Unassigned</span>
+                    <span className="text-muted-foreground">{t('Unassigned')}</span>
                 )}
             </SelectTrigger>
             <SelectContent position="popper" align="start">
-                <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
+                <SelectItem value={UNASSIGNED}>{t('Unassigned')}</SelectItem>
                 {agents.map((option) => (
                     <SelectItem key={option.id} value={String(option.id)}>
                         <Avatar className="size-5">
@@ -314,6 +315,7 @@ function AgentCell({
 }
 
 export function createColumns({
+    t,
     getInitials,
     onView,
     onDelete,
@@ -326,6 +328,7 @@ export function createColumns({
     isAdmin,
     agents,
 }: {
+    t: Translator;
     getInitials: (name: string) => string;
     onView: (order: Order) => void;
     onDelete: (order: Order) => void;
@@ -352,7 +355,7 @@ export function createColumns({
     const agentColumn: ColumnDef<Order> = {
         id: 'agent',
         accessorFn: (order) => order.assigned_agent?.name ?? '—',
-        header: 'Agent',
+        header: t('Agent'),
         cell: ({ row }) => (
             <AgentCell
                 order={row.original}
@@ -373,7 +376,7 @@ export function createColumns({
                 onCheckedChange={(value) =>
                     table.toggleAllPageRowsSelected(!!value)
                 }
-                aria-label="Select all"
+                aria-label={t('Select all')}
             />
         ),
         cell: ({ row }) => (
@@ -381,7 +384,7 @@ export function createColumns({
                 checked={row.getIsSelected()}
                 onCheckedChange={(value) => row.toggleSelected(!!value)}
                 onClick={(event) => event.stopPropagation()}
-                aria-label="Select row"
+                aria-label={t('Select row')}
             />
         ),
         enableSorting: false,
@@ -392,7 +395,7 @@ export function createColumns({
         selectColumn,
         {
             accessorKey: 'reference',
-            header: () => sortHeader('Ref', 'reference'),
+            header: () => sortHeader(t('Ref'), 'reference'),
             cell: ({ row }) => (
                 <div className="flex items-center gap-1.5">
                     <CopyableValue
@@ -401,7 +404,7 @@ export function createColumns({
                     />
                     {row.original.is_test && (
                         <Badge variant="secondary" className="shrink-0">
-                            Test
+                            {t('Test')}
                         </Badge>
                     )}
                 </div>
@@ -409,7 +412,7 @@ export function createColumns({
         },
         {
             accessorKey: 'ordered_at',
-            header: () => sortHeader('Ordered', 'ordered_at'),
+            header: () => sortHeader(t('Ordered'), 'ordered_at'),
             cell: ({ row }) =>
                 formatDateTime(
                     row.original.ordered_at ?? row.original.created_at,
@@ -419,7 +422,7 @@ export function createColumns({
         {
             id: 'customer',
             accessorFn: (order) => order.customer_name ?? '',
-            header: 'Customer',
+            header: t('Customer'),
             cell: ({ row }) => {
                 const order = row.original;
                 const { customer_name, customer_phone } = order;
@@ -437,20 +440,20 @@ export function createColumns({
                                 <Badge
                                     variant="outline"
                                     className="shrink-0 border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                                    title="Matches a recent order from the same phone number"
+                                    title={t('Matches a recent order from the same phone number')}
                                 >
                                     <CopyX />
-                                    Duplicate
+                                    {t('Duplicate')}
                                 </Badge>
                             )}
                             {order.is_blacklist_flagged && (
                                 <Badge
                                     variant="destructive"
                                     className="shrink-0"
-                                    title="Customer phone number is on the blacklist"
+                                    title={t('Customer phone number is on the blacklist')}
                                 >
                                     <ShieldAlert />
-                                    Blacklisted
+                                    {t('Blacklisted')}
                                 </Badge>
                             )}
                         </div>
@@ -479,7 +482,7 @@ export function createColumns({
                                     >
                                         <a href={`tel:${digits}`}>
                                             <Phone />
-                                            Call
+                                            {t('Call')}
                                         </a>
                                     </Button>
                                     {whatsappNumber && (
@@ -494,7 +497,7 @@ export function createColumns({
                                                 rel="noopener noreferrer"
                                             >
                                                 <MessageCircle />
-                                                WhatsApp
+                                                {t('WhatsApp')}
                                             </a>
                                         </Button>
                                     )}
@@ -512,7 +515,7 @@ export function createColumns({
                                         className="w-full justify-start gap-2 px-2 font-normal text-muted-foreground"
                                     >
                                         <Copy />
-                                        Copy
+                                        {t('Copy')}
                                     </Button>
                                 </PopoverContent>
                             </Popover>
@@ -527,7 +530,7 @@ export function createColumns({
         },
         {
             accessorKey: 'total_amount',
-            header: () => sortHeader('Price', 'total_amount'),
+            header: () => sortHeader(t('Price'), 'total_amount'),
             cell: ({ row }) => (
                 <span className="font-semibold">
                     {row.original.total_amount}
@@ -536,7 +539,7 @@ export function createColumns({
         },
         {
             accessorKey: 'source_platform',
-            header: () => sortHeader('Source', 'source_platform'),
+            header: () => sortHeader(t('Source'), 'source_platform'),
             cell: ({ row }) => {
                 const order = row.original;
 
@@ -547,7 +550,7 @@ export function createColumns({
                 if (isManualOrderSource(order.source_platform)) {
                     return (
                         <Badge variant="outline" className="font-normal">
-                            {orderSourceLabel(order.source_platform)}
+                            {t(orderSourceLabel(order.source_platform))}
                         </Badge>
                     );
                 }
@@ -556,11 +559,11 @@ export function createColumns({
                     <div className="grid gap-0.5">
                         <span className="truncate text-sm">
                             {order.store?.name ??
-                                orderSourceLabel(order.source_platform)}
+                                t(orderSourceLabel(order.source_platform))}
                         </span>
                         <span className="truncate text-xs text-muted-foreground">
                             {order.store?.platform?.name ??
-                                orderSourceLabel(order.source_platform)}
+                                t(orderSourceLabel(order.source_platform))}
                         </span>
                     </div>
                 );
@@ -568,7 +571,7 @@ export function createColumns({
         },
         {
             accessorKey: 'confirmation_status',
-            header: () => sortHeader('Confirmation', 'confirmation_status'),
+            header: () => sortHeader(t('Confirmation'), 'confirmation_status'),
             cell: ({ row }) => {
                 const order = row.original;
 
@@ -582,7 +585,7 @@ export function createColumns({
         },
         {
             accessorKey: 'delivery_status',
-            header: () => sortHeader('Delivery', 'delivery_status'),
+            header: () => sortHeader(t('Delivery'), 'delivery_status'),
             cell: ({ row }) => {
                 const order = row.original;
                 const status = order.delivery_status;
@@ -593,7 +596,7 @@ export function createColumns({
                             variant="outline"
                             className={deliveryStatusColors[status]}
                         >
-                            {deliveryStatusLabels[status]}
+                            {t(deliveryStatusLabels[status])}
                         </Badge>
                     );
                 }
@@ -610,7 +613,7 @@ export function createColumns({
                             className="h-auto gap-1.5 p-0 text-sm text-muted-foreground hover:text-foreground"
                         >
                             <Truck />
-                            Create shipment
+                            {t('Create shipment')}
                         </Button>
                     );
                 }
@@ -639,7 +642,7 @@ export function createColumns({
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                aria-label="Order actions"
+                                aria-label={t('Order actions')}
                             >
                                 <MoreHorizontal />
                             </Button>

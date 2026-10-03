@@ -8,6 +8,7 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { useTranslation } from '@/hooks/use-translation';
 import { bulkDestroy } from '@/routes/orders';
 
 export function OrderBulkDeleteDialog({
@@ -21,6 +22,8 @@ export function OrderBulkDeleteDialog({
     orderIds: number[];
     onDeleted: () => void;
 }) {
+    const { t } = useTranslation();
+
     const [processing, setProcessing] = useState(false);
 
     const handleDelete = () => {
@@ -44,8 +47,7 @@ export function OrderBulkDeleteDialog({
                     {orderIds.length === 1 ? 'order' : 'orders'}?
                 </DialogTitle>
                 <DialogDescription>
-                    This will remove the selected orders from your active
-                    list. This action cannot be undone.
+                    {t('This will remove the selected orders from your active list. This action cannot be undone.')}
                 </DialogDescription>
 
                 <DialogFooter className="gap-2">

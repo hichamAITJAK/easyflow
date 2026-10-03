@@ -40,6 +40,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 import { edit as editBusiness } from '@/routes/business';
 import { update as updateBusinessProfile } from '@/routes/business/profile';
 
@@ -86,6 +87,8 @@ export default function BusinessSettings({
     };
     minOrdersForEvaluation: number;
 }) {
+    const { t } = useTranslation();
+
     const [logo, setLogo] = useState<File | null>(null);
     const [removeLogo, setRemoveLogo] = useState(false);
     const [processing, setProcessing] = useState(false);
@@ -122,15 +125,15 @@ export default function BusinessSettings({
 
     return (
         <>
-            <Head title="Business settings" />
+            <Head title={t('Business settings')} />
 
-            <h1 className="sr-only">Business settings</h1>
+            <h1 className="sr-only">{t('Business settings')}</h1>
 
             <div className="space-y-6">
                 <Heading
                     variant="small"
-                    title="Business settings"
-                    description="Defaults that apply across your whole business"
+                    title={t('Business settings')}
+                    description={t('Defaults that apply across your whole business')}
                 />
 
                 <form onSubmit={handleProfileSubmit} className="space-y-6">
@@ -138,17 +141,16 @@ export default function BusinessSettings({
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Building2 className="size-5 text-muted-foreground" />
-                                Business details
+                                {t('Business details')}
                             </CardTitle>
                             <CardDescription>
-                                These appear on the commission invoices you
-                                issue to agents.
+                                {t('These appear on the commission invoices you issue to agents.')}
                             </CardDescription>
                         </CardHeader>
 
                         <CardContent className="space-y-6">
                             <Field>
-                                <FieldLabel>Logo</FieldLabel>
+                                <FieldLabel>{t('Logo')}</FieldLabel>
                                 <LogoDropzone
                                     initialPreviewUrl={business.logo}
                                     onChange={(file) => {
@@ -161,8 +163,7 @@ export default function BusinessSettings({
                                     onRemove={() => setRemoveLogo(true)}
                                 />
                                 <FieldDescription>
-                                    Printed at the top of every invoice you
-                                    issue.
+                                    {t('Printed at the top of every invoice you issue.')}
                                 </FieldDescription>
                                 <FieldError
                                     errors={[{ message: errors.logo }]}
@@ -172,7 +173,7 @@ export default function BusinessSettings({
                             <div className="grid gap-6 sm:grid-cols-2">
                                 <Field>
                                     <FieldLabel htmlFor="business_name">
-                                        Business name{' '}
+                                        {t('Business name')}{' '}
                                         <span className="text-destructive">
                                             *
                                         </span>
@@ -186,7 +187,7 @@ export default function BusinessSettings({
                                         />
                                     </InputGroup>
                                     <FieldDescription>
-                                        Your trading name, shown across the app.
+                                        {t('Your trading name, shown across the app.')}
                                     </FieldDescription>
                                     <FieldError
                                         errors={[{ message: errors.name }]}
@@ -195,7 +196,7 @@ export default function BusinessSettings({
 
                                 <Field>
                                     <FieldLabel htmlFor="legal_name">
-                                        Registered name
+                                        {t('Registered name')}
                                     </FieldLabel>
                                     <InputGroup>
                                         <InputGroupInput
@@ -207,8 +208,7 @@ export default function BusinessSettings({
                                         />
                                     </InputGroup>
                                     <FieldDescription>
-                                        Used on invoices when it differs from
-                                        the trading name.
+                                        {t('Used on invoices when it differs from the trading name.')}
                                     </FieldDescription>
                                     <FieldError
                                         errors={[
@@ -267,15 +267,13 @@ export default function BusinessSettings({
                                 </Field>
                             </div>
                             <FieldDescription className="-mt-2">
-                                Moroccan company identifiers. Leave blank if
-                                they don&apos;t apply — they are only printed
-                                when set.
+                                {t("Moroccan company identifiers. Leave blank if they don't apply — they are only printed when set.")}
                             </FieldDescription>
 
                             <div className="grid gap-6 border-t pt-6 sm:grid-cols-2">
                                 <Field>
                                     <FieldLabel htmlFor="business_phone">
-                                        Phone
+                                        {t('Phone')}
                                     </FieldLabel>
                                     <InputGroup>
                                         <InputGroupAddon>
@@ -297,7 +295,7 @@ export default function BusinessSettings({
 
                                 <Field>
                                     <FieldLabel htmlFor="business_email">
-                                        Email
+                                        {t('Email')}
                                     </FieldLabel>
                                     <InputGroup>
                                         <InputGroupAddon>
@@ -317,7 +315,7 @@ export default function BusinessSettings({
 
                                 <Field>
                                     <FieldLabel htmlFor="address">
-                                        Address
+                                        {t('Address')}
                                     </FieldLabel>
                                     <InputGroup>
                                         <InputGroupAddon>
@@ -337,7 +335,7 @@ export default function BusinessSettings({
                                 </Field>
 
                                 <Field>
-                                    <FieldLabel htmlFor="city">City</FieldLabel>
+                                    <FieldLabel htmlFor="city">{t('City')}</FieldLabel>
                                     <InputGroup>
                                         <InputGroupInput
                                             id="city"
@@ -354,7 +352,7 @@ export default function BusinessSettings({
 
                         <CardFooter className="justify-end border-t">
                             <Button type="submit" disabled={processing}>
-                                {processing ? 'Saving…' : 'Save details'}
+                                {processing ? t('Saving…') : t('Save details')}
                             </Button>
                         </CardFooter>
                     </Card>
@@ -370,19 +368,17 @@ export default function BusinessSettings({
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <Target className="size-5 text-muted-foreground" />
-                                    Performance targets
+                                    {t('Performance targets')}
                                 </CardTitle>
                                 <CardDescription>
-                                    Agents are measured against these unless
-                                    they have their own target set on the team
-                                    page.
+                                    {t('Agents are measured against these unless they have their own target set on the team page.')}
                                 </CardDescription>
                             </CardHeader>
 
                             <CardContent className="space-y-6">
                                 <Field>
                                     <FieldLabel htmlFor="confirmation_rate">
-                                        Confirmation rate target{' '}
+                                        {t('Confirmation rate target')}{' '}
                                         <span className="text-destructive">
                                             *
                                         </span>
@@ -409,8 +405,7 @@ export default function BusinessSettings({
                                         </InputGroupAddon>
                                     </InputGroup>
                                     <FieldDescription>
-                                        Share of assigned orders an agent is
-                                        expected to confirm.
+                                        {t('Share of assigned orders an agent is expected to confirm.')}
                                     </FieldDescription>
                                     <FieldError
                                         errors={[
@@ -426,7 +421,7 @@ export default function BusinessSettings({
                                 <div className="grid gap-6 sm:grid-cols-2">
                                     <Field>
                                         <FieldLabel htmlFor="confirmation_rate_period">
-                                            Measured over
+                                            {t('Measured over')}
                                         </FieldLabel>
                                         <Select
                                             name="targets[confirmation_rate_period]"
@@ -447,15 +442,14 @@ export default function BusinessSettings({
                                                             key={option.value}
                                                             value={option.value}
                                                         >
-                                                            {option.label}
+                                                            {t(option.label)}
                                                         </SelectItem>
                                                     ),
                                                 )}
                                             </SelectContent>
                                         </Select>
                                         <FieldDescription>
-                                            Rolling window the rate is summed
-                                            over.
+                                            {t('Rolling window the rate is summed over.')}
                                         </FieldDescription>
                                         <FieldError
                                             errors={[
@@ -471,7 +465,7 @@ export default function BusinessSettings({
 
                                     <Field>
                                         <FieldLabel htmlFor="confirmation_rate_bonus">
-                                            Bonus when met
+                                            {t('Bonus when met')}
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupInput
@@ -481,7 +475,7 @@ export default function BusinessSettings({
                                                 inputMode="decimal"
                                                 min={0}
                                                 step="0.01"
-                                                placeholder="No bonus"
+                                                placeholder={t('No bonus')}
                                                 defaultValue={
                                                     targets.confirmation_rate_bonus ??
                                                     ''
@@ -492,8 +486,7 @@ export default function BusinessSettings({
                                             </InputGroupAddon>
                                         </InputGroup>
                                         <FieldDescription>
-                                            Leave blank for no bonus on this
-                                            target.
+                                            {t('Leave blank for no bonus on this target.')}
                                         </FieldDescription>
                                         <FieldError
                                             errors={[
@@ -510,7 +503,7 @@ export default function BusinessSettings({
 
                                 <Field>
                                     <FieldLabel htmlFor="delivery_success_rate">
-                                        Delivery success rate target{' '}
+                                        {t('Delivery success rate target')}{' '}
                                         <span className="text-destructive">
                                             *
                                         </span>
@@ -537,8 +530,7 @@ export default function BusinessSettings({
                                         </InputGroupAddon>
                                     </InputGroup>
                                     <FieldDescription>
-                                        Share of shipped parcels expected to be
-                                        delivered rather than returned.
+                                        {t('Share of shipped parcels expected to be delivered rather than returned.')}
                                     </FieldDescription>
                                     <FieldError
                                         errors={[
@@ -554,7 +546,7 @@ export default function BusinessSettings({
                                 <div className="grid gap-6 sm:grid-cols-2">
                                     <Field>
                                         <FieldLabel htmlFor="delivery_success_rate_period">
-                                            Measured over
+                                            {t('Measured over')}
                                         </FieldLabel>
                                         <Select
                                             name="targets[delivery_success_rate_period]"
@@ -575,15 +567,14 @@ export default function BusinessSettings({
                                                             key={option.value}
                                                             value={option.value}
                                                         >
-                                                            {option.label}
+                                                            {t(option.label)}
                                                         </SelectItem>
                                                     ),
                                                 )}
                                             </SelectContent>
                                         </Select>
                                         <FieldDescription>
-                                            Rolling window the rate is summed
-                                            over.
+                                            {t('Rolling window the rate is summed over.')}
                                         </FieldDescription>
                                         <FieldError
                                             errors={[
@@ -599,7 +590,7 @@ export default function BusinessSettings({
 
                                     <Field>
                                         <FieldLabel htmlFor="delivery_success_rate_bonus">
-                                            Bonus when met
+                                            {t('Bonus when met')}
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupInput
@@ -609,7 +600,7 @@ export default function BusinessSettings({
                                                 inputMode="decimal"
                                                 min={0}
                                                 step="0.01"
-                                                placeholder="No bonus"
+                                                placeholder={t('No bonus')}
                                                 defaultValue={
                                                     targets.delivery_success_rate_bonus ??
                                                     ''
@@ -620,8 +611,7 @@ export default function BusinessSettings({
                                             </InputGroupAddon>
                                         </InputGroup>
                                         <FieldDescription>
-                                            Leave blank for no bonus on this
-                                            target.
+                                            {t('Leave blank for no bonus on this target.')}
                                         </FieldDescription>
                                         <FieldError
                                             errors={[
@@ -638,7 +628,7 @@ export default function BusinessSettings({
 
                                 <Field className="border-t pt-6">
                                     <FieldLabel htmlFor="min_orders_for_evaluation">
-                                        Minimum orders before judging{' '}
+                                        {t('Minimum orders before judging')}{' '}
                                         <span className="text-destructive">
                                             *
                                         </span>
@@ -661,10 +651,7 @@ export default function BusinessSettings({
                                         </InputGroupAddon>
                                     </InputGroup>
                                     <FieldDescription>
-                                        An agent is never warned until they have
-                                        handled this many orders in the period —
-                                        a rate from a handful of orders
-                                        isn&apos;t evidence.
+                                        {t("An agent is never warned until they have handled this many orders in the period — a rate from a handful of orders isn't evidence.")}
                                     </FieldDescription>
                                     <FieldError
                                         errors={[
@@ -679,7 +666,7 @@ export default function BusinessSettings({
 
                             <CardFooter className="justify-end border-t">
                                 <Button type="submit" disabled={processing}>
-                                    {processing ? 'Saving…' : 'Save changes'}
+                                    {processing ? t('Saving…') : t('Save changes')}
                                 </Button>
                             </CardFooter>
                         </Card>
@@ -693,7 +680,7 @@ export default function BusinessSettings({
 BusinessSettings.layout = {
     breadcrumbs: [
         {
-            title: 'Business settings',
+            title: t('Business settings'),
             href: editBusiness(),
         },
     ],

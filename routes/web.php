@@ -9,6 +9,7 @@ use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\DeliveryCouriers\DeliveryAccountController;
 use App\Http\Controllers\DeliveryCouriers\DeliveryCourrierConnectionController;
 use App\Http\Controllers\Fulfillment\FulfillmentWebController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\Orders\ParcelController;
 use App\Http\Controllers\Products\ProductController;
@@ -31,6 +32,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'))->name('home');
+
+// Guests may switch language too (cookie only); signed-in users also save it on their account.
+Route::post('locale', [LocaleController::class, 'update'])->name('locale.update');
 
 Route::get('account-status', [AccountStatusController::class, 'show'])->name('account-status');
 

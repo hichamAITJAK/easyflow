@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
 import TextLink from '@/components/text-link';
+import { useTranslation } from '@/hooks/use-translation';
 import { login } from '@/routes';
 
 type Props = {
@@ -9,6 +10,8 @@ type Props = {
 };
 
 export default function AccountStatus({ title, message }: Props) {
+    const { t } = useTranslation();
+
     return (
         <>
             <Head title={title} />
@@ -21,7 +24,7 @@ export default function AccountStatus({ title, message }: Props) {
             </div>
 
             <TextLink href={login()} className="mx-auto block text-sm">
-                Back to log in
+                {t('Back to log in')}
             </TextLink>
         </>
     );

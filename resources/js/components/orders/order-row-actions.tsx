@@ -1,5 +1,6 @@
 import { Eye, Pencil, ShieldAlert, Trash2 } from 'lucide-react';
 import type { ComponentType } from 'react';
+import { useTranslation } from '@/hooks/use-translation';
 import type { Order } from '@/types';
 
 type ActionItemProps = {
@@ -97,6 +98,8 @@ export function OrderRowActionItems({
     actions: OrderRowAction[];
     Item: ComponentType<ActionItemProps>;
 }) {
+    const { t } = useTranslation();
+
     return (
         <>
             {actions.map((action) => (
@@ -106,7 +109,7 @@ export function OrderRowActionItems({
                     onSelect={action.onSelect}
                 >
                     <action.icon />
-                    {action.label}
+                    {t(action.label)}
                 </Item>
             ))}
         </>

@@ -14,6 +14,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslation } from '@/hooks/use-translation';
 import {
     CANCEL_REASON_GROUPS,
     cancellationReasonLabels,
@@ -36,6 +37,8 @@ export function CancelOrderDialog({
     onOpenChange: (open: boolean) => void;
     order: Order | null;
 }) {
+    const { t } = useTranslation();
+
     const [reasonCode, setReasonCode] = useState<OrderCancelReason | ''>('');
 
     if (!order) {
@@ -54,7 +57,7 @@ export function CancelOrderDialog({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Cancel order</DialogTitle>
+                    <DialogTitle>{t('Cancel order')}</DialogTitle>
                     {/* Names the subject — the agent was being asked to make
                         an irreversible decision about an anonymous record,
                         with no way to catch a wrong selection from here. */}
@@ -64,13 +67,12 @@ export function CancelOrderDialog({
                         cancelled — so this no longer claims it can't be
                         changed. */}
                     <DialogDescription>
-                        Cancelling{' '}
+                        {t('Cancelling')}{' '}
                         <span className="font-medium text-foreground">
-                            {order.customer_name ?? 'this order'}
+                            {order.customer_name ?? t('this order')}
                         </span>
-                        {order.reference ? ` · ${order.reference}` : ''}. Choose
-                        why — the reason is recorded on the order and shows in
-                        its history.
+                        {order.reference ? ` · ${order.reference}` : ''}.{' '}
+                        {t('Choose why — the reason is recorded on the order and shows in its history.')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -91,7 +93,7 @@ export function CancelOrderDialog({
                             <div className="grid gap-2">
                                 <RadioGroup
                                     value={reasonCode}
-                                    aria-label="Cancellation reason"
+                                    aria-label={t('Cancellation reason')}
                                     onValueChange={(value) =>
                                         setReasonCode(
                                             value as OrderCancelReason,
@@ -153,7 +155,7 @@ export function CancelOrderDialog({
                                     <Textarea
                                         id="cancellation_note"
                                         name="cancellation_note"
-                                        placeholder="e.g. Client asked to reorder next month"
+                                        placeholder={t('e.g. Client asked to reorder next month')}
                                         required
                                     />
                                     <InputError
@@ -179,8 +181,8 @@ export function CancelOrderDialog({
                                     disabled={processing || !reasonCode}
                                 >
                                     {processing
-                                        ? 'Cancelling…'
-                                        : 'Cancel this order'}
+                                        ? t('Cancelling…')
+                                        : t('Cancel this order')}
                                 </Button>
                             </DialogFooter>
                         </>

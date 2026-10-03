@@ -8,6 +8,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from '@/hooks/use-translation';
 import type { AgentOption } from '@/pages/orders/columns';
 import type { Order } from '@/types';
 
@@ -32,6 +33,8 @@ export function OrderViewDialog({
     onCreateShipment?: (order: Order) => void;
     agents?: AgentOption[];
 }) {
+    const { t } = useTranslation();
+
     const [detail, setDetail] = useState<Order | null>(null);
     const [loadingHistory, setLoadingHistory] = useState(false);
 
@@ -83,7 +86,7 @@ export function OrderViewDialog({
             <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>
-                        Order {order.reference ?? `#${order.id}`}
+                        {t('Order :reference', { reference: order.reference ?? `#${order.id}` })}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -103,7 +106,7 @@ export function OrderViewDialog({
                 )}
                 {loadingHistory && detail && (
                     <p className="text-xs text-muted-foreground">
-                        Loading event history…
+                        {t('Loading event history…')}
                     </p>
                 )}
             </DialogContent>

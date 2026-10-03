@@ -37,6 +37,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import orderRoutes from '@/routes/orders';
 import type { Order, OrderItem, OrderSource } from '@/types';
@@ -223,6 +224,8 @@ export function OrderFormDialog({
     /** When set, the dialog edits this order instead of creating a new one. */
     order?: Order | null;
 }) {
+    const { t } = useTranslation();
+
     const isEditing = order != null;
     const [address, setAddress] = useState('');
     const [city, setCity] = useState('');
@@ -534,19 +537,19 @@ export function OrderFormDialog({
             <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-4xl">
                 <DialogHeader>
                     <DialogTitle>
-                        {isEditing ? 'Edit order' : 'Add order'}
+                        {isEditing ? t('Edit order') : t('Add order')}
                     </DialogTitle>
                     <DialogDescription>
                         {isEditing
                             ? "Update this order's customer details and items."
-                            : 'Manually record a customer order.'}
+                            : t('Manually record a customer order.')}
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="customer_name">Customer name</Label>
+                            <Label htmlFor="customer_name">{t('Customer name')}</Label>
                             <Input
                                 id="customer_name"
                                 value={customerName}
@@ -554,13 +557,13 @@ export function OrderFormDialog({
                                     setCustomerName(event.target.value)
                                 }
                                 required
-                                placeholder="Jane Doe"
+                                placeholder={t('Jane Doe')}
                             />
                             <InputError message={errors.customer_name} />
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="customer_phone">Phone</Label>
+                            <Label htmlFor="customer_phone">{t('Phone')}</Label>
                             <Input
                                 id="customer_phone"
                                 value={customerPhone}
@@ -575,7 +578,7 @@ export function OrderFormDialog({
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="customer_address">Address</Label>
+                        <Label htmlFor="customer_address">{t('Address')}</Label>
                         <AddressAutocomplete
                             id="customer_address"
                             name="customer_address"
@@ -593,7 +596,7 @@ export function OrderFormDialog({
 
                     <div className="grid grid-cols-3 gap-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="customer_city">City</Label>
+                            <Label htmlFor="customer_city">{t('City')}</Label>
                             <Input
                                 id="customer_city"
                                 value={city}
@@ -605,7 +608,7 @@ export function OrderFormDialog({
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="order_source">Source</Label>
+                            <Label htmlFor="order_source">{t('Source')}</Label>
                             <Select
                                 value={orderSource}
                                 onValueChange={setOrderSource}
@@ -614,7 +617,7 @@ export function OrderFormDialog({
                                     id="order_source"
                                     className="w-full"
                                 >
-                                    <SelectValue placeholder="Not specified" />
+                                    <SelectValue placeholder={t('Not specified')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {ORDER_SOURCES.map((source) => (
@@ -622,7 +625,7 @@ export function OrderFormDialog({
                                             key={source.value}
                                             value={source.value}
                                         >
-                                            {source.label}
+                                            {t(source.label)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -631,7 +634,7 @@ export function OrderFormDialog({
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="total_amount">Total amount</Label>
+                            <Label htmlFor="total_amount">{t('Total amount')}</Label>
                             <Input
                                 id="total_amount"
                                 type="number"
@@ -653,21 +656,21 @@ export function OrderFormDialog({
                         "ring the bell twice", "confirm the colour before
                         shipping" — and it rides along to fulfilment. */}
                     <div className="grid gap-2">
-                        <Label htmlFor="order_notes">Note</Label>
+                        <Label htmlFor="order_notes">{t('Note')}</Label>
                         <Textarea
                             id="order_notes"
                             value={notes}
                             onChange={(event) => setNotes(event.target.value)}
                             maxLength={2000}
                             rows={3}
-                            placeholder="Anything the warehouse or the next agent should know…"
+                            placeholder={t('Anything the warehouse or the next agent should know…')}
                         />
                         <InputError message={errors.notes} />
                     </div>
 
                     <div className="space-y-3 rounded-lg border p-4">
                         <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium">Products</p>
+                            <p className="text-sm font-medium">{t('Products')}</p>
                             <Button
                                 type="button"
                                 variant="outline"
@@ -675,7 +678,7 @@ export function OrderFormDialog({
                                 onClick={addLineItem}
                             >
                                 <Plus />
-                                Add product
+                                {t('Add product')}
                             </Button>
                         </div>
 
@@ -713,7 +716,7 @@ export function OrderFormDialog({
                                 >
                                     <div className="flex items-end gap-2">
                                         <div className="grid flex-1 gap-2">
-                                            <Label>Product</Label>
+                                            <Label>{t('Product')}</Label>
                                             <Popover
                                                 open={
                                                     openProductPopoverKey ===
@@ -753,18 +756,17 @@ export function OrderFormDialog({
                                                             : item.product_name
                                                               ? item.product_name
                                                               : loadingProducts
-                                                                ? 'Loading products…'
-                                                                : 'Select a product'}
+                                                                ? t('Loading products…')
+                                                                : t('Select a product')}
                                                         <ChevronsUpDown className="opacity-50" />
                                                     </Button>
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
                                                     <Command>
-                                                        <CommandInput placeholder="Search products…" />
+                                                        <CommandInput placeholder={t('Search products…')} />
                                                         <CommandList>
                                                             <CommandEmpty>
-                                                                No results
-                                                                found.
+                                                                {t('No results found.')}
                                                             </CommandEmpty>
                                                             <CommandGroup>
                                                                 {productOptions.map(
@@ -820,7 +822,7 @@ export function OrderFormDialog({
                                         {!hasVariants && (
                                             <>
                                                 <div className="grid w-20 gap-2">
-                                                    <Label>Qty</Label>
+                                                    <Label>{t('Qty')}</Label>
                                                     <Input
                                                         type="number"
                                                         min="1"
@@ -851,7 +853,7 @@ export function OrderFormDialog({
                                                 </div>
 
                                                 <div className="grid w-28 gap-2">
-                                                    <Label>Unit price</Label>
+                                                    <Label>{t('Unit price')}</Label>
                                                     <Input
                                                         type="number"
                                                         step="0.01"
@@ -880,7 +882,7 @@ export function OrderFormDialog({
                                             onClick={() =>
                                                 removeLineItem(item.key)
                                             }
-                                            aria-label="Remove product"
+                                            aria-label={t('Remove product')}
                                         >
                                             <Trash2 />
                                         </Button>
@@ -909,7 +911,7 @@ export function OrderFormDialog({
                                                     >
                                                         <div className="grid flex-1 gap-2">
                                                             <Label>
-                                                                Variant
+                                                                {t('Variant')}
                                                             </Label>
                                                             <Select
                                                                 value={String(
@@ -926,7 +928,7 @@ export function OrderFormDialog({
                                                                 }
                                                             >
                                                                 <SelectTrigger className="w-full">
-                                                                    <SelectValue placeholder="Select a variant" />
+                                                                    <SelectValue placeholder={t('Select a variant')} />
                                                                 </SelectTrigger>
                                                                 <SelectContent>
                                                                     {selectedProduct!.variants.map(
@@ -980,9 +982,9 @@ export function OrderFormDialog({
                                                                                     {!variant.is_available
                                                                                         ? ' (unavailable)'
                                                                                         : soldOut
-                                                                                          ? ' (sold out)'
+                                                                                          ? t('(sold out)')
                                                                                           : taken
-                                                                                            ? ' (already added)'
+                                                                                            ? t('(already added)')
                                                                                             : ''}
                                                                                 </SelectItem>
                                                                             );
@@ -993,7 +995,7 @@ export function OrderFormDialog({
                                                         </div>
 
                                                         <div className="grid w-20 gap-2">
-                                                            <Label>Qty</Label>
+                                                            <Label>{t('Qty')}</Label>
                                                             <Input
                                                                 type="number"
                                                                 min="1"
@@ -1034,7 +1036,7 @@ export function OrderFormDialog({
 
                                                         <div className="grid w-28 gap-2">
                                                             <Label>
-                                                                Unit price
+                                                                {t('Unit price')}
                                                             </Label>
                                                             <Input
                                                                 type="number"
@@ -1083,7 +1085,7 @@ export function OrderFormDialog({
                                                                     line.key,
                                                                 )
                                                             }
-                                                            aria-label="Remove variant"
+                                                            aria-label={t('Remove variant')}
                                                         >
                                                             <Trash2 />
                                                         </Button>
@@ -1102,7 +1104,7 @@ export function OrderFormDialog({
                                                     disabled={!canAddVariant}
                                                 >
                                                     <Plus />
-                                                    Add variant
+                                                    {t('Add variant')}
                                                 </Button>
 
                                                 <span className="text-xs text-muted-foreground tabular-nums">
@@ -1125,7 +1127,7 @@ export function OrderFormDialog({
                             Cancel
                         </Button>
                         <Button type="submit" disabled={processing}>
-                            {isEditing ? 'Save changes' : 'Create order'}
+                            {isEditing ? t('Save changes') : t('Create order')}
                         </Button>
                     </DialogFooter>
                 </form>

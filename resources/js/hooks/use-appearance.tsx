@@ -1,7 +1,13 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 
-export type ResolvedAppearance = 'light' | 'dark';
-export type Appearance = ResolvedAppearance | 'system';
+export type Appearance = 'light' | 'dark';
+
+/**
+ * Kept as an alias so existing call sites that distinguished the stored
+ * choice from the rendered one keep compiling. With no "system" option the
+ * two are always the same value.
+ */
+export type ResolvedAppearance = Appearance;
 
 export type UseAppearanceReturn = {
     readonly appearance: Appearance;
@@ -9,16 +15,17 @@ export type UseAppearanceReturn = {
     readonly updateAppearance: (mode: Appearance) => void;
 };
 
+/**
+ * Light is the default and the only automatic choice. There is no
+ * "match the device" mode: the app is used in shops and warehouses under
+ * whatever light is there, and a theme that flips on its own because the
+ * phone hit sunset is a surprise, not a feature. Dark stays available as a
+ * deliberate choice.
+ */
+const DEFAULT_APPEARANCE: Appearance = 'light';
+
 const listeners = new Set<() => void>();
-let currentAppearance: Appearance = 'system';
-
-const prefersDark = (): boolean => {
-    if (typeof window === 'undefined') {
-        return false;
-    }
-
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-};
+let currentAppearance: Appearance = DEFAULT_APPEARANCE;
 
 const setCookie = (name: string, value: string, days = 365): void => {
     if (typeof document === 'undefined') {
@@ -29,16 +36,21 @@ const setCookie = (name: string, value: string, days = 365): void => {
     document.cookie = `${name}=${value};path=/;max-age=${maxAge};SameSite=Lax`;
 };
 
+const isAppearance = (value: unknown): value is Appearance =>
+    value === 'light' || value === 'dark';
+
+/**
+ * Anything that is not a known value — including the retired "system"
+ * choice a returning browser may still hold — resolves to the default.
+ */
 const getStoredAppearance = (): Appearance => {
     if (typeof window === 'undefined') {
-        return 'system';
+        return DEFAULT_APPEARANCE;
     }
 
-    return (localStorage.getItem('appearance') as Appearance) || 'system';
-};
+    const stored = localStorage.getItem('appearance');
 
-const isDarkMode = (appearance: Appearance): boolean => {
-    return appearance === 'dark' || (appearance === 'system' && prefersDark());
+    return isAppearance(stored) ? stored : DEFAULT_APPEARANCE;
 };
 
 const applyTheme = (appearance: Appearance): void => {
@@ -46,7 +58,7 @@ const applyTheme = (appearance: Appearance): void => {
         return;
     }
 
-    const isDark = isDarkMode(appearance);
+    const isDark = appearance === 'dark';
 
     document.documentElement.classList.toggle('dark', isDark);
     document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
@@ -60,65 +72,37 @@ const subscribe = (callback: () => void) => {
 
 const notify = (): void => listeners.forEach((listener) => listener());
 
-const mediaQuery = (): MediaQueryList | null => {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
-    return window.matchMedia('(prefers-color-scheme: dark)');
-};
-
-const handleSystemThemeChange = (): void => applyTheme(currentAppearance);
-
 export function initializeTheme(): void {
     if (typeof window === 'undefined') {
         return;
     }
 
-    if (!localStorage.getItem('appearance')) {
-        localStorage.setItem('appearance', 'system');
-        setCookie('appearance', 'system');
-    }
-
     currentAppearance = getStoredAppearance();
-    applyTheme(currentAppearance);
 
-    // Set up system theme change listener
-    mediaQuery()?.addEventListener('change', handleSystemThemeChange);
+    // Write back so a stale "system" value is replaced once, and the cookie
+    // the server reads for the first paint agrees with what runs here.
+    localStorage.setItem('appearance', currentAppearance);
+    setCookie('appearance', currentAppearance);
+
+    applyTheme(currentAppearance);
 }
 
 export function useAppearance(): UseAppearanceReturn {
-    const appearance: Appearance = useSyncExternalStore(
+    const appearance = useSyncExternalStore(
         subscribe,
         () => currentAppearance,
-        () => 'system',
+        () => DEFAULT_APPEARANCE,
     );
-
-    // The server always resolves 'system' to 'light' (it has no access to
-    // the browser's prefers-color-scheme). initializeTheme() runs before
-    // hydration and may resolve 'system' to 'dark' on the client, so using
-    // the live value on the very first client render would mismatch what
-    // was server-rendered. Report the SSR-safe value until after mount,
-    // then switch to the real resolved value.
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => setMounted(true), []);
-
-    const resolvedAppearance: ResolvedAppearance =
-        mounted && isDarkMode(appearance) ? 'dark' : 'light';
 
     const updateAppearance = (mode: Appearance): void => {
         currentAppearance = mode;
 
-        // Store in localStorage for client-side persistence...
         localStorage.setItem('appearance', mode);
-
-        // Store in cookie for SSR...
         setCookie('appearance', mode);
 
         applyTheme(mode);
         notify();
     };
 
-    return { appearance, resolvedAppearance, updateAppearance } as const;
+    return { appearance, resolvedAppearance: appearance, updateAppearance } as const;
 }

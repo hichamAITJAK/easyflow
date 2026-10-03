@@ -9,6 +9,7 @@ import {
 import { useOptionalSidebar } from '@/components/ui/sidebar';
 import { UserInfo } from '@/components/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
+import { useTranslation } from '@/hooks/use-translation';
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
 import type { User } from '@/types';
@@ -18,6 +19,8 @@ type Props = {
 };
 
 export function UserMenuContent({ user }: Props) {
+    const { t } = useTranslation();
+
     const cleanup = useMobileNavigation();
     // Null under AppHeader, which renders this menu without a
     // SidebarProvider — there is no sheet to close there.
@@ -59,7 +62,7 @@ export function UserMenuContent({ user }: Props) {
                         onClick={closeMobileSidebar}
                     >
                         <Settings className="mr-2" />
-                        Settings
+                        {t('Settings')}
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
@@ -73,7 +76,7 @@ export function UserMenuContent({ user }: Props) {
                     data-test="logout-button"
                 >
                     <LogOut className="mr-2" />
-                    Log out
+                    {t('Log out')}
                 </Link>
             </DropdownMenuItem>
         </>

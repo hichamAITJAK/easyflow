@@ -3,6 +3,7 @@ import type { HTMLAttributes } from 'react';
 import { useId } from 'react';
 import type { Appearance, ResolvedAppearance } from '@/hooks/use-appearance';
 import { useAppearance } from '@/hooks/use-appearance';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 
 type Palette = {
@@ -25,27 +26,26 @@ type Palette = {
  */
 const PALETTES: Record<ResolvedAppearance, Palette> = {
     light: {
-        canvas: 'oklch(0.985 0.004 260)',
-        sidebar: 'oklch(0.99 0.003 260)',
-        surface: 'oklch(1 0.002 260)',
-        line: 'oklch(0.93 0.006 260)',
-        accent: 'oklch(0.52 0.2 264)',
-        muted: 'oklch(0.92 0.005 260)',
+        canvas: 'oklch(0.985 0.004 325)',
+        sidebar: 'oklch(0.99 0.003 325)',
+        surface: 'oklch(1 0.002 325)',
+        line: 'oklch(0.93 0.006 325)',
+        accent: 'oklch(0.3 0.089 339.3)',
+        muted: 'oklch(0.92 0.005 325)',
     },
     dark: {
-        canvas: 'oklch(0.145 0 0)',
-        sidebar: 'oklch(0.205 0 0)',
-        surface: 'oklch(0.185 0 0)',
-        line: 'oklch(0.28 0 0)',
-        accent: 'oklch(0.55 0.19 264)',
-        muted: 'oklch(0.32 0 0)',
+        canvas: 'oklch(0.15 0.01 325)',
+        sidebar: 'oklch(0.21 0.012 325)',
+        surface: 'oklch(0.19 0.012 325)',
+        line: 'oklch(0.28 0.01 325)',
+        accent: 'oklch(0.7 0.11 313.5)',
+        muted: 'oklch(0.32 0.01 325)',
     },
 };
 
 const OPTIONS: { value: Appearance; label: string; hint: string }[] = [
-    { value: 'light', label: 'Light', hint: 'Always light' },
-    { value: 'dark', label: 'Dark', hint: 'Always dark' },
-    { value: 'system', label: 'System', hint: 'Match device' },
+    { value: 'light', label: 'Light', hint: 'Default' },
+    { value: 'dark', label: 'Dark', hint: 'Easier on the eyes at night' },
 ];
 
 /**
@@ -101,29 +101,15 @@ function ThemeSkeleton({ scheme }: { scheme: ResolvedAppearance }) {
 }
 
 function ThemePreview({ value }: { value: Appearance }) {
-    if (value !== 'system') {
-        return <ThemeSkeleton scheme={value} />;
-    }
-
-    // Split preview: "System" is not a third look, it is whichever of the
-    // other two the device asks for — showing both says that without copy.
-    return (
-        <div className="relative h-full w-full">
-            <ThemeSkeleton scheme="light" />
-            <div
-                className="absolute inset-0"
-                style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}
-            >
-                <ThemeSkeleton scheme="dark" />
-            </div>
-        </div>
-    );
+    return <ThemeSkeleton scheme={value} />;
 }
 
 export default function AppearanceToggleTab({
     className = '',
     ...props
 }: HTMLAttributes<HTMLDivElement>) {
+    const { t } = useTranslation();
+
     const { appearance, updateAppearance } = useAppearance();
     const labelId = useId();
 
@@ -135,10 +121,10 @@ export default function AppearanceToggleTab({
                     updateAppearance(value as Appearance)
                 }
                 aria-labelledby={labelId}
-                className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+                className="grid grid-cols-1 gap-3 sm:grid-cols-2"
             >
                 <span id={labelId} className="sr-only">
-                    Theme
+                    {t('Theme')}
                 </span>
 
                 {OPTIONS.map(({ value, label, hint }) => {
@@ -169,10 +155,10 @@ export default function AppearanceToggleTab({
 
                             <div className="flex w-full items-baseline justify-between gap-2 bg-card px-3 py-2">
                                 <span className="text-sm font-medium text-foreground">
-                                    {label}
+                                    {t(label)}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
-                                    {hint}
+                                    {t(hint)}
                                 </span>
                             </div>
                         </RadioGroupPrimitive.Item>

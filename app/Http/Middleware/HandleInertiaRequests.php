@@ -44,6 +44,29 @@ class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'toast' => fn () => Inertia::getFlashed($request)['toast'] ?? null,
+            'locale' => app()->getLocale(),
+            'translations' => fn () => $this->translations(app()->getLocale()),
         ];
+    }
+
+    /**
+     * The current language's strings for the React side, keyed by the
+     * English source text — the same lang/{locale}.json Laravel's own
+     * __() reads, so PHP and the UI can never disagree on a translation.
+     * English has no file: a missing key renders as itself.
+     *
+     * @return array<string, string>
+     */
+    protected function translations(string $locale): array
+    {
+        $path = lang_path("{$locale}.json");
+
+        if (! is_file($path)) {
+            return [];
+        }
+
+        $decoded = json_decode((string) file_get_contents($path), true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 }

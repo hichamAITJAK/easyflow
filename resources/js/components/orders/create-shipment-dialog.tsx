@@ -44,6 +44,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import { create as createDeliveryCourier } from '@/routes/delivery-couriers';
 import orderDeliveryAccounts from '@/routes/orders/delivery-accounts';
@@ -63,6 +64,8 @@ export function CreateShipmentDialog({
     order: Order | null;
     deliveryAccounts: DeliveryAccount[];
 }) {
+    const { t } = useTranslation();
+
     const [accountId, setAccountId] = useState<string>('');
     const [cityId, setCityId] = useState<string | null>(null);
     const [cityOptions, setCityOptions] = useState<CityOption[]>([]);
@@ -123,10 +126,9 @@ export function CreateShipmentDialog({
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Create shipment</DialogTitle>
+                        <DialogTitle>{t('Create shipment')}</DialogTitle>
                         <DialogDescription>
-                            Register this order as a parcel with a delivery
-                            courier.
+                            {t('Register this order as a parcel with a delivery courier.')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -135,16 +137,15 @@ export function CreateShipmentDialog({
                             <EmptyMedia variant="icon">
                                 <Truck />
                             </EmptyMedia>
-                            <EmptyTitle>No courier connected</EmptyTitle>
+                            <EmptyTitle>{t('No courier connected')}</EmptyTitle>
                             <EmptyDescription>
-                                Connect a delivery courier account before you
-                                can create shipments.
+                                {t('Connect a delivery courier account before you can create shipments.')}
                             </EmptyDescription>
                         </EmptyHeader>
                         <EmptyContent>
                             <Button asChild>
                                 <Link href={createDeliveryCourier()}>
-                                    Connect a courier
+                                    {t('Connect a courier')}
                                 </Link>
                             </Button>
                         </EmptyContent>
@@ -158,10 +159,9 @@ export function CreateShipmentDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Create shipment</DialogTitle>
+                    <DialogTitle>{t('Create shipment')}</DialogTitle>
                     <DialogDescription>
-                        Review the customer details and choose a courier to
-                        register this parcel.
+                        {t('Review the customer details and choose a courier to register this parcel.')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -175,7 +175,7 @@ export function CreateShipmentDialog({
                         <>
                             <div className="grid gap-2">
                                 <Label htmlFor="customer_name">
-                                    Customer name
+                                    {t('Customer name')}
                                 </Label>
                                 <Input
                                     id="customer_name"
@@ -187,7 +187,7 @@ export function CreateShipmentDialog({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="customer_phone">Phone</Label>
+                                <Label htmlFor="customer_phone">{t('Phone')}</Label>
                                 <Input
                                     id="customer_phone"
                                     name="customer_phone"
@@ -199,7 +199,7 @@ export function CreateShipmentDialog({
 
                             <div className="grid gap-2">
                                 <Label htmlFor="customer_address">
-                                    Address
+                                    {t('Address')}
                                 </Label>
                                 <AddressAutocomplete
                                     id="customer_address"
@@ -233,7 +233,7 @@ export function CreateShipmentDialog({
 
                             <div className="grid gap-2">
                                 <Label htmlFor="total_amount">
-                                    Total amount
+                                    {t('Total amount')}
                                 </Label>
                                 <Input
                                     id="total_amount"
@@ -249,7 +249,7 @@ export function CreateShipmentDialog({
 
                             <div className="grid gap-2">
                                 <Label htmlFor="delivery_account_id">
-                                    Delivery courier
+                                    {t('Delivery courier')}
                                 </Label>
                                 <Select
                                     value={accountId}
@@ -259,7 +259,7 @@ export function CreateShipmentDialog({
                                         id="delivery_account_id"
                                         className="w-full"
                                     >
-                                        <SelectValue placeholder="Choose a courier" />
+                                        <SelectValue placeholder={t('Choose a courier')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {deliveryAccounts.map((account) => (
@@ -285,7 +285,7 @@ export function CreateShipmentDialog({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="city_id">City</Label>
+                                <Label htmlFor="city_id">{t('City')}</Label>
                                 <Popover
                                     open={cityPopoverOpen}
                                     onOpenChange={setCityPopoverOpen}
@@ -309,19 +309,19 @@ export function CreateShipmentDialog({
                                                           cityId,
                                                   )?.label
                                                 : !accountId
-                                                  ? 'Choose a courier first'
+                                                  ? t('Choose a courier first')
                                                   : loadingCities
-                                                    ? 'Loading cities…'
-                                                    : 'Select a city'}
+                                                    ? t('Loading cities…')
+                                                    : t('Select a city')}
                                             <ChevronsUpDown className="opacity-50" />
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
                                         <Command>
-                                            <CommandInput placeholder="Search cities…" />
+                                            <CommandInput placeholder={t('Search cities…')} />
                                             <CommandList>
                                                 <CommandEmpty>
-                                                    No cities found.
+                                                    {t('No cities found.')}
                                                 </CommandEmpty>
                                                 <CommandGroup>
                                                     {cityOptions.map(
@@ -370,17 +370,17 @@ export function CreateShipmentDialog({
 
                             <div className="space-y-4 rounded-lg border p-4">
                                 <p className="text-sm font-medium">
-                                    Parcel options
+                                    {t('Parcel options')}
                                 </p>
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="parcel_nature">
-                                        Nature
+                                        {t('Nature')}
                                     </Label>
                                     <Input
                                         id="parcel_nature"
                                         name="parcel_nature"
-                                        placeholder="e.g. Clothing"
+                                        placeholder={t('e.g. Clothing')}
                                     />
                                     <InputError
                                         message={errors.parcel_nature}
@@ -389,7 +389,7 @@ export function CreateShipmentDialog({
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="parcel_note">
-                                        Note for the courier
+                                        {t('Note for the courier')}
                                     </Label>
                                     <Input id="parcel_note" name="parcel_note" />
                                     <InputError message={errors.parcel_note} />
@@ -403,7 +403,7 @@ export function CreateShipmentDialog({
                                                 setParcelOpen(value === true)
                                             }
                                         />
-                                        Allow opening
+                                        {t('Allow opening')}
                                     </label>
                                     <label className="flex items-center gap-2 text-sm">
                                         <Checkbox
@@ -414,7 +414,7 @@ export function CreateShipmentDialog({
                                                 )
                                             }
                                         />
-                                        Fragile
+                                        {t('Fragile')}
                                     </label>
                                     <label className="flex items-center gap-2 text-sm">
                                         <Checkbox
@@ -425,7 +425,7 @@ export function CreateShipmentDialog({
                                                 )
                                             }
                                         />
-                                        Exchange
+                                        {t('Exchange')}
                                     </label>
                                 </div>
                                 <input

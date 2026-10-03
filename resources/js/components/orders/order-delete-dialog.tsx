@@ -8,6 +8,7 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { useTranslation } from '@/hooks/use-translation';
 import type { Order } from '@/types';
 
 export function OrderDeleteDialog({
@@ -19,6 +20,8 @@ export function OrderDeleteDialog({
     onOpenChange: (open: boolean) => void;
     order: Order | null;
 }) {
+    const { t } = useTranslation();
+
     if (!order) {
         return null;
     }
@@ -26,10 +29,9 @@ export function OrderDeleteDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
-                <DialogTitle>Delete this order?</DialogTitle>
+                <DialogTitle>{t('Delete this order?')}</DialogTitle>
                 <DialogDescription>
-                    This will remove the order from your active list. This
-                    action cannot be undone.
+                    {t('This will remove the order from your active list. This action cannot be undone.')}
                 </DialogDescription>
 
                 <Form

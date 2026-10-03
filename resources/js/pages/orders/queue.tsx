@@ -20,6 +20,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { useTranslation } from '@/hooks/use-translation';
 import { bucketDotColors } from '@/lib/order-status';
 import { cn } from '@/lib/utils';
 import { index as ordersIndex } from '@/routes/orders';
@@ -59,6 +60,8 @@ export default function OrdersQueue({
     bucketCounts: OrderBucketCounts;
     deliveryAccounts: DeliveryAccount[];
 }) {
+    const { t } = useTranslation();
+
     const [search, setSearch] = useState(filters.search ?? '');
     const debouncedSearch = useDebouncedValue(search, 300);
     const isFirstSearchRun = useRef(true);
@@ -289,7 +292,7 @@ export default function OrdersQueue({
 
     return (
         <>
-            <Head title="My queue" />
+            <Head title={t('My queue')} />
 
             {/* dvh, not vh — a mobile browser's dynamic toolbar was clipping
                 the bottom of the viewport, and the action rail is the one
@@ -331,12 +334,12 @@ export default function OrdersQueue({
                                         // searchable, so listing it would send
                                         // agents hunting for a customer by name
                                         // and getting nothing.
-                                        placeholder="Reference, tracking, or full phone…"
+                                        placeholder={t('Reference, tracking, or full phone…')}
                                         value={search}
                                         onChange={(event) =>
                                             setSearch(event.target.value)
                                         }
-                                        aria-label="Search queue"
+                                        aria-label={t('Search queue')}
                                     />
                                 </div>
 
@@ -355,12 +358,12 @@ export default function OrdersQueue({
                                 <Button
                                     type="button"
                                     onClick={() => setCreateOpen(true)}
-                                    aria-label="New manual order"
+                                    aria-label={t('New manual order')}
                                     className="shrink-0"
                                 >
                                     <Plus />
                                     <span className="hidden sm:inline">
-                                        New order
+                                        {t('New order')}
                                     </span>
                                 </Button>
                             </div>
@@ -461,19 +464,19 @@ export default function OrdersQueue({
                                             orders yet. */}
                                         <EmptyTitle>
                                             {search
-                                                ? 'No matches'
+                                                ? t('No matches')
                                                 : (filters.bucket ?? 'all') ===
                                                     'all'
-                                                  ? 'Your queue is clear'
-                                                  : 'Nothing in this filter'}
+                                                  ? t('Your queue is clear')
+                                                  : t('Nothing in this filter')}
                                         </EmptyTitle>
                                         <EmptyDescription>
                                             {search
-                                                ? `No order matches “${search}”. Reference and tracking match on any part; a phone number has to be complete, and customer names aren't searchable.`
+                                                ? t("No order matches “:search”. Reference and tracking match on any part; a phone number has to be complete, and customer names aren't searchable.", { search })
                                                 : (filters.bucket ?? 'all') ===
                                                     'all'
-                                                  ? 'No orders are assigned to you right now. New ones appear here automatically.'
-                                                  : 'No orders have this status. Try another filter.'}
+                                                  ? t('No orders are assigned to you right now. New ones appear here automatically.')
+                                                  : t('No orders have this status. Try another filter.')}
                                         </EmptyDescription>
                                     </EmptyHeader>
                                     {/* A zero-result search is a dead end
@@ -502,7 +505,7 @@ export default function OrdersQueue({
                                             onClick={() => setCreateOpen(true)}
                                         >
                                             <Plus />
-                                            New manual order
+                                            {t('New manual order')}
                                         </Button>
                                     )}
                                 </Empty>
@@ -516,7 +519,7 @@ export default function OrdersQueue({
                                     className="space-y-2 px-3 py-2 focus-visible:outline-none"
                                     role="listbox"
                                     tabIndex={0}
-                                    aria-label="Order queue"
+                                    aria-label={t('Order queue')}
                                     aria-activedescendant={
                                         selectedId !== null
                                             ? `queue-order-${selectedId}`
@@ -607,10 +610,9 @@ export default function OrdersQueue({
                                     {/* "Get started" is filler on a screen
                                         the agent lives in all day. Say what
                                         the pane is for and how to fill it. */}
-                                    <EmptyTitle>No order selected</EmptyTitle>
+                                    <EmptyTitle>{t('No order selected')}</EmptyTitle>
                                     <EmptyDescription>
-                                        Pick an order from the queue to see
-                                        its details and call the customer.
+                                        {t('Pick an order from the queue to see its details and call the customer.')}
                                     </EmptyDescription>
                                 </EmptyHeader>
                             </Empty>

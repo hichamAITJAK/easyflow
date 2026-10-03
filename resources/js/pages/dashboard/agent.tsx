@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { RateBarChart } from '@/components/dashboard/rate-bar-chart';
 import { StatTile } from '@/components/dashboard/stat-tile';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 
 type Props = {
@@ -42,42 +43,44 @@ export default function AgentDashboard({
     rateTotals,
     commissionEarned,
 }: Props) {
+    const { t } = useTranslation();
+
     return (
         <>
-            <Head title="Dashboard" />
+            <Head title={t('Dashboard')} />
 
             <div className="space-y-6 p-4">
                 <p className="text-sm text-muted-foreground">
-                    Last {periodDays} days
+                    {t('Last :days days', { days: periodDays })}
                 </p>
 
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
                     {/* Assigned carries no share: it is the denominator
                         the others are measured against, so "100%" would
                         be noise. */}
-                    <StatTile label="Assigned" value={totals.assigned} />
+                    <StatTile label={t('Assigned')} value={totals.assigned} />
                     <StatTile
-                        label="Confirmed"
+                        label={t('Confirmed')}
                         value={totals.confirmed}
                         caption="of assigned"
                         rate={tileRates.confirmed}
                     />
                     <StatTile
-                        label="Delivered"
+                        label={t('Delivered')}
                         value={totals.delivered}
                         caption="of shipped"
                         rate={tileRates.delivered}
                         accent="success"
                     />
                     <StatTile
-                        label="Cancelled"
+                        label={t('Cancelled')}
                         value={totals.cancelled}
                         caption="of assigned"
                         rate={tileRates.cancelled}
                         accent="destructive"
                     />
                     <StatTile
-                        label="Commission earned"
+                        label={t('Commission earned')}
                         value={money(commissionEarned)}
                     />
                 </div>
@@ -88,13 +91,13 @@ export default function AgentDashboard({
                     line — sharing one would mis-state the threshold for
                     whichever metric didn't own it. */}
                 <RateBarChart
-                    title="My confirmation rate"
+                    title={t('My confirmation rate')}
                     total={rateTotals.confirmation}
                     totalPeriodDays={periodDays}
                     series={[
                         {
                             key: 'confirmation',
-                            label: 'Confirmation rate',
+                            label: t('Confirmation rate'),
                             data: confirmationRateTrend,
                         },
                     ]}
@@ -106,13 +109,13 @@ export default function AgentDashboard({
                 />
 
                 <RateBarChart
-                    title="My delivery rate"
+                    title={t('My delivery rate')}
                     total={rateTotals.delivery}
                     totalPeriodDays={periodDays}
                     series={[
                         {
                             key: 'delivery',
-                            label: 'Delivery rate',
+                            label: t('Delivery rate'),
                             color: 'var(--color-chart-3)',
                             data: deliveryRateTrend,
                         },

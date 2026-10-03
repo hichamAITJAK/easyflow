@@ -1,4 +1,5 @@
 import { PackageCheck, TrendingDown, TrendingUp, XCircle } from 'lucide-react';
+import { useMemo } from 'react';
 import { Bar, BarChart, LabelList, XAxis } from 'recharts';
 import {
     Card,
@@ -14,7 +15,9 @@ import {
     ItemMedia,
     ItemTitle,
 } from '@/components/ui/item';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatNumber } from '@/lib/format';
+import type { Translator } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 /**
@@ -57,9 +60,9 @@ const FAKE_METRICS = [
     },
 ];
 
-const chartConfig = {
-    orders: { label: 'Orders', color: 'var(--color-chart-1)' },
-} satisfies ChartConfig;
+const buildChartConfig = (t: Translator) => ({
+    orders: { label: t('Orders'), color: 'var(--color-chart-1)' },
+}) satisfies ChartConfig;
 
 function MetricRow({
     title,
@@ -69,6 +72,7 @@ function MetricRow({
     icon: Icon,
     chip,
 }: (typeof FAKE_METRICS)[number]) {
+
     const good = delta === 0 || delta > 0 === higherIsBetter;
     const TrendIcon = delta >= 0 ? TrendingUp : TrendingDown;
 
@@ -114,13 +118,16 @@ function MetricRow({
  * outcome quality for the same week, read side by side.
  */
 export function WeeklyAnalyticsCard() {
+    const { t } = useTranslation();
+    const chartConfig = useMemo(() => buildChartConfig(t), [t]);
+
     const total = FAKE_WEEK.reduce((sum, point) => sum + point.orders, 0);
 
     return (
         <Card className="py-0 shadow-none">
             <div className="grid md:grid-cols-3">
                 <div className="p-6 md:col-span-2">
-                    <CardTitle>Total orders</CardTitle>
+                    <CardTitle>{t('Total orders')}</CardTitle>
                     <CardDescription className="mt-1">
                         {formatNumber(total)} orders this week
                     </CardDescription>
@@ -158,9 +165,9 @@ export function WeeklyAnalyticsCard() {
                 </div>
 
                 <div className="flex flex-col border-t p-6 md:border-t-0 md:border-l">
-                    <CardTitle>This week</CardTitle>
+                    <CardTitle>{t('This week')}</CardTitle>
                     <CardDescription className="mt-1">
-                        Change vs last week
+                        {t('Change vs last week')}
                     </CardDescription>
 
                     <ItemGroup className="flex-1 justify-center gap-6 py-6">

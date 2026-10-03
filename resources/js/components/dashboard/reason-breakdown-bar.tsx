@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
 
+import { useTranslation } from '@/hooks/use-translation';
 type Row = { label: string; count: number };
 
 const humanizeCode = (code: string) =>
@@ -36,14 +37,16 @@ export function RankedCountBar({
     emptyMessage?: string;
     maxRows?: number;
 }) {
+    const { t } = useTranslation();
+
     const chartConfig = {
-        count: { label: 'Orders', color },
+        count: { label: t('Orders'), color },
     } satisfies ChartConfig;
 
     if (data.length === 0) {
         return (
             <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-                {emptyMessage}
+                {t(emptyMessage)}
             </div>
         );
     }
@@ -91,12 +94,14 @@ export function ReasonBreakdownBar({
     data: { reason: string; count: number }[];
     color?: string;
 }) {
+    const { t } = useTranslation();
+
     return (
         <RankedCountBar
             data={data.map((row) => ({ label: row.reason, count: row.count }))}
             color={color}
             humanize
-            emptyMessage="No reasons recorded in this period yet."
+            emptyMessage={t('No reasons recorded in this period yet.')}
         />
     );
 }

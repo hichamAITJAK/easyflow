@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslation } from '@/hooks/use-translation';
 import type { Order } from '@/types';
 
 /**
@@ -30,6 +31,8 @@ export function BlacklistOrderDialog({
     onOpenChange: (open: boolean) => void;
     order: Order | null;
 }) {
+    const { t } = useTranslation();
+
     if (!order) {
         return null;
     }
@@ -38,9 +41,9 @@ export function BlacklistOrderDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Blacklist customer</DialogTitle>
+                    <DialogTitle>{t('Blacklist customer')}</DialogTitle>
                     <DialogDescription>
-                        {order.customer_name ?? 'This client'} (
+                        {order.customer_name ?? t('This client')} (
                         {order.customer_phone}) will be blocked from placing
                         new orders. Every existing order from this phone
                         number will be flagged too.
@@ -57,24 +60,24 @@ export function BlacklistOrderDialog({
                         <>
                             <div className="grid gap-2">
                                 <Label htmlFor="blacklist_reason">
-                                    Reason
+                                    {t('Reason')}
                                 </Label>
                                 <Input
                                     id="blacklist_reason"
                                     name="reason"
-                                    placeholder="e.g. Repeated refusals, chargeback history"
+                                    placeholder={t('e.g. Repeated refusals, chargeback history')}
                                 />
                                 <InputError message={errors.reason} />
                             </div>
 
                             <div className="grid gap-2">
                                 <Label htmlFor="blacklist_notes">
-                                    Notes (optional)
+                                    {t('Notes (optional)')}
                                 </Label>
                                 <Textarea
                                     id="blacklist_notes"
                                     name="notes"
-                                    placeholder="Any additional context"
+                                    placeholder={t('Any additional context')}
                                 />
                                 <InputError message={errors.notes} />
                             </div>

@@ -1,7 +1,6 @@
 import { Link } from '@inertiajs/react';
 import {
     Building2,
-    ListChecks,
     ShieldCheck,
     Store,
     Truck,
@@ -27,7 +26,6 @@ import {
 import { index as businessesIndex } from '@/routes/super-admin/businesses';
 import { index as couriersIndex } from '@/routes/super-admin/couriers';
 import { index as platformsIndex } from '@/routes/super-admin/platforms';
-import { index as queueIndex } from '@/routes/super-admin/queue';
 import type { NavItem } from '@/types';
 
 const navItems: NavItem[] = [
@@ -46,11 +44,14 @@ const navItems: NavItem[] = [
         href: couriersIndex(),
         icon: Truck,
     },
-    {
-        title: 'Queue',
-        href: queueIndex(),
-        icon: ListChecks,
-    },
+    // Queue is hidden from the nav for now, not removed: the route and page
+    // still exist at /super-admin/queue. Restore by uncommenting and
+    // re-adding the `queueIndex` and `ListChecks` imports.
+    // {
+    //     title: 'Queue',
+    //     href: queueIndex(),
+    //     icon: ListChecks,
+    // },
 ];
 
 function SuperAdminSidebar() {

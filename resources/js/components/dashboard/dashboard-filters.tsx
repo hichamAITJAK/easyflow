@@ -16,6 +16,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatDateRange } from '@/lib/format';
 
 export type SimpleOption = { id: number; name: string };
@@ -96,6 +97,8 @@ export function DashboardFilters({
     onReset: () => void;
     hasActiveFilters: boolean;
 }) {
+    const { t } = useTranslation();
+
     const selectedStores = draft.store_ids ? draft.store_ids.split(',') : [];
     const isCustom = draft.period === CUSTOM_PERIOD;
     const rangeFrom = fromDateParam(draft.date_from);
@@ -104,12 +107,12 @@ export function DashboardFilters({
     const rangeLabel =
         draft.date_from && draft.date_to
             ? formatDateRange(draft.date_from, draft.date_to)
-            : 'Pick dates';
+            : t('Pick dates');
 
     return (
         <div className="flex flex-wrap items-end gap-3">
             <div className="grid gap-1.5">
-                <Label htmlFor="dashboard-store-filter">Stores</Label>
+                <Label htmlFor="dashboard-store-filter">{t('Stores')}</Label>
                 <MultiCombobox
                     id="dashboard-store-filter"
                     className="w-52"
@@ -124,14 +127,14 @@ export function DashboardFilters({
                                 next.length > 0 ? next.join(',') : undefined,
                         })
                     }
-                    placeholder="All stores"
+                    placeholder={t('All stores')}
                     searchPlaceholder="Search stores…"
-                    emptyMessage="No stores found."
+                    emptyMessage={t('No stores found.')}
                 />
             </div>
 
             <div className="grid gap-1.5">
-                <Label htmlFor="dashboard-period-filter">Period</Label>
+                <Label htmlFor="dashboard-period-filter">{t('Period')}</Label>
                 <Select
                     value={draft.period ?? DEFAULT_PERIOD}
                     onValueChange={(value) =>
@@ -159,7 +162,7 @@ export function DashboardFilters({
                                 key={period.value}
                                 value={period.value}
                             >
-                                {period.label}
+                                {t(period.label)}
                             </SelectItem>
                         ))}
                     </SelectContent>
@@ -168,7 +171,7 @@ export function DashboardFilters({
 
             {isCustom && (
                 <div className="grid gap-1.5">
-                    <Label htmlFor="dashboard-range-filter">Dates</Label>
+                    <Label htmlFor="dashboard-range-filter">{t('Dates')}</Label>
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button

@@ -51,7 +51,7 @@ createInertiaApp({
         );
     },
     progress: {
-        color: 'oklch(0.52 0.27 280.05)',
+        color: 'oklch(0.3 0.089 339.3)',
         showSpinner: false,
     },
 });

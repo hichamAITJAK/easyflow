@@ -7,6 +7,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 
+import { useTranslation } from '@/hooks/use-translation';
 const RANGES = [
     { value: '7', label: 'Last 7 days' },
     { value: '14', label: 'Last 14 days' },
@@ -49,6 +50,8 @@ export function ChartRangeSelect({
     onValueChange,
     available,
 }: ReturnType<typeof useChartRange>['selectProps']) {
+    const { t } = useTranslation();
+
     if (available.length < 2) {
         return null;
     }
@@ -57,7 +60,7 @@ export function ChartRangeSelect({
         <Select value={value} onValueChange={onValueChange}>
             <SelectTrigger
                 className="w-[160px] rounded-lg sm:ml-auto"
-                aria-label="Select a range"
+                aria-label={t('Select a range')}
             >
                 <SelectValue />
             </SelectTrigger>
@@ -68,7 +71,7 @@ export function ChartRangeSelect({
                         value={option.value}
                         className="rounded-lg"
                     >
-                        {option.label}
+                        {t(option.label)}
                     </SelectItem>
                 ))}
             </SelectContent>

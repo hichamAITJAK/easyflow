@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
 import {
     ChartContainer,
@@ -8,14 +9,16 @@ import {
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
 
+import { useTranslation } from '@/hooks/use-translation';
+import type { Translator } from '@/lib/i18n';
 type Point = { date: string; rate: number | null };
 
 // lastWeek gets navy, not teal — chart-1/chart-2 share luminance and the
 // two lines can cross; the dash alone shouldn't carry the distinction.
-const chartConfig = {
-    thisWeek: { label: 'This week', color: 'var(--color-chart-1)' },
-    lastWeek: { label: 'Last week', color: 'var(--color-chart-3)' },
-} satisfies ChartConfig;
+const buildChartConfig = (t: Translator) => ({
+    thisWeek: { label: t('This week'), color: 'var(--color-chart-1)' },
+    lastWeek: { label: t('Last week'), color: 'var(--color-chart-3)' },
+}) satisfies ChartConfig;
 
 const dayLabel = (iso: string) =>
     new Date(iso + 'T00:00:00').toLocaleDateString(undefined, {
@@ -35,6 +38,9 @@ export function WeekOverWeekLine({
     thisWeek: Point[];
     lastWeek: Point[];
 }) {
+    const { t } = useTranslation();
+    const chartConfig = useMemo(() => buildChartConfig(t), [t]);
+
     const chartData = thisWeek.map((point, index) => ({
         day: dayLabel(point.date),
         thisWeek: point.rate,

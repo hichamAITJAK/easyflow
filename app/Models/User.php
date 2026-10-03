@@ -40,7 +40,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['business_id', 'name', 'email', 'google_id', 'phone', 'password', 'role', 'status', 'avatar', 'last_login_at'])]
+#[Fillable(['business_id', 'name', 'email', 'google_id', 'phone', 'password', 'role', 'status', 'locale', 'avatar', 'last_login_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {

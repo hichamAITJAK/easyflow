@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode, RefObject } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import AppWordmark from '@/components/app-wordmark';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -241,8 +241,7 @@ export default function Welcome() {
                         href="/"
                         className="flex items-center gap-2 font-medium"
                     >
-                        <AppLogoIcon className="size-6 fill-current text-primary" />
-                        {name}
+                        <AppWordmark className="h-7" />
                     </Link>
 
                     <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
@@ -639,8 +638,7 @@ export default function Welcome() {
                             href="/"
                             className="flex items-center gap-2 font-medium"
                         >
-                            <AppLogoIcon className="size-6 fill-current text-primary" />
-                            {name}
+                            <AppWordmark className="h-7" />
                         </Link>
                         <p className="mt-3 max-w-xs text-sm text-muted-foreground">
                             EasyFlow helps COD businesses manage stores, orders,

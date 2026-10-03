@@ -31,6 +31,7 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+
     const { auth } = usePage<PageProps>().props;
     const visibleNavItems = getVisibleNavItems(auth.user?.role);
 

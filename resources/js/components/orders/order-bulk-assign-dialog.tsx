@@ -18,6 +18,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 
+import { useTranslation } from '@/hooks/use-translation';
 type AgentOption = { id: number; name: string };
 
 export function OrderBulkAssignDialog({
@@ -35,6 +36,8 @@ export function OrderBulkAssignDialog({
     getInitials: (name: string) => string;
     onAssigned: () => void;
 }) {
+    const { t } = useTranslation();
+
     const [selectedAgent, setSelectedAgent] = useState<string>('');
     const [processing, setProcessing] = useState(false);
 
@@ -70,7 +73,7 @@ export function OrderBulkAssignDialog({
                     {orderIds.length === 1 ? 'order' : 'orders'} in bulk
                 </DialogTitle>
                 <DialogDescription>
-                    Select a confirmation agent to assign the selected orders to. This will distribute the orders instantly.
+                    {t('Select a confirmation agent to assign the selected orders to. This will distribute the orders instantly.')}
                 </DialogDescription>
 
                 <div className="py-4">
@@ -79,11 +82,11 @@ export function OrderBulkAssignDialog({
                         onValueChange={setSelectedAgent}
                     >
                         <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select an agent to assign..." />
+                            <SelectValue placeholder={t('Select an agent to assign...')} />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="__unassigned__">
-                                <span className="text-muted-foreground">Unassign orders</span>
+                                <span className="text-muted-foreground">{t('Unassign orders')}</span>
                             </SelectItem>
                             {agents.map((agent) => (
                                 <SelectItem key={agent.id} value={String(agent.id)}>

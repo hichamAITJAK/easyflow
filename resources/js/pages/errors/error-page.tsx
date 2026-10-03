@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import AppWordmark from '@/components/app-wordmark';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 
 type Props = {
@@ -10,29 +11,31 @@ type Props = {
 };
 
 export default function ErrorPage({ status, title, message }: Props) {
+    const { t } = useTranslation();
+
     return (
         <>
             <Head title={title} />
 
             <div className="flex min-h-svh flex-col items-center justify-center gap-8 bg-background p-6 text-center">
-                <AppLogoIcon className="h-10 w-auto fill-current text-foreground" />
+                <AppWordmark className="h-9" />
 
                 <div className="space-y-2">
                     <p className="text-sm font-medium text-muted-foreground">
-                        Error {status}
+                        {t('Error :status', { status })}
                     </p>
                     <h1 className="text-2xl font-semibold">{title}</h1>
                     <p className="text-sm text-balance text-muted-foreground">
-                        {message}
+                        {t(message)}
                     </p>
                 </div>
 
                 <div className="flex items-center gap-3">
                     <Button variant="outline" onClick={() => history.back()}>
-                        Go back
+                        {t('Go back')}
                     </Button>
                     <Button asChild>
-                        <Link href={dashboard()}>Go to dashboard</Link>
+                        <Link href={dashboard()}>{t('Go to dashboard')}</Link>
                     </Button>
                 </div>
             </div>

@@ -1,16 +1,16 @@
 import AppLogoIcon from '@/components/app-logo-icon';
+import AppWordmark from '@/components/app-wordmark';
 
+/**
+ * Sidebar header. The wordmark already carries the mark as its "o", so it
+ * stands alone when there is room; when the sidebar collapses to icons,
+ * only the mark fits and the wordmark steps aside for it.
+ */
 export default function AppLogo() {
     return (
         <>
-            <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary/10 text-sidebar-primary-foreground">
-                <AppLogoIcon className="size-5 fill-current text-white dark:text-black" />
-            </div>
-            <div className="ml-1 grid flex-1 text-left text-sm">
-                <span className="mb-0.5 truncate leading-tight font-semibold">
-                    EasyFlow
-                </span>
-            </div>
+            <AppWordmark className="h-6 group-data-[collapsible=icon]:hidden" />
+            <AppLogoIcon className="hidden size-7 group-data-[collapsible=icon]:block" />
         </>
     );
 }

@@ -6,6 +6,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 
+import { useTranslation } from '@/hooks/use-translation';
 const ALL = '__all__';
 
 export type AgentOption = { id: number | string; name: string };
@@ -35,6 +36,8 @@ export function AgentFilter({
      *  screen-reader rotor can't tell identical labels apart. */
     ariaLabel?: string;
 }) {
+    const { t } = useTranslation();
+
     return (
         <Select
             value={value ?? ALL}
@@ -43,13 +46,13 @@ export function AgentFilter({
             <SelectTrigger
                 size="sm"
                 className="w-[140px] rounded-lg"
-                aria-label={ariaLabel}
+                aria-label={t(ariaLabel)}
             >
-                <SelectValue placeholder={placeholder} />
+                <SelectValue placeholder={t(placeholder)} />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
                 <SelectItem value={ALL} className="rounded-lg">
-                    {allLabel}
+                    {t(allLabel)}
                 </SelectItem>
                 {agents.map((agent) => (
                     <SelectItem

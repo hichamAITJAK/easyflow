@@ -96,15 +96,12 @@ export function StatTile({
      */
     rate?: number | null;
 }) {
+
     const { text, chip } = ACCENTS[accent ?? 'default'];
     const deltaIsGood =
         delta === undefined || delta === 0 || delta > 0 === higherIsBetter;
-
-    const valueTitle =
-        exactValue ??
-        (typeof value === 'number' ? formatNumber(value) : undefined);
-    const valueText =
-        typeof value === 'number' ? formatCompactNumber(value) : value;
+    const valueTitle = exactValue ?? (typeof value === 'number' ? formatNumber(value) : undefined);
+    const valueText = typeof value === 'number' ? formatCompactNumber(value) : value;
 
     return (
         <Card className="gap-0 p-4 shadow-none">
@@ -140,16 +137,14 @@ export function StatTile({
                     {valueText}
                     {valueTitle && valueTitle !== String(valueText) && (
                         <span className="sr-only">
-                            , exactly {valueTitle}
+                            {t(', exactly :value', { value: valueTitle })}
                         </span>
                     )}
                 </span>
 
                 {delta !== undefined ? (
                     <DeltaPill delta={delta} good={deltaIsGood} />
-                ) : (
-                    rate !== undefined &&
-                    rate !== null && (
+                ) : ( rate !== undefined && rate !== null && (
                         <Badge
                             variant="outline"
                             className="border-transparent bg-muted tabular-nums text-muted-foreground"

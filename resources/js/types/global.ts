@@ -9,4 +9,8 @@ export type PageProps<
     quote?: { message: string; author: string };
     status?: string;
     toast?: { type: 'success' | 'error'; message: string } | null;
+    locale: Locale;
+    translations: Record<string, string>;
 };
+
+export type Locale = 'fr' | 'en';

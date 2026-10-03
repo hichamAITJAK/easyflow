@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\UserRole;
 use App\Models\Business;
 use App\Models\EcommercePlatform;
 use App\Models\Order;
@@ -77,11 +76,7 @@ function makeBusinessUser(array $overrides = []): User
  */
 function superAdmin(array $overrides = []): User
 {
-    return User::factory()->create([
-        'role' => UserRole::SUPER_ADMIN,
-        'business_id' => null,
-        ...$overrides,
-    ]);
+    return User::factory()->superAdmin()->create($overrides);
 }
 
 /**

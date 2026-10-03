@@ -2,6 +2,7 @@ import { CheckCircle2, PackageCheck, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from '@/hooks/use-translation';
 import { deliveryStatusLabels } from '@/lib/order-status';
 import type { FulfillmentActivityEvent } from '@/types/fulfillment';
 import type { OrderDeliveryStatus } from '@/types/order';
@@ -25,6 +26,8 @@ export function ActivityList({
     onUndo: (eventId: number) => void;
     undoingId: number | null;
 }) {
+    const { t } = useTranslation();
+
     if (loading) {
         return (
             <div className="space-y-2">
@@ -42,9 +45,9 @@ export function ActivityList({
                     <EmptyMedia variant="icon">
                         <PackageCheck />
                     </EmptyMedia>
-                    <EmptyTitle>No scans yet today</EmptyTitle>
+                    <EmptyTitle>{t('No scans yet today')}</EmptyTitle>
                     <EmptyDescription>
-                        Parcels you scan will appear here so you can check or undo them.
+                        {t('Parcels you scan will appear here so you can check or undo them.')}
                     </EmptyDescription>
                 </EmptyHeader>
             </Empty>
@@ -65,7 +68,7 @@ export function ActivityList({
                             {event.tracking_number ?? `Order #${event.order_id}`}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
-                            {deliveryStatusLabels[event.to_status as OrderDeliveryStatus] ??
+                            {t(deliveryStatusLabels[event.to_status as OrderDeliveryStatus]) ??
                                 event.to_status}
                             {event.customer_name ? ` · ${event.customer_name}` : ''}
                         </p>
@@ -91,7 +94,7 @@ export function ActivityList({
                             disabled={undoingId !== null}
                         >
                             <Undo2 className="size-4" />
-                            <span className="sr-only">Undo this scan</span>
+                            <span className="sr-only">{t('Undo this scan')}</span>
                         </Button>
                     )}
                 </li>

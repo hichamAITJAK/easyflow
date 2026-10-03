@@ -102,33 +102,27 @@
 
 :root {
     --background:
-        oklch(0.985 0.004 260);
+        oklch(0.985 0.004 325);
     --foreground:
-        oklch(0.145 0.005 260);
+        oklch(0.145 0.005 325);
     --card:
-        oklch(1 0.002 260);
+        oklch(1 0.002 325);
     --card-foreground:
-        oklch(0.145 0.005 260);
+        oklch(0.145 0.005 325);
     --popover:
-        oklch(1 0.002 260);
+        oklch(1 0.002 325);
     --popover-foreground:
-        oklch(0.145 0.005 260);
-    --primary:
-        oklch(0.52 0.2 264);
-    --primary-foreground:
-        oklch(0.985 0.002 260);
-    --secondary:
-        oklch(0.97 0.005 260);
-    --secondary-foreground:
-        oklch(0.205 0.006 260);
+        oklch(0.145 0.005 325);
+    --primary: oklch(0.3 0.089 339.3);
+    --primary-foreground: oklch(0.985 0.008 320);
+    --secondary: oklch(0.969 0.024 319.5);
+    --secondary-foreground: oklch(0.25 0.06 339.3);
     --muted:
-        oklch(0.97 0.005 260);
+        oklch(0.97 0.005 325);
     --muted-foreground:
-        oklch(0.556 0.008 260);
-    --accent:
-        oklch(0.97 0.005 260);
-    --accent-foreground:
-        oklch(0.205 0.006 260);
+        oklch(0.556 0.008 325);
+    --accent: oklch(0.969 0.024 319.5);
+    --accent-foreground: oklch(0.25 0.06 339.3);
     --destructive:
         oklch(0.577 0.245 27.325);
     --destructive-foreground: oklch(1 0 0);
@@ -154,11 +148,10 @@
     --info: oklch(0.573 0.214 258.247);
     --info-foreground: oklch(1 0 0);
     --border:
-        oklch(0.93 0.006 260);
+        oklch(0.93 0.006 325);
     --input:
-        oklch(0.93 0.006 260);
-    --ring:
-        oklch(0.52 0.2 264);
+        oklch(0.93 0.006 325);
+    --ring: oklch(0.3 0.089 339.3);
     /* Elevated surfaces (Card, Popover, Dialog): shadow instead of a hairline
        in light mode, hairline instead of shadow in dark mode — shadows don't
        read against a dark canvas. See --surface-border/--surface-shadow use
@@ -181,59 +174,52 @@
     --radius:
         0.625rem;
     --sidebar:
-        oklch(0.99 0.003 260);
+        oklch(0.99 0.003 325);
     --sidebar-foreground:
-        oklch(0.145 0.005 260);
-    --sidebar-primary:
-        oklch(0.52 0.2 264);
-    --sidebar-primary-foreground:
-        oklch(0.985 0.002 260);
-    --sidebar-accent:
-        oklch(0.97 0.005 260);
-    --sidebar-accent-foreground:
-        oklch(0.205 0.006 260);
+        oklch(0.145 0.005 325);
+    --sidebar-primary: oklch(0.3 0.089 339.3);
+    --sidebar-primary-foreground: oklch(0.985 0.008 320);
+    --sidebar-accent: oklch(0.969 0.024 319.5);
+    --sidebar-accent-foreground: oklch(0.25 0.06 339.3);
     --sidebar-border:
-        oklch(0.93 0.006 260);
-    --sidebar-ring:
-        oklch(0.52 0.2 264);
+        oklch(0.93 0.006 325);
+    --sidebar-ring: oklch(0.3 0.089 339.3);
 }
 
 .dark {
     --background:
-        oklch(0.145 0 0);
+        oklch(0.15 0.01 325);
     --foreground:
         oklch(0.985 0 0);
     --card:
-        oklch(0.185 0 0);
+        oklch(0.19 0.012 325);
     --card-foreground:
         oklch(0.985 0 0);
     --popover:
-        oklch(0.185 0 0);
+        oklch(0.19 0.012 325);
     --popover-foreground:
         oklch(0.985 0 0);
-    --primary:
-        oklch(0.55 0.19 264);
-    --primary-foreground:
-        oklch(0.985 0 0);
+    --primary: oklch(0.7 0.11 313.5);
+    --primary-foreground: oklch(0.18 0.05 339.3);
     --secondary:
-        oklch(0.269 0 0);
+        oklch(0.27 0.012 325);
     --secondary-foreground:
         oklch(0.985 0 0);
     --muted:
-        oklch(0.269 0 0);
+        oklch(0.27 0.012 325);
     --muted-foreground:
         oklch(0.708 0 0);
     --accent:
-        oklch(0.269 0 0);
+        oklch(0.27 0.012 325);
     --accent-foreground:
         oklch(0.985 0 0);
     --destructive:
         oklch(0.704 0.191 22.216);
     --destructive-foreground: oklch(1 0 0);
     --success: oklch(0.68 0.12 155);
-    --success-foreground: oklch(0.145 0 0);
+    --success-foreground: oklch(0.15 0.01 325);
     --warning: oklch(0.82 0.12 73);
-    --warning-foreground: oklch(0.145 0 0);
+    --warning-foreground: oklch(0.15 0.01 325);
     /* On a dark canvas the fill tokens are already light enough to read as
        ink (measured 6.82:1 and 10.50:1 on --card, and still ~5.7:1 on their
        own 10% tint), so the text variants are the same colour rather than a
@@ -243,13 +229,12 @@
     --destructive-text: var(--destructive);
     --info-text: var(--info);
     --info: oklch(0.685 0.19 258.247);
-    --info-foreground: oklch(0.145 0 0);
+    --info-foreground: oklch(0.15 0.01 325);
     --border:
         oklch(1 0 0 / 10%);
     --input:
         oklch(1 0 0 / 15%);
-    --ring:
-        oklch(0.55 0.19 264);
+    --ring: oklch(0.7 0.11 313.5);
     --surface-border: oklch(0.27 0 0);
     --surface-shadow: none;
     /* Same hues as light mode, lightness lifted so every series clears a
@@ -264,21 +249,18 @@
     --chart-7: oklch(0.68 0.1 221.723);
     --chart-8: oklch(0.6 0.02 0);
     --sidebar:
-        oklch(0.205 0 0);
+        oklch(0.21 0.012 325);
     --sidebar-foreground:
         oklch(0.985 0 0);
-    --sidebar-primary:
-        oklch(0.55 0.19 264);
-    --sidebar-primary-foreground:
-        oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.7 0.11 313.5);
+    --sidebar-primary-foreground: oklch(0.18 0.05 339.3);
     --sidebar-accent:
-        oklch(0.269 0 0);
+        oklch(0.27 0.012 325);
     --sidebar-accent-foreground:
         oklch(0.985 0 0);
     --sidebar-border:
         oklch(1 0 0 / 10%);
-    --sidebar-ring:
-        oklch(0.55 0.19 264);
+    --sidebar-ring: oklch(0.7 0.11 313.5);
 }
 
 /*
@@ -435,4 +417,49 @@
         calc(var(--radius) * 2.2);
     --radius-4xl:
         calc(var(--radius) * 2.6);
+}
+
+/* ── Integrations orbit (auth split panel) ───────────────────────────────
+   One slow turn; nodes counter-turn so their logos stay upright. The spoke
+   pulse rides an offset-path from node to hub. All three are gated behind
+   motion-safe at the call site, so reduced-motion users get the still ring. */
+@keyframes orbit {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes orbit-reverse {
+    to {
+        transform: translate(-50%, -50%) rotate(-360deg);
+    }
+}
+
+@keyframes spoke-pulse {
+    0% {
+        offset-distance: 0%;
+        opacity: 0;
+    }
+    15% {
+        opacity: 1;
+    }
+    85% {
+        opacity: 1;
+    }
+    100% {
+        offset-distance: 100%;
+        opacity: 0;
+    }
+}
+
+@utility animate-orbit {
+    animation: orbit 90s linear infinite;
+}
+
+@utility animate-orbit-reverse {
+    animation: orbit-reverse 90s linear infinite;
+}
+
+@utility animate-spoke-pulse {
+    animation: spoke-pulse 4.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }

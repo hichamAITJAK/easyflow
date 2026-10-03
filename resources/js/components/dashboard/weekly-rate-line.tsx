@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
 
+import { useTranslation } from '@/hooks/use-translation';
 export type WeeklyRatePoint = {
     /** Label for the week, e.g. "Jun 2" (week start). */
     week: string;
@@ -39,6 +40,8 @@ export function WeeklyRateLine({
     series: WeeklyRateSeries[];
     className?: string;
 }) {
+    const { t } = useTranslation();
+
     const chartConfig = Object.fromEntries(
         series.map((entry) => [
             entry.key,
@@ -70,7 +73,7 @@ export function WeeklyRateLine({
     if (!hasData) {
         return (
             <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-                No data for this period yet.
+                {t('No data for this period yet.')}
             </div>
         );
     }

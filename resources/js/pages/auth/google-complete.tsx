@@ -11,27 +11,30 @@ import {
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 
+import { useTranslation } from '@/hooks/use-translation';
 type Props = {
     name: string;
     email: string;
 };
 
 export default function GoogleComplete({ name, email }: Props) {
+    const { t } = useTranslation();
+
     setLayoutProps({
-        title: 'One last step',
-        description: `Signed in as ${email}. Name your business to get started.`,
+        title: t('One last step'),
+        description: t('Signed in as :email. Name your business to get started.', { email }),
     });
 
     return (
         <>
-            <Head title="Complete your registration" />
+            <Head title={t('Complete your registration')} />
 
             <Form {...GoogleLoginController.complete.form()}>
                 {({ processing, errors }) => (
                     <FieldGroup>
                         <Field>
                             <FieldLabel htmlFor="business_name">
-                                Business name
+                                {t('Business name')}
                             </FieldLabel>
                             <Input
                                 id="business_name"
@@ -39,10 +42,10 @@ export default function GoogleComplete({ name, email }: Props) {
                                 required
                                 autoFocus
                                 autoComplete="organization"
-                                placeholder="e.g. Atlas Store"
+                                placeholder={t('e.g. Atlas Store')}
                             />
                             <FieldDescription>
-                                Shown to your team — you can change it later.
+                                {t('Shown to your team — you can change it later.')}
                             </FieldDescription>
                             <InputError message={errors.business_name} />
                         </Field>

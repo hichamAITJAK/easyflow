@@ -66,6 +66,8 @@ import {
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useInitials } from '@/hooks/use-initials';
 import { useTableFilters } from '@/hooks/use-table-filters';
+import { useTranslation } from '@/hooks/use-translation';
+import type { Translator } from '@/lib/i18n';
 import {
     confirmationStatusLabels,
     deliveryStatusLabels,
@@ -101,7 +103,7 @@ const FILTER_KEYS: (keyof OrderFilters)[] = [
     'date_to',
 ];
 
-function exportOrdersToCsv(orders: Order[], selectedIds: number[]) {
+function exportOrdersToCsv(orders: Order[], selectedIds: number[], t: Translator) {
     const toExport =
         selectedIds.length > 0
             ? orders.filter((order) => selectedIds.includes(order.id))
@@ -112,19 +114,19 @@ function exportOrdersToCsv(orders: Order[], selectedIds: number[]) {
     }
 
     const headers = [
-        'Reference',
-        'Ordered At',
-        'Customer Name',
-        'Phone',
-        'Address',
-        'City',
-        'Total Amount',
-        'Source',
-        'Confirmation Status',
-        'Delivery Status',
-        'Tracking Number',
-        'Agent',
-        'Store',
+        t('Reference'),
+        t('Ordered At'),
+        t('Customer Name'),
+        t('Phone'),
+        t('Address'),
+        t('City'),
+        t('Total Amount'),
+        t('Source'),
+        t('Confirmation Status'),
+        t('Delivery Status'),
+        t('Tracking Number'),
+        t('Agent'),
+        t('Store'),
     ];
 
     const rows = toExport.map((order) => [
@@ -135,7 +137,7 @@ function exportOrdersToCsv(orders: Order[], selectedIds: number[]) {
         `"${(order.customer_address ?? '').replace(/"/g, '""')}"`,
         `"${(order.customer_city ?? '').replace(/"/g, '""')}"`,
         `"${order.total_amount ?? ''}"`,
-        `"${orderSourceLabel(order.source_platform)}"`,
+        `"${t(orderSourceLabel(order.source_platform))}"`,
         `"${order.confirmation_status ?? ''}"`,
         `"${order.delivery_status ?? ''}"`,
         `"${order.courier_tracking_number ?? ''}"`,
@@ -203,7 +205,7 @@ const METRIC_CARDS: {
         label: 'Submitted to courier',
         icon: PackageCheck,
         hoverBorder: 'hover:border-violet-500/50',
-        selected: 'border-violet-500 bg-violet-500/10 shadow-sm ring-1 ring-violet-500',
+        selected: 'border-primary bg-primary/10 shadow-sm ring-1 ring-primary',
         labelClass: 'font-medium text-violet-700 dark:text-violet-400',
         iconClass: 'size-4 text-violet-500',
         valueClass: 'text-2xl font-bold text-violet-600 dark:text-violet-500',
@@ -268,7 +270,7 @@ function OrderMetricCard({
             <CardHeader className="gap-1 px-4 py-3">
                 <div className="flex items-center justify-between">
                     <CardDescription className={metric.labelClass}>
-                        {metric.label}
+                        {t(metric.label)}
                     </CardDescription>
                     <Icon className={metric.iconClass} />
                 </div>
@@ -293,6 +295,8 @@ export default function OrdersIndex({
     agents: AgentOption[];
     deliveryAccounts: DeliveryAccount[];
 }) {
+    const { t } = useTranslation();
+
     const [formOpen, setFormOpen] = useState(false);
     const [editOrder, setEditOrder] = useState<Order | null>(null);
     const [viewOrder, setViewOrder] = useState<Order | null>(null);
@@ -326,7 +330,7 @@ export default function OrdersIndex({
         if (draft.confirmation_status && draft.confirmation_status !== NONE) {
             list.push({
                 key: 'confirmation_status',
-                label: `Status: ${confirmationStatusLabels[draft.confirmation_status as keyof typeof confirmationStatusLabels] ?? draft.confirmation_status}`,
+                label: `${t('Status')}: ${t(confirmationStatusLabels[draft.confirmation_status as keyof typeof confirmationStatusLabels]) ?? draft.confirmation_status}`,
                 onRemove: () => updateFilters({ confirmation_status: undefined }),
             });
         }
@@ -334,7 +338,7 @@ export default function OrdersIndex({
         if (draft.delivery_status && draft.delivery_status !== NONE) {
             list.push({
                 key: 'delivery_status',
-                label: `Delivery: ${deliveryStatusLabels[draft.delivery_status as keyof typeof deliveryStatusLabels] ?? draft.delivery_status}`,
+                label: `${t('Delivery')}: ${t(deliveryStatusLabels[draft.delivery_status as keyof typeof deliveryStatusLabels]) ?? draft.delivery_status}`,
                 onRemove: () => updateFilters({ delivery_status: undefined }),
             });
         }
@@ -401,7 +405,7 @@ agentLabel = agentObj.name;
         }
 
         return list;
-    }, [draft, stores, agents, updateFilters]);
+    }, [draft, stores, agents, updateFilters, t]);
 
     const [search, setSearch] = useState(filters.search ?? '');
     const debouncedSearch = useDebouncedValue(search, 300);
@@ -441,6 +445,7 @@ agentLabel = agentObj.name;
     const columns = useMemo(
         () =>
             createColumns({
+                t,
                 getInitials,
                 onView: setViewOrder,
                 onDelete: setDeleteOrder,
@@ -453,7 +458,7 @@ agentLabel = agentObj.name;
                 isAdmin,
                 agents,
             }),
-        [getInitials, filters, isAdmin, agents],
+        [getInitials, filters, isAdmin, agents, t],
     );
 
     const table = useReactTable({
@@ -472,12 +477,12 @@ agentLabel = agentObj.name;
 
     return (
         <>
-            <Head title="Orders" />
+            <Head title={t('Orders')} />
 
             <div className="space-y-6 p-4">
                 <Heading
-                    title="Orders"
-                    description="Track and manage your customer orders."
+                    title={t('Orders')}
+                    description={t('Track and manage your customer orders.')}
                 />
 
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
@@ -507,12 +512,12 @@ agentLabel = agentObj.name;
                     <DataTableCardToolbar className="gap-4 flex-col sm:flex-row items-stretch sm:items-center">
                         <div className="flex flex-1 flex-wrap items-center gap-2.5">
                             <Label htmlFor="search" className="sr-only">
-                                Search orders
+                                {t('Search orders')}
                             </Label>
                             <Input
                                 id="search"
                                 className="w-full sm:max-w-xs h-9"
-                                placeholder="Search reference, tracking number, or exact phone…"
+                                placeholder={t('Search reference, tracking number, or exact phone…')}
                                 value={search}
                                 onChange={(event) =>
                                     setSearch(event.target.value)
@@ -529,7 +534,7 @@ agentLabel = agentObj.name;
                                 )}
                             >
                                 <Filter className="size-4" />
-                                <span>Filters</span>
+                                <span>{t('Filters')}</span>
                                 {activeFiltersList.length > 0 && (
                                     <Badge className="ml-0.5 size-5 flex items-center justify-center rounded-full p-0 text-[11px] font-semibold">
                                         {activeFiltersList.length}
@@ -549,7 +554,7 @@ agentLabel = agentObj.name;
                                                 type="button"
                                                 variant="ghost"
                                                 size="icon-xs"
-                                                aria-label={`Remove filter: ${item.label}`}
+                                                aria-label={t('Remove filter: :label', { label: item.label })}
                                                 onClick={item.onRemove}
                                                 className="-mr-1 size-4 text-muted-foreground hover:bg-transparent hover:text-foreground"
                                             >
@@ -584,7 +589,7 @@ agentLabel = agentObj.name;
                                             >
                                                 <Users className="size-3.5" />
                                                 <span className="hidden sm:inline">
-                                                    Assign Agent
+                                                    {t('Assign Agent')}
                                                 </span>
                                             </Button>
                                             <Button
@@ -597,7 +602,7 @@ agentLabel = agentObj.name;
                                             >
                                                 <Trash2 className="size-3.5" />
                                                 <span className="hidden sm:inline">
-                                                    Delete
+                                                    {t('Delete')}
                                                 </span>
                                             </Button>
                                         </>
@@ -612,7 +617,7 @@ agentLabel = agentObj.name;
                                     >
                                         <CheckSquare className="size-3.5" />
                                         <span className="hidden sm:inline">
-                                            Status
+                                            {t('Status')}
                                         </span>
                                     </Button>
                                 </div>
@@ -627,15 +632,16 @@ agentLabel = agentObj.name;
                                     exportOrdersToCsv(
                                         orders.data,
                                         selectedOrderIds,
+                                        t,
                                     )
                                 }
-                                title="Export current orders to CSV"
+                                title={t('Export current orders to CSV')}
                             >
                                 <Download className="size-3.5" />
                                 <span className="hidden sm:inline">
                                     {selectedOrderIds.length > 0
-                                        ? 'Export selected'
-                                        : 'Export CSV'}
+                                        ? t('Export selected')
+                                        : t('Export CSV')}
                                 </span>
                             </Button>
                             <Button
@@ -646,7 +652,7 @@ agentLabel = agentObj.name;
                                 disabled={loadingOrders}
                                 // The label is hidden below `sm`, leaving an
                                 // icon-only control with no accessible name.
-                                aria-label="Load orders"
+                                aria-label={t('Load orders')}
                             >
                                 <CloudDownload
                                     className={
@@ -655,8 +661,8 @@ agentLabel = agentObj.name;
                                 />
                                 <span className="hidden sm:inline">
                                     {loadingOrders
-                                        ? 'Loading orders…'
-                                        : 'Load orders'}
+                                        ? t('Loading orders…')
+                                        : t('Load orders')}
                                 </span>
                             </Button>
                             <Button
@@ -666,7 +672,7 @@ agentLabel = agentObj.name;
                             >
                                 <Plus />
                                 <span className="hidden sm:inline">
-                                    Add order
+                                    {t('Add order')}
                                 </span>
                             </Button>
                             <DataTableViewOptions table={table} />
@@ -678,7 +684,7 @@ agentLabel = agentObj.name;
                             <div className="border-y bg-muted/30 p-4">
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 items-end">
                                     <div className="grid gap-1.5">
-                                        <Label className="text-xs font-semibold text-muted-foreground">Confirmation status</Label>
+                                        <Label className="text-xs font-semibold text-muted-foreground">{t('Confirmation status')}</Label>
                                         <Select
                                             value={draft.confirmation_status ?? NONE}
                                             onValueChange={(value) =>
@@ -689,11 +695,11 @@ agentLabel = agentObj.name;
                                             }
                                         >
                                             <SelectTrigger className="w-full h-9">
-                                                <SelectValue placeholder="All statuses" />
+                                                <SelectValue placeholder={t('All statuses')} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value={NONE}>
-                                                    All statuses
+                                                    {t('All statuses')}
                                                 </SelectItem>
                                                 {Object.entries(
                                                     confirmationStatusLabels,
@@ -707,7 +713,7 @@ agentLabel = agentObj.name;
                                     </div>
 
                                     <div className="grid gap-1.5">
-                                        <Label className="text-xs font-semibold text-muted-foreground">Delivery status</Label>
+                                        <Label className="text-xs font-semibold text-muted-foreground">{t('Delivery status')}</Label>
                                         <Select
                                             value={draft.delivery_status ?? NONE}
                                             onValueChange={(value) =>
@@ -718,11 +724,11 @@ agentLabel = agentObj.name;
                                             }
                                         >
                                             <SelectTrigger className="w-full h-9">
-                                                <SelectValue placeholder="All statuses" />
+                                                <SelectValue placeholder={t('All statuses')} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value={NONE}>
-                                                    All statuses
+                                                    {t('All statuses')}
                                                 </SelectItem>
                                                 {Object.entries(
                                                     deliveryStatusLabels,
@@ -758,15 +764,15 @@ agentLabel = agentObj.name;
                                                             : undefined,
                                                 })
                                             }
-                                            placeholder="All stores"
+                                            placeholder={t('All stores')}
                                             searchPlaceholder="Search stores…"
-                                            emptyMessage="No stores found."
+                                            emptyMessage={t('No stores found.')}
                                         />
                                     </div>
 
                                     {isAdmin && (
                                         <div className="grid gap-1.5">
-                                            <Label className="text-xs font-semibold text-muted-foreground">Agent</Label>
+                                            <Label className="text-xs font-semibold text-muted-foreground">{t('Agent')}</Label>
                                             <Select
                                                 value={draft.assigned_agent_id ?? NONE}
                                                 onValueChange={(value) =>
@@ -779,14 +785,14 @@ agentLabel = agentObj.name;
                                                 }
                                             >
                                                 <SelectTrigger className="w-full h-9">
-                                                    <SelectValue placeholder="All agents" />
+                                                    <SelectValue placeholder={t('All agents')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value={NONE}>
-                                                        All agents
+                                                        {t('All agents')}
                                                     </SelectItem>
                                                     <SelectItem value="__unassigned__">
-                                                        Unassigned only
+                                                        {t('Unassigned only')}
                                                     </SelectItem>
                                                     {agents.map((agent) => (
                                                         <SelectItem
@@ -802,25 +808,25 @@ agentLabel = agentObj.name;
                                     )}
 
                                     <div className="grid gap-1.5">
-                                        <Label htmlFor="date_from" className="text-xs font-semibold text-muted-foreground">From</Label>
+                                        <Label htmlFor="date_from" className="text-xs font-semibold text-muted-foreground">{t('From')}</Label>
                                         <DatePicker
                                             value={draft.date_from}
                                             onChange={(value) =>
                                                 updateFilters({ date_from: value })
                                             }
-                                            placeholder="Any date"
+                                            placeholder={t('Any date')}
                                             className="w-full h-9"
                                         />
                                     </div>
 
                                     <div className="grid gap-1.5">
-                                        <Label htmlFor="date_to" className="text-xs font-semibold text-muted-foreground">To</Label>
+                                        <Label htmlFor="date_to" className="text-xs font-semibold text-muted-foreground">{t('To')}</Label>
                                         <DatePicker
                                             value={draft.date_to}
                                             onChange={(value) =>
                                                 updateFilters({ date_to: value })
                                             }
-                                            placeholder="Any date"
+                                            placeholder={t('Any date')}
                                             className="w-full h-9"
                                         />
                                     </div>
@@ -840,7 +846,7 @@ agentLabel = agentObj.name;
                         <DataTable
                             table={table}
                             columnCount={columns.length}
-                            emptyMessage="No orders yet."
+                            emptyMessage={t('No orders yet.')}
                         />
                     </DataTableCardTable>
 

@@ -1,5 +1,4 @@
 import { Form, Head } from '@inertiajs/react';
-import { GoogleLoginButton } from '@/components/google-login-button';
 import InputError from '@/components/input-error';
 import PasskeyVerify from '@/components/passkey-verify';
 import PasswordInput from '@/components/password-input';
@@ -10,6 +9,7 @@ import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 
@@ -19,9 +19,11 @@ type Props = {
 };
 
 export default function Login({ status, canResetPassword }: Props) {
+    const { t } = useTranslation();
+
     return (
         <>
-            <Head title="Log in" />
+            <Head title={t('Log in')} />
 
             {status && (
                 <div
@@ -40,7 +42,7 @@ export default function Login({ status, canResetPassword }: Props) {
                 {({ processing, errors }) => (
                     <FieldGroup>
                         <Field>
-                            <FieldLabel htmlFor="email">Email</FieldLabel>
+                            <FieldLabel htmlFor="email">{t('Email')}</FieldLabel>
                             <Input
                                 id="email"
                                 type="email"
@@ -57,7 +59,7 @@ export default function Login({ status, canResetPassword }: Props) {
                         <Field>
                             <div className="flex items-center justify-between">
                                 <FieldLabel htmlFor="password">
-                                    Password
+                                    {t('Password')}
                                 </FieldLabel>
                                 {canResetPassword && (
                                     <TextLink
@@ -65,7 +67,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                         className="text-sm"
                                         tabIndex={5}
                                     >
-                                        Forgot password?
+                                        {t('Forgot password?')}
                                     </TextLink>
                                 )}
                             </div>
@@ -75,7 +77,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                 required
                                 tabIndex={2}
                                 autoComplete="current-password"
-                                placeholder="Your password"
+                                placeholder={t('Your password')}
                             />
                             <InputError message={errors.password} />
                         </Field>
@@ -86,7 +88,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                 htmlFor="remember"
                                 className="font-normal text-muted-foreground"
                             >
-                                Remember me
+                                {t('Remember me')}
                             </Label>
                         </Field>
 
@@ -108,10 +110,6 @@ export default function Login({ status, canResetPassword }: Props) {
                                 or
                             </span>
                         </div>
-
-                        <Field>
-                            <GoogleLoginButton label="Continue with Google" />
-                        </Field>
 
                         <Field>
                             <PasskeyVerify />

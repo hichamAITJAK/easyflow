@@ -44,6 +44,7 @@ import {
     SelectItem,
     SelectTrigger,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatDateTime } from '@/lib/format';
 import {
     cancellationReasonLabels,
@@ -68,10 +69,12 @@ const UNASSIGNED = '__unassigned__';
  * cost" in a field grid, per PRD's speed-first framing of this screen.
  */
 function TotalAmount({ value }: { value: string }) {
+    const { t } = useTranslation();
+
     return (
         <div className="flex items-baseline justify-between rounded-lg border bg-muted/30 px-4 py-3">
             <span className="text-sm font-medium text-muted-foreground">
-                Total
+                {t('Total')}
             </span>
             <span className="text-2xl font-semibold tabular-nums tracking-tight">
                 {Number(value).toFixed(2)}{' '}
@@ -100,7 +103,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
             onClick={() => {
                 navigator.clipboard.writeText(value);
                 setCopied(true);
-                toast.success(`${label} copied to clipboard!`);
+                toast.success(t(':label copied to clipboard!', { label }));
                 setTimeout(() => setCopied(false), 2000);
             }}
         >
@@ -125,6 +128,8 @@ function AssignedAgent({
     agents: AgentOption[];
     onAssigned?: () => void;
 }) {
+    const { t } = useTranslation();
+
     const [updating, setUpdating] = useState(false);
     const agent = order.assigned_agent;
 
@@ -194,7 +199,7 @@ function AssignedAgent({
                                 {agent.name}
                             </span>
                             <span className="truncate text-xs font-normal text-muted-foreground">
-                                Confirmation agent
+                                {t('Confirmation agent')}
                             </span>
                         </span>
                     </>
@@ -203,17 +208,17 @@ function AssignedAgent({
                         <User className="size-4 shrink-0 text-muted-foreground" />
                         <span className="grid min-w-0 flex-1 gap-0.5">
                             <span className="truncate text-sm font-medium">
-                                Unassigned
+                                {t('Unassigned')}
                             </span>
                             <span className="truncate text-xs font-normal text-muted-foreground">
-                                Click to assign an agent
+                                {t('Click to assign an agent')}
                             </span>
                         </span>
                     </>
                 )}
             </SelectTrigger>
             <SelectContent position="popper" align="start">
-                <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
+                <SelectItem value={UNASSIGNED}>{t('Unassigned')}</SelectItem>
                 {agents.map((option) => (
                     <SelectItem key={option.id} value={String(option.id)}>
                         {option.name}
@@ -258,6 +263,8 @@ export function OrderDetail({
      */
     variant?: 'admin' | 'queue';
 }) {
+    const { t } = useTranslation();
+
     const isQueue = variant === 'queue';
     const digits = order.customer_phone?.replace(/[^\d+]/g, '');
     const whatsappNumber = order.customer_phone
@@ -277,7 +284,7 @@ export function OrderDetail({
                         'animate-in fade-in zoom-in-95 duration-300',
                     )}
                 >
-                    {confirmationStatusLabels[order.confirmation_status]}
+                    {t(confirmationStatusLabels[order.confirmation_status])}
                 </Badge>
                 {order.delivery_status && (
                     <Badge
@@ -288,10 +295,10 @@ export function OrderDetail({
                             'animate-in fade-in zoom-in-95 duration-300',
                         )}
                     >
-                        {deliveryStatusLabels[order.delivery_status]}
+                        {t(deliveryStatusLabels[order.delivery_status])}
                     </Badge>
                 )}
-                {order.is_test && <Badge variant="secondary">Test</Badge>}
+                {order.is_test && <Badge variant="secondary">{t('Test')}</Badge>}
                 {order.is_duplicate_flagged && (
                     <Badge
                         variant="outline"
@@ -301,7 +308,7 @@ export function OrderDetail({
                     </Badge>
                 )}
                 {order.is_blacklist_flagged && (
-                    <Badge variant="destructive">Blacklisted</Badge>
+                    <Badge variant="destructive">{t('Blacklisted')}</Badge>
                 )}
 
                 {/* Where the order came from. Shown in both variants: the
@@ -309,7 +316,7 @@ export function OrderDetail({
                     an agent had no way to tell a WhatsApp lead from a Shopify
                     order — which changes how the call opens. */}
                 <Badge variant="outline" className="font-normal">
-                    {orderSourceLabel(order.source_platform)}
+                    {t(orderSourceLabel(order.source_platform))}
                 </Badge>
 
                 {!isQueue && order.store?.name && (
@@ -321,7 +328,7 @@ export function OrderDetail({
                             reads as a bug. */}
                         {order.store.platform?.name &&
                             order.store.platform.name !==
-                                orderSourceLabel(order.source_platform) && (
+                                t(orderSourceLabel(order.source_platform)) && (
                                 <>
                                     <span aria-hidden>·</span>
                                     <span>{order.store.platform.name}</span>
@@ -334,7 +341,7 @@ export function OrderDetail({
             {order.notes && (
                 <Alert variant="warning">
                     <NotebookText />
-                    <AlertTitle>Notes</AlertTitle>
+                    <AlertTitle>{t('Notes')}</AlertTitle>
                     <AlertDescription className="whitespace-pre-wrap">
                         {order.notes}
                     </AlertDescription>
@@ -358,7 +365,7 @@ export function OrderDetail({
                         <ItemDescription>
                             {[order.customer_address, order.customer_city]
                                 .filter(Boolean)
-                                .join(', ') || 'No address on file'}
+                                .join(', ') || t('No address on file')}
                         </ItemDescription>
                     </ItemContent>
                     {order.customer_phone && (
@@ -377,7 +384,7 @@ export function OrderDetail({
                                     >
                                         <a
                                             href={`tel:${digits}`}
-                                            aria-label="Call customer"
+                                            aria-label={t('Call customer')}
                                         >
                                             <Phone className="text-blue-600 dark:text-blue-400" />
                                         </a>
@@ -392,7 +399,7 @@ export function OrderDetail({
                                                 href={`https://wa.me/${whatsappNumber}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                aria-label="Message on WhatsApp"
+                                                aria-label={t('Message on WhatsApp')}
                                             >
                                                 <WhatsAppIcon className="text-[#25D366]" />
                                             </a>
@@ -402,7 +409,7 @@ export function OrderDetail({
                             )}
                             <CopyButton
                                 value={order.customer_phone}
-                                label="Phone number"
+                                label={t('Phone number')}
                             />
                         </ItemActions>
                     )}
@@ -466,9 +473,9 @@ export function OrderDetail({
                                                 )}
                                             </ItemTitle>
                                             <ItemDescription>
-                                                Qty {item.quantity}
+                                                {t('Qty :quantity', { quantity: item.quantity })}
                                                 {item.sku_snapshot &&
-                                                    ` · SKU ${item.sku_snapshot}`}
+                                                    ` · ${t('SKU')} ${item.sku_snapshot}`}
                                             </ItemDescription>
                                         </ItemContent>
                                         <ItemActions>
@@ -493,7 +500,7 @@ export function OrderDetail({
                         <ItemContent>
                             <ItemTitle>
                                 {order.delivery_account?.courier?.name ??
-                                    'Delivery'}
+                                    t('Delivery')}
                             </ItemTitle>
                             <ItemDescription>
                                 {order.delivery_driver_name}
@@ -511,7 +518,7 @@ export function OrderDetail({
                                 </span>
                                 <CopyButton
                                     value={order.courier_tracking_number}
-                                    label="Tracking number"
+                                    label={t('Tracking number')}
                                 />
                             </ItemActions>
                         )}
@@ -528,10 +535,9 @@ export function OrderDetail({
                             <EmptyMedia variant="icon">
                                 <Truck />
                             </EmptyMedia>
-                            <EmptyTitle>Not shipped yet</EmptyTitle>
+                            <EmptyTitle>{t('Not shipped yet')}</EmptyTitle>
                             <EmptyDescription>
-                                This order is confirmed but has no parcel
-                                with a courier.
+                                {t('This order is confirmed but has no parcel with a courier.')}
                             </EmptyDescription>
                         </EmptyHeader>
                         <EmptyContent>
@@ -541,7 +547,7 @@ export function OrderDetail({
                                 onClick={() => onCreateShipment(order)}
                             >
                                 <Truck className="size-3.5" />
-                                Create shipment
+                                {t('Create shipment')}
                             </Button>
                         </EmptyContent>
                     </Empty>
@@ -553,8 +559,8 @@ export function OrderDetail({
                         <AlertCircle />
                         <AlertTitle>
                             {order.cancellation_reason_code
-                                ? 'Cancellation reason'
-                                : 'Return reason'}
+                                ? t('Cancellation reason')
+                                : t('Return reason')}
                         </AlertTitle>
                         <AlertDescription>
                             {order.cancellation_reason_code
@@ -562,17 +568,17 @@ export function OrderDetail({
                                 order.cancellation_reason_code
                                 ]
                                 : order.return_reason_code &&
-                                returnReasonLabels[order.return_reason_code]}
+                                t(returnReasonLabels[order.return_reason_code])}
                         </AlertDescription>
                     </Alert>
                 )}
 
             {showHistory && (
                 <div>
-                    <div className="mb-2 text-sm font-medium">History</div>
+                    <div className="mb-2 text-sm font-medium">{t('History')}</div>
                     {events.length === 0 ? (
                         <p className="py-4 text-center text-sm text-muted-foreground">
-                            No status changes recorded yet.
+                            {t('No status changes recorded yet.')}
                         </p>
                     ) : (
                         <ol className="space-y-4">
@@ -607,7 +613,7 @@ export function OrderDetail({
                                                 )}
                                             >
                                                 {event.from_status
-                                                    ? `${statusEventLabel(event.from_status)} → ${statusEventLabel(event.to_status)}`
+                                                    ? `${t(statusEventLabel(event.from_status))} → ${t(statusEventLabel(event.to_status))}`
                                                     : statusEventLabel(
                                                           event.to_status,
                                                       )}

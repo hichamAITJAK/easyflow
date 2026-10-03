@@ -17,6 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 import {
     confirmationStatusColors,
     MANUALLY_SELECTABLE_CONFIRMATION_STATUSES,
@@ -46,6 +47,8 @@ export function OrderBulkStatusDialog({
     orderIds: number[];
     onUpdated: () => void;
 }) {
+    const { t } = useTranslation();
+
     const [selectedStatus, setSelectedStatus] = useState<string>('');
     const [processing, setProcessing] = useState(false);
 
@@ -80,7 +83,7 @@ export function OrderBulkStatusDialog({
                     {orderIds.length === 1 ? 'order' : 'orders'}
                 </DialogTitle>
                 <DialogDescription>
-                    Select a new confirmation status to apply across all selected orders simultaneously.
+                    {t('Select a new confirmation status to apply across all selected orders simultaneously.')}
                 </DialogDescription>
 
                 <div className="py-4">
@@ -89,7 +92,7 @@ export function OrderBulkStatusDialog({
                         onValueChange={setSelectedStatus}
                     >
                         <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select target status..." />
+                            <SelectValue placeholder={t('Select target status...')} />
                         </SelectTrigger>
                         <SelectContent>
                             {BULK_STATUS_OPTIONS.map(([value, label]) => (

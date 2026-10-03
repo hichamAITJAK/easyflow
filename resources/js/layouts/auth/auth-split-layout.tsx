@@ -1,41 +1,38 @@
 import { Link, usePage } from '@inertiajs/react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import AppWordmark from '@/components/app-wordmark';
+import { IntegrationsOrbit } from '@/components/integrations-orbit';
+import { useTranslation } from '@/hooks/use-translation';
 import { home } from '@/routes';
 import type { AuthLayoutProps, PageProps } from '@/types';
 
 /*
   THESIS: a working merchant's front door — the form is the tool, the panel
-  is the world it runs: a Moroccan medina at dusk with parcels tracing a
-  delivery route. No stock gradient, no abstract shapes: the product's own
-  geography, painted for the brand.
-  OWN-WORLD: app tokens on the form side; the panel carries the violet dusk
-  + terracotta palette of the generated scene, veiled by a primary-tinted
-  gradient so both halves read as one brand.
-  STORY: recognize the world, complete one focused form, get back to orders.
+  shows what the tool connects: the stores orders come from and the couriers
+  they go out to, drawn as one slowly turning ring around the EasyFlow hub.
+  OWN-WORLD: app tokens on both halves. The panel is a quiet muted field
+  with the product's real integration marks on it — no stock scene, no
+  painted world, nothing that needs a veil to match the form side.
+  STORY: see what EasyFlow sits between, complete one focused form, get
+  back to orders.
   FIRST VIEWPORT: logo top-left, heading + form left column at max-w-sm;
-  full-bleed scene right with one line of copy anchored at its foot.
-  FORM: user-pinned split-with-generated-image (beats seed roll by brief).
-  FINISH: unreviewed and undocumented is unfinished; this build ends with
-  the finish review, the verdict, and DESIGN.md.
+  orbit centred right with one line of copy anchored at its foot.
+  MOTION: one authored moment (the ring turns, spokes pulse inward); still
+  under prefers-reduced-motion.
 */
 export default function AuthSplitLayout({
     children,
     title,
     description,
 }: AuthLayoutProps) {
+    const { t } = useTranslation();
+
     const { name } = usePage<PageProps>().props;
 
     return (
         <div className="grid min-h-svh lg:grid-cols-2">
             <div className="relative flex flex-col px-6 py-8 sm:px-10">
-                <Link
-                    href={home()}
-                    className="flex items-center gap-2.5 self-center font-semibold tracking-tight lg:self-start"
-                >
-                    <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm shadow-primary/25">
-                        <AppLogoIcon className="size-4.5 fill-current" />
-                    </span>
-                    {name}
+                <Link href={home()} className="self-center lg:self-start">
+                    <AppWordmark className="h-7" />
                 </Link>
 
                 <div className="flex flex-1 items-center justify-center py-10">
@@ -43,11 +40,11 @@ export default function AuthSplitLayout({
                         {(title || description) && (
                             <div className="mb-8 space-y-1.5">
                                 <h1 className="text-2xl font-semibold tracking-tight text-balance">
-                                    {title}
+                                    {t(title)}
                                 </h1>
                                 {description && (
                                     <p className="text-sm text-balance text-muted-foreground">
-                                        {description}
+                                        {t(description)}
                                     </p>
                                 )}
                             </div>
@@ -58,24 +55,22 @@ export default function AuthSplitLayout({
                 </div>
             </div>
 
-            <div className="relative hidden overflow-hidden lg:block">
-                <img
-                    src="/assets/images/cod_login_illustration.png"
-                    alt=""
+            <div className="relative hidden overflow-hidden bg-muted/40 lg:flex lg:flex-col lg:items-center lg:justify-center">
+                {/* Fine grid so the panel has a surface rather than a void;
+                    masked out toward the edges so it never competes with
+                    the ring. */}
+                <div
                     aria-hidden
-                    className="absolute inset-0 size-full object-cover"
+                    className="absolute inset-0 [background-image:linear-gradient(to_right,var(--color-border)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-border)_1px,transparent_1px)] [background-size:48px_48px] opacity-40 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_72%)]"
                 />
-                {/* Primary-tinted veil so the scene and the form side read
-                    as one brand, plus a foot gradient that carries the copy. */}
-                <div className="absolute inset-0 bg-primary/15 mix-blend-multiply" />
-                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
 
-                <blockquote className="absolute inset-x-0 bottom-0 p-10 text-white">
-                    <p className="max-w-md text-lg font-medium text-balance">
-                        &ldquo;Every order, every courier, and every store —
-                        in one place.&rdquo;
+                <IntegrationsOrbit className="relative max-w-[32rem] px-10" />
+
+                <blockquote className="absolute inset-x-0 bottom-0 p-10">
+                    <p className="max-w-md text-lg font-medium text-balance text-foreground">
+                        {t('“Every order, every courier, and every store — in one place.”')}
                     </p>
-                    <footer className="mt-3 text-sm text-white/70">
+                    <footer className="mt-3 text-sm text-muted-foreground">
                         {name} — built for cash-on-delivery commerce
                     </footer>
                 </blockquote>

@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import AppLogoIcon from '@/components/app-logo-icon';
+import { useTranslation } from '@/hooks/use-translation';
 import { home } from '@/routes';
 import type { AuthLayoutProps, PageProps } from '@/types';
 
@@ -22,6 +23,8 @@ export default function AuthCardLayout({
     title,
     description,
 }: AuthLayoutProps) {
+    const { t } = useTranslation();
+
     const { name } = usePage<PageProps>().props;
 
     return (
@@ -46,11 +49,11 @@ export default function AuthCardLayout({
                     {(title || description) && (
                         <div className="space-y-1.5 text-center">
                             <h1 className="text-xl font-semibold tracking-tight text-balance">
-                                {title}
+                                {t(title)}
                             </h1>
                             {description && (
                                 <p className="mx-auto max-w-xs text-sm text-balance text-muted-foreground">
-                                    {description}
+                                    {t(description)}
                                 </p>
                             )}
                         </div>

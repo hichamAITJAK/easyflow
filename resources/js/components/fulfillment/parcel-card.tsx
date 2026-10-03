@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 import { deliveryStatusLabels } from '@/lib/order-status';
 import type { FulfillmentAction, FulfillmentOrder } from '@/types/fulfillment';
 
@@ -32,13 +33,15 @@ export function ParcelCard({
     onConfirm: () => void;
     confirming: boolean;
 }) {
+    const { t } = useTranslation();
+
     // The courier-facing handling flags. Surfaced as loud chips because
     // they change how the parcel is physically handled, and this card is
     // the only place the agent sees them.
     const flags = [
-        order.parcel_fragile && { label: 'Fragile', icon: AlertTriangle },
-        order.parcel_open && { label: 'Open on delivery', icon: PackageOpen },
-        order.parcel_replace && { label: 'Replacement', icon: Repeat },
+        order.parcel_fragile && { label: t('Fragile'), icon: AlertTriangle },
+        order.parcel_open && { label: t('Open on delivery'), icon: PackageOpen },
+        order.parcel_replace && { label: t('Replacement'), icon: Repeat },
     ].filter(Boolean) as { label: string; icon: typeof AlertTriangle }[];
 
     return (
@@ -51,13 +54,13 @@ export function ParcelCard({
                         </p>
                         {order.reference && (
                             <p className="mt-0.5 text-xs text-muted-foreground">
-                                Order {order.reference}
+                                {t('Order :reference', { reference: order.reference })}
                             </p>
                         )}
                     </div>
                     {order.delivery_status && (
                         <Badge variant="secondary" className="shrink-0">
-                            {deliveryStatusLabels[order.delivery_status]}
+                            {t(deliveryStatusLabels[order.delivery_status])}
                         </Badge>
                     )}
                 </div>
@@ -109,7 +112,7 @@ export function ParcelCard({
                                     )}
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-sm font-medium">
-                                            {item.name ?? 'Unnamed item'}
+                                            {item.name ?? t('Unnamed item')}
                                         </p>
                                         {item.sku && (
                                             <p className="truncate font-mono text-xs text-muted-foreground">
@@ -140,11 +143,11 @@ export function ParcelCard({
                         disabled={confirming}
                     >
                         {confirming ? <Spinner /> : null}
-                        {ACTION_LABELS[action]}
+                        {t(ACTION_LABELS[action])}
                     </Button>
                 ) : (
                     <p className="rounded-md border border-dashed p-3 text-center text-sm text-muted-foreground">
-                        Nothing to do for this parcel right now.
+                        {t('Nothing to do for this parcel right now.')}
                     </p>
                 )}
             </CardContent>

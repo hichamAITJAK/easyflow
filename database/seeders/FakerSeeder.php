@@ -83,6 +83,11 @@ class FakerSeeder extends Seeder
             return;
         }
 
+        // A developer seeding demo data wants the whole platform usable,
+        // including the super-admin panel — and SuperAdminSeeder is
+        // idempotent, so this is harmless when db:seed already ran.
+        $this->call(SuperAdminSeeder::class);
+
         $business = Business::create([
             'name' => 'EasyFlow',
             'slug' => 'no-sheet-cod',

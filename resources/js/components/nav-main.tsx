@@ -7,10 +7,13 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
+import { useTranslation } from '@/hooks/use-translation';
 import { toUrl } from '@/lib/utils';
 import type { NavItem } from '@/types';
 
 export function NavMain({ items = [] }: { items: NavItem[] }) {
+    const { t } = useTranslation();
+
     const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
 
     /**
@@ -46,20 +49,20 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
 
     return (
         <SidebarGroup className="px-2 py-0">
-            <SidebarGroupLabel>Platform</SidebarGroupLabel>
+            <SidebarGroupLabel>{t('Platform')}</SidebarGroupLabel>
             <SidebarMenu>
                 {items.map((item) => (
                     <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton
                             asChild
                             isActive={isActive(item)}
-                            tooltip={{ children: item.title }}
+                            tooltip={{ children: t(item.title) }}
                             closeMobileOnClick
                             className="data-[active=true]:bg-muted"
                         >
                             <Link href={item.href} prefetch>
                                 {item.icon && <item.icon />}
-                                <span>{item.title}</span>
+                                <span>{t(item.title)}</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

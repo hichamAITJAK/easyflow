@@ -28,7 +28,9 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { useTableFilters } from '@/hooks/use-table-filters';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatCompactNumber, formatNumber } from '@/lib/format';
+import type { Translator } from '@/lib/i18n';
 import { dashboard } from '@/routes';
 import { index as ordersIndex } from '@/routes/orders';
 import { index as parcelsIndex } from '@/routes/parcels';
@@ -92,18 +94,18 @@ function duration(seconds: number): string {
     return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
-function greeting(): string {
+function greeting(t: Translator): string {
     const hour = new Date().getHours();
 
     if (hour < 12) {
-        return 'Good morning';
+        return t('Good morning');
     }
 
     if (hour < 18) {
-        return 'Good afternoon';
+        return t('Good afternoon');
     }
 
-    return 'Good evening';
+    return t('Good evening');
 }
 
 /**
@@ -114,7 +116,7 @@ const ALERT_TEMPLATES: Record<
     string,
     {
         variant: 'warning' | 'info';
-        title: (count: number) => string;
+        title: (count: number, t: Translator) => string;
         description: string;
         actionLabel: string;
         href: () => string;
@@ -123,8 +125,10 @@ const ALERT_TEMPLATES: Record<
 > = {
     unassigned: {
         variant: 'warning',
-        title: (count) =>
-            `${count} order${count === 1 ? '' : 's'} unassigned`,
+        title: (count, t) =>
+            count === 1
+                ? t(':count order unassigned', { count })
+                : t(':count orders unassigned', { count }),
         description:
             'No eligible agent covers these orders — assign them manually before they go stale.',
         actionLabel: 'Assign now',
@@ -134,8 +138,10 @@ const ALERT_TEMPLATES: Record<
     },
     'stale-transit': {
         variant: 'info',
-        title: (count) =>
-            `${count} parcel${count === 1 ? '' : 's'} stuck in transit`,
+        title: (count, t) =>
+            count === 1
+                ? t(':count parcel stuck in transit', { count })
+                : t(':count parcels stuck in transit', { count }),
         description:
             'No courier status change in 5 days. Worth a call to the courier.',
         actionLabel: 'View parcels',
@@ -164,6 +170,8 @@ export default function AdminDashboard({
     performanceTable,
     alerts,
 }: Props) {
+    const { t } = useTranslation();
+
     const { auth } = usePage<PageProps>().props;
     const { draft, updateFilters, resetFilters, hasActiveFilters } =
         useTableFilters(dashboard().url, filters, FILTER_KEYS);
@@ -181,7 +189,7 @@ export default function AdminDashboard({
 
     return (
         <>
-            <Head title="Dashboard" />
+            <Head title={t('Dashboard')} />
 
             <div className="space-y-6 p-4">
                 {/* The period preset in the filter bar names the window, so
@@ -189,10 +197,10 @@ export default function AdminDashboard({
                 <div className="flex flex-wrap items-end justify-between gap-4">
                     <div className="grid gap-1">
                         <h1 className="text-xl font-semibold">
-                            {greeting()}, {firstName}
+                            {greeting(t)}, {firstName}
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            Here's how the business is doing.
+                            {t("Here's how the business is doing.")}
                         </p>
                     </div>
 
@@ -215,10 +223,10 @@ export default function AdminDashboard({
                                 <Alert key={id} variant={template.variant}>
                                     <AlertIcon />
                                     <AlertTitle>
-                                        {template.title(count)}
+                                        {template.title(count, t)}
                                     </AlertTitle>
                                     <AlertDescription>
-                                        {template.description}
+                                        {t(template.description)}
                                     </AlertDescription>
                                     <AlertAction className="flex items-center gap-1">
                                         <Button
@@ -227,14 +235,14 @@ export default function AdminDashboard({
                                             variant="outline"
                                         >
                                             <Link href={template.href()}>
-                                                {template.actionLabel}
+                                                {t(template.actionLabel)}
                                             </Link>
                                         </Button>
                                         {template.dismissible && (
                                             <Button
                                                 size="icon-sm"
                                                 variant="ghost"
-                                                aria-label={`Dismiss "${template.title(count)}"`}
+                                                aria-label={t('Dismiss ":title"', { title: template.title(count, t) })}
                                                 onClick={() =>
                                                     setDismissedAlerts(
                                                         (prev) => [...prev, id],
@@ -256,7 +264,7 @@ export default function AdminDashboard({
                     sitting at couriers. */}
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                     <StatTile
-                        label="Total earned"
+                        label={t('Total earned')}
                         caption="Delivered & collected"
                         value={money(moneyProps.totalEarned)}
                         exactValue={`${formatNumber(moneyProps.totalEarned)} MAD`}
@@ -265,13 +273,13 @@ export default function AdminDashboard({
                     />
 
                     <StatTile
-                        label="Courier money"
+                        label={t('Courier money')}
                         caption={
                             moneyProps.courierVariance === null
-                                ? 'Awaiting remittance'
+                                ? t('Awaiting remittance')
                                 : moneyProps.courierVariance < 0
-                                  ? `${money(moneyProps.courierVariance)} vs received last settlement`
-                                  : 'Settled in full last period'
+                                  ? t(':amount vs received last settlement', { amount: money(moneyProps.courierVariance) })
+                                  : t('Settled in full last period')
                         }
                         captionAccent={
                             moneyProps.courierVariance === null
@@ -286,16 +294,16 @@ export default function AdminDashboard({
                     />
 
                     <StatTile
-                        label="Confirmed pipeline"
-                        caption="Not yet shipped"
+                        label={t('Confirmed pipeline')}
+                        caption={t('Not yet shipped')}
                         value={money(moneyProps.pipeline)}
                         exactValue={`${formatNumber(moneyProps.pipeline)} MAD`}
                         icon={Clock}
                     />
 
                     <StatTile
-                        label="Agent commissions"
-                        caption="Owed this period"
+                        label={t('Agent commissions')}
+                        caption={t('Owed this period')}
                         value={money(moneyProps.commissions)}
                         exactValue={`${formatNumber(moneyProps.commissions)} MAD`}
                         icon={HandCoins}
@@ -318,9 +326,9 @@ export default function AdminDashboard({
                     <Card className="shadow-none">
                         <CardHeader className="flex flex-wrap items-start justify-between gap-2 space-y-0">
                             <div className="grid gap-1.5">
-                                <CardTitle>Best hour to confirm</CardTitle>
+                                <CardTitle>{t('Best hour to confirm')}</CardTitle>
                                 <CardDescription>
-                                    Confirmation rate by call hour
+                                    {t('Confirmation rate by call hour')}
                                 </CardDescription>
                             </div>
                             {confirmSpeed.avgSeconds !== null && (
@@ -329,7 +337,7 @@ export default function AdminDashboard({
                                         {duration(confirmSpeed.avgSeconds)}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
-                                        avg assigned to confirmed
+                                        {t('avg assigned to confirmed')}
                                         {confirmSpeed.delta !== null && (
                                             <>
                                                 {' '}
@@ -359,10 +367,9 @@ export default function AdminDashboard({
                     <Card className="shadow-none">
                         <CardHeader className="flex flex-wrap items-start justify-between gap-2 space-y-0">
                             <div className="grid gap-1.5">
-                                <CardTitle>Rates</CardTitle>
+                                <CardTitle>{t('Rates')}</CardTitle>
                                 <CardDescription>
-                                    Confirmation, delivery and return over the
-                                    selected period
+                                    Confirmation, delivery and return over the selected period
                                 </CardDescription>
                             </div>
                             <AgentFilter
@@ -371,7 +378,7 @@ export default function AdminDashboard({
                                 onChange={(next) =>
                                     updateFilters({ agent_id: next })
                                 }
-                                ariaLabel="Filter rates by agent"
+                                ariaLabel={t('Filter rates by agent')}
                             />
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -384,17 +391,17 @@ export default function AdminDashboard({
                                     [
                                         {
                                             key: 'confirmation',
-                                            label: 'Confirmation',
+                                            label: t('Confirmation'),
                                             color: 'var(--color-chart-1)',
                                         },
                                         {
                                             key: 'delivery',
-                                            label: 'Delivery',
+                                            label: t('Delivery'),
                                             color: 'var(--color-chart-3)',
                                         },
                                         {
                                             key: 'return',
-                                            label: 'Return',
+                                            label: t('Return'),
                                             color: 'var(--color-chart-2)',
                                         },
                                     ] as const
@@ -420,13 +427,13 @@ export default function AdminDashboard({
                                 series={[
                                     {
                                         key: 'confirmation',
-                                        label: 'Confirmation rate',
+                                        label: t('Confirmation rate'),
                                         color: 'var(--color-chart-1)',
                                         data: rates.buckets.confirmation,
                                     },
                                     {
                                         key: 'delivery',
-                                        label: 'Delivery success',
+                                        label: t('Delivery success'),
                                         color: 'var(--color-chart-3)',
                                         data: rates.buckets.delivery,
                                     },
@@ -439,13 +446,13 @@ export default function AdminDashboard({
                                 Rising is bad here, hence the hot accent. */}
                             <div>
                                 <p className="mb-1 text-xs font-medium text-muted-foreground">
-                                    Return rate — lower is better
+                                    {t('Return rate — lower is better')}
                                 </p>
                                 <WeeklyRateLine
                                     series={[
                                         {
                                             key: 'return',
-                                            label: 'Return rate',
+                                            label: t('Return rate'),
                                             color: 'var(--color-chart-2)',
                                             data: rates.buckets.return,
                                         },

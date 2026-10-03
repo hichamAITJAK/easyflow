@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useMemo } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 import {
     ChartRangeSelect,
@@ -17,13 +17,15 @@ import {
     ChartTooltipContent,
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatDate } from '@/lib/format';
 
+import type { Translator } from '@/lib/i18n';
 type Point = { date: string; count: number };
 
-const chartConfig = {
-    count: { label: 'Orders', color: 'var(--color-chart-1)' },
-} satisfies ChartConfig;
+const buildChartConfig = (t: Translator) => ({
+    count: { label: t('Orders'), color: 'var(--color-chart-1)' },
+}) satisfies ChartConfig;
 
 const shortDateLabel = (iso: string) =>
     formatDate(iso + 'T00:00:00', { month: 'short', day: 'numeric' });
@@ -43,6 +45,9 @@ export function OrdersAreaChart({
     data: Point[];
     title?: string;
 }) {
+    const { t } = useTranslation();
+    const chartConfig = useMemo(() => buildChartConfig(t), [t]);
+
     const fillId = `orders-fill-${useId().replace(/:/g, '')}`;
 
     const { take, days, selectProps } = useChartRange(data.length);
@@ -54,7 +59,7 @@ export function OrdersAreaChart({
         <Card className="pt-0 shadow-none">
             <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
                 <div className="grid flex-1 gap-1">
-                    <CardTitle>{title}</CardTitle>
+                    <CardTitle>{t(title)}</CardTitle>
                     <CardDescription>
                         {days} day{days === 1 ? '' : 's'} shown
                     </CardDescription>
@@ -123,7 +128,7 @@ export function OrdersAreaChart({
 
                 {allZero && (
                     <p className="mt-2 text-center text-sm text-muted-foreground">
-                        No orders in this period.
+                        {t('No orders in this period.')}
                     </p>
                 )}
             </CardContent>

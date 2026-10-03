@@ -12,6 +12,8 @@ import {
 import { ChartContainer } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
 import { useInitials } from '@/hooks/use-initials';
+import { useTranslation } from '@/hooks/use-translation';
+import type { Translator } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 export type AgentPerformance = {
@@ -31,13 +33,13 @@ export type PerformanceTargets = {
 
 // Teal + navy rings — the widest-luminance palette pair, so the two rings
 // stay apart in grayscale too.
-const chartConfig = {
+const buildChartConfig = (t: Translator) => ({
     confirmation: {
-        label: 'Confirmation rate',
+        label: t('Confirmation rate'),
         color: 'var(--color-chart-1)',
     },
-    delivery: { label: 'Delivery success', color: 'var(--color-chart-3)' },
-} satisfies ChartConfig;
+    delivery: { label: t('Delivery success'), color: 'var(--color-chart-3)' },
+}) satisfies ChartConfig;
 
 function MetricRow({
     label,
@@ -50,6 +52,7 @@ function MetricRow({
     value: number;
     target: number;
 }) {
+
     const met = value >= target;
     const diff = Math.abs(value - target).toFixed(1);
 
@@ -96,21 +99,15 @@ export function TeamPerformanceRadial({
     agents: AgentPerformance[];
     targets: PerformanceTargets;
 }) {
+    const { t } = useTranslation();
+    const chartConfig = useMemo(() => buildChartConfig(t), [t]);
+
     // Combined shortfall against both targets; most-negative first.
     const needsAttention = useMemo(
         () =>
             [...agents].sort(
                 (a, b) =>
-                    a.confirmationRate -
-                    targets.confirmation +
-                    (a.deliveryRate - targets.delivery) -
-                    (b.confirmationRate -
-                        targets.confirmation +
-                        (b.deliveryRate - targets.delivery)),
-            )[0],
-        [agents, targets],
-    );
-
+                    a.confirmationRate - targets.confirmation + (a.deliveryRate - targets.delivery) - (b.confirmationRate - targets.confirmation + (b.deliveryRate - targets.delivery)), )[0], [agents, targets], );
     const [agentId, setAgentId] = useState<string | undefined>();
     const getInitials = useInitials();
 
@@ -121,12 +118,12 @@ export function TeamPerformanceRadial({
         return (
             <Card className="shadow-none">
                 <CardHeader>
-                    <CardTitle>Team performance</CardTitle>
-                    <CardDescription>Agent vs target</CardDescription>
+                    <CardTitle>{t('Team performance')}</CardTitle>
+                    <CardDescription>{t('Agent vs target')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-                        No confirmation agents yet.
+                        {t('No confirmation agents yet.')}
                     </div>
                 </CardContent>
             </Card>
@@ -151,19 +148,19 @@ export function TeamPerformanceRadial({
         <Card className="shadow-none">
             <CardHeader className="flex flex-wrap items-start justify-between gap-2 space-y-0">
                 <div className="grid gap-1.5">
-                    <CardTitle>Team performance</CardTitle>
+                    <CardTitle>{t('Team performance')}</CardTitle>
                     <CardDescription>
                         {agentId === undefined
-                            ? 'Needs attention first'
-                            : 'Agent vs target'}
+                            ? t('Needs attention first')
+                            : t('Agent vs target')}
                     </CardDescription>
                 </div>
                 <AgentFilter
                     agents={agents}
                     value={agentId}
                     onChange={setAgentId}
-                    allLabel="Needs attention"
-                    ariaLabel="Select agent to review"
+                    allLabel={t('Needs attention')}
+                    ariaLabel={t('Select agent to review')}
                 />
             </CardHeader>
 
@@ -236,13 +233,13 @@ export function TeamPerformanceRadial({
                     </div>
 
                     <MetricRow
-                        label="Confirmation rate"
+                        label={t('Confirmation rate')}
                         colorVar="--color-chart-1"
                         value={selected.confirmationRate}
                         target={targets.confirmation}
                     />
                     <MetricRow
-                        label="Delivery success"
+                        label={t('Delivery success')}
                         colorVar="--color-chart-3"
                         value={selected.deliveryRate}
                         target={targets.delivery}

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Bar, BarChart, XAxis, YAxis } from 'recharts';
 import {
     ChartContainer,
@@ -6,11 +7,13 @@ import {
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
 
+import { useTranslation } from '@/hooks/use-translation';
+import type { Translator } from '@/lib/i18n';
 type Stage = { stage: string; count: number };
 
-const chartConfig = {
-    count: { label: 'Orders', color: 'var(--color-chart-3)' },
-} satisfies ChartConfig;
+const buildChartConfig = (t: Translator) => ({
+    count: { label: t('Orders'), color: 'var(--color-chart-3)' },
+}) satisfies ChartConfig;
 
 /**
  * 5-stage confirmation funnel (new -> assigned -> confirmed -> submitted to
@@ -19,6 +22,9 @@ const chartConfig = {
  * single-hue bar, not a multi-slot categorical chart.
  */
 export function ConfirmationFunnel({ data }: { data: Stage[] }) {
+    const { t } = useTranslation();
+    const chartConfig = useMemo(() => buildChartConfig(t), [t]);
+
     return (
         <ChartContainer config={chartConfig} className="h-64 w-full">
             <BarChart

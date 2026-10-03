@@ -19,6 +19,7 @@ import {
     ChartTooltipContent,
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatDate } from '@/lib/format';
 
 type Point = { date: string; rate: number | null };
@@ -76,6 +77,8 @@ export function RateBarChart({
     /** Extra header controls (e.g. an agent filter) next to the range picker. */
     headerExtra?: ReactNode;
 }) {
+    const { t } = useTranslation();
+
     const chartConfig = Object.fromEntries(
         series.map((entry, index) => [
             entry.key,
@@ -106,8 +109,7 @@ export function RateBarChart({
     });
 
     const hasData = chartData.some((row) =>
-        series.some((entry) => row[entry.key] !== null),
-    );
+        series.some((entry) => row[entry.key] !== null), );
 
     return (
         <Card className="pt-0 shadow-none">
@@ -126,8 +128,8 @@ export function RateBarChart({
                         </span>
                         <span className="text-xs text-muted-foreground">
                             {totalPeriodDays
-                                ? `Last ${totalPeriodDays} days`
-                                : 'Full period'}
+                                ? t('Last :days days', { days: totalPeriodDays })
+                                : t('Full period')}
                         </span>
                     </div>
                 )}
@@ -218,7 +220,7 @@ export function RateBarChart({
                     </ChartContainer>
                 ) : (
                     <div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
-                        No data for this period yet.
+                        {t('No data for this period yet.')}
                     </div>
                 )}
             </CardContent>

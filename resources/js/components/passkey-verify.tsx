@@ -6,6 +6,7 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -28,6 +29,8 @@ export default function PasskeyVerify({
     separatorPosition = 'below',
     separatorClassName,
 }: Props = {}) {
+    const { t } = useTranslation();
+
     const { verify, isLoading, error, isSupported } = usePasskeyVerify({
         ...(routes && {
             routes: {
@@ -83,8 +86,8 @@ export default function PasskeyVerify({
                 >
                     {isLoading ? <Spinner /> : <KeyRound className="h-4 w-4" />}
                     {isLoading
-                        ? (loadingLabel ?? 'Authenticating...')
-                        : (label ?? 'Sign in with a passkey')}
+                        ? (loadingLabel ?? t('Authenticating...'))
+                        : (label ?? t('Sign in with a passkey'))}
                 </Button>
                 {error && (
                     <InputError message={error} className="text-center" />

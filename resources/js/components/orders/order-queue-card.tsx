@@ -1,6 +1,7 @@
 import { AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatRelativeTime } from '@/lib/format';
 import {
     confirmationStatusColors,
@@ -29,9 +30,11 @@ export function OrderQueueCard({
     selected: boolean;
     onSelect: () => void;
 }) {
+    const { t } = useTranslation();
+
     const status = order.delivery_status
-        ? deliveryStatusLabels[order.delivery_status]
-        : confirmationStatusLabels[order.confirmation_status];
+        ? t(deliveryStatusLabels[order.delivery_status])
+        : t(confirmationStatusLabels[order.confirmation_status]);
     const statusColor = order.delivery_status
         ? deliveryStatusColors[order.delivery_status]
         : confirmationStatusColors[order.confirmation_status];
@@ -68,7 +71,7 @@ export function OrderQueueCard({
                     {/* Matches the pane's fallback rather than collapsing to
                         an empty row — an unnamed order still has to be
                         callable from this list. */}
-                    {order.customer_name ?? 'Unnamed customer'}
+                    {order.customer_name ?? t('Unnamed customer')}
                 </span>
                 <span className="shrink-0 text-xs text-muted-foreground">
                     {formatRelativeTime(order.ordered_at ?? order.created_at)}
@@ -76,7 +79,7 @@ export function OrderQueueCard({
             </div>
             <div className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
                 <span className="truncate">
-                    {order.customer_phone ?? 'No phone on file'}
+                    {order.customer_phone ?? t('No phone on file')}
                 </span>
                 {/* Names the flag that actually fired — "Duplicate or
                     blacklist flagged" made a screen-reader user open the
@@ -88,10 +91,10 @@ export function OrderQueueCard({
                         aria-label={
                             order.is_duplicate_flagged &&
                             order.is_blacklist_flagged
-                                ? 'Flagged: duplicate order, blacklisted customer'
+                                ? t('Flagged: duplicate order, blacklisted customer')
                                 : order.is_duplicate_flagged
-                                  ? 'Flagged: duplicate order'
-                                  : 'Flagged: blacklisted customer'
+                                  ? t('Flagged: duplicate order')
+                                  : t('Flagged: blacklisted customer')
                         }
                     />
                 )}

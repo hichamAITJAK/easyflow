@@ -10,6 +10,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { formatDateTime } from '@/lib/format';
+import type { Translator } from '@/lib/i18n';
 import { deliveryStatusColors, deliveryStatusLabels } from '@/lib/order-status';
 import type { Order, ParcelFilters } from '@/types';
 
@@ -18,10 +19,12 @@ function copyTrackingNumber(trackingNumber: string) {
 }
 
 export function createColumns({
+    t,
     filters,
     routeUrl,
     onViewHistory,
 }: {
+    t: Translator;
     filters: ParcelFilters;
     routeUrl: string;
     onViewHistory: (order: Order) => void;
@@ -40,7 +43,7 @@ export function createColumns({
     return [
         {
             accessorKey: 'reference',
-            header: 'Reference',
+            header: t('Reference'),
             cell: ({ row }) => (
                 <span className="font-medium">
                     {row.original.reference ?? '—'}
@@ -49,7 +52,7 @@ export function createColumns({
         },
         {
             accessorKey: 'courier_tracking_number',
-            header: 'Tracking number',
+            header: t('Tracking number'),
             cell: ({ row }) => {
                 const trackingNumber = row.original.courier_tracking_number;
 
@@ -83,7 +86,7 @@ export function createColumns({
             // column keeps grouping parcels by carrier rather than by whatever
             // a business happened to name its account.
             accessorFn: (order) => order.delivery_account?.courier?.name ?? '—',
-            header: 'Courier',
+            header: t('Courier'),
             cell: ({ row }) => {
                 const account = row.original.delivery_account;
 
@@ -112,7 +115,7 @@ export function createColumns({
         },
         {
             id: 'customer',
-            header: 'Customer',
+            header: t('Customer'),
             cell: ({ row }) => {
                 const order = row.original;
 
@@ -130,12 +133,12 @@ export function createColumns({
         },
         {
             accessorKey: 'customer_city',
-            header: 'City',
+            header: t('City'),
             cell: ({ row }) => row.original.customer_city ?? '—',
         },
         {
             accessorKey: 'delivery_status',
-            header: () => sortHeader('Delivery status', 'delivery_status'),
+            header: () => sortHeader(t('Delivery status'), 'delivery_status'),
             cell: ({ row }) => {
                 const status = row.original.delivery_status;
 
@@ -144,7 +147,7 @@ export function createColumns({
                         variant="outline"
                         className={deliveryStatusColors[status]}
                     >
-                        {deliveryStatusLabels[status]}
+                        {t(deliveryStatusLabels[status])}
                     </Badge>
                 ) : (
                     '—'
@@ -153,17 +156,17 @@ export function createColumns({
         },
         {
             accessorKey: 'delivery_cost',
-            header: () => sortHeader('Delivery cost', 'delivery_cost'),
+            header: () => sortHeader(t('Delivery cost'), 'delivery_cost'),
             cell: ({ row }) => row.original.delivery_cost ?? '—',
         },
         {
             accessorKey: 'total_amount',
-            header: () => sortHeader('Total', 'total_amount'),
+            header: () => sortHeader(t('Total'), 'total_amount'),
             cell: ({ row }) => row.original.total_amount,
         },
         {
             accessorKey: 'shipped_at',
-            header: () => sortHeader('Shipped', 'shipped_at'),
+            header: () => sortHeader(t('Shipped'), 'shipped_at'),
             cell: ({ row }) =>
                 row.original.shipped_at
                     ? formatDateTime(row.original.shipped_at)
@@ -171,7 +174,7 @@ export function createColumns({
         },
         {
             accessorKey: 'ready_for_pickup_at',
-            header: 'Scanned out',
+            header: t('Scanned out'),
             // The two scan columns are the warehouse's own record of a parcel
             // physically leaving and physically coming back — the outcomes
             // that matter most on this table. A filled chip lets a scan be
@@ -198,7 +201,7 @@ export function createColumns({
         },
         {
             accessorKey: 'return_received_at',
-            header: 'Scanned returned',
+            header: t('Scanned returned'),
             cell: ({ row }) =>
                 row.original.return_received_at ? (
                     <Badge
@@ -224,7 +227,7 @@ export function createColumns({
                         <Button
                             variant="ghost"
                             size="icon"
-                            aria-label="Parcel actions"
+                            aria-label={t('Parcel actions')}
                         >
                             <MoreHorizontal />
                         </Button>
@@ -234,7 +237,7 @@ export function createColumns({
                             onSelect={() => onViewHistory(row.original)}
                         >
                             <History />
-                            View history
+                            {t('View history')}
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

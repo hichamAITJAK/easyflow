@@ -18,6 +18,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatCompactNumber, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -61,6 +62,8 @@ function RateCell({
     value: number | null;
     target: number;
 }) {
+    const { t } = useTranslation();
+
     if (value === null) {
         return (
             <TableCell className="text-right text-muted-foreground">
@@ -86,9 +89,9 @@ function RateCell({
                     <ArrowDownRight aria-hidden className="size-3.5" />
                 )}
                 {value.toFixed(0)}%
-                {above && <span className="sr-only">, above target</span>}
+                {above && <span className="sr-only">{t(', above target')}</span>}
                 {wellBelow && (
-                    <span className="sr-only">, well below target</span>
+                    <span className="sr-only">{t(', well below target')}</span>
                 )}
             </span>
         </TableCell>
@@ -116,7 +119,7 @@ function SortableHead({
                 size="sm"
                 className="-mr-2.5 gap-1"
                 onClick={() => onSort(column)}
-                aria-label={`Sort by ${label}${active ? (sort.desc ? ', descending' : ', ascending') : ''}`}
+                aria-label={t('Sort by :label', { label }) + (active ? (sort.desc ? t(', descending') : t(', ascending')) : '')}
             >
                 {label}
                 <SortIcon
@@ -143,6 +146,8 @@ function RowsTable({
     /** Couriers tab: confirmation happens before the courier exists. */
     hideConfirmation?: boolean;
 }) {
+    const { t } = useTranslation();
+
     const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({
         key: 'orders',
         desc: true,
@@ -174,37 +179,37 @@ function RowsTable({
         <Table>
             <TableHeader>
                 <TableRow>
-                    <TableHead>Name</TableHead>
+                    <TableHead>{t('Name')}</TableHead>
                     <SortableHead
-                        label="Orders"
+                        label={t('Orders')}
                         column="orders"
                         sort={sort}
                         onSort={toggleSort}
                     />
                     {!hideConfirmation && (
                         <SortableHead
-                            label="Confirmation"
+                            label={t('Confirmation')}
                             column="confirmationRate"
                             sort={sort}
                             onSort={toggleSort}
                         />
                     )}
                     <SortableHead
-                        label="Delivery"
+                        label={t('Delivery')}
                         column="deliveryRate"
                         sort={sort}
                         onSort={toggleSort}
                     />
                     {hideConfirmation && (
                         <SortableHead
-                            label="Avg days"
+                            label={t('Avg days')}
                             column="avgDeliveryDays"
                             sort={sort}
                             onSort={toggleSort}
                         />
                     )}
                     <SortableHead
-                        label="Earned"
+                        label={t('Earned')}
                         column="earned"
                         sort={sort}
                         onSort={toggleSort}
@@ -256,7 +261,7 @@ function RowsTable({
                         <TableCell className="text-right font-medium tabular-nums">
                             {formatCompactNumber(row.earned)} MAD
                             <span className="sr-only">
-                                , exactly {formatNumber(row.earned)} MAD
+                                {t(', exactly :amount MAD', { amount: formatNumber(row.earned) })}
                             </span>
                         </TableCell>
                     </TableRow>
@@ -286,17 +291,20 @@ export function PerformanceTable({
     /** Business rate targets — tinting is relative to these. */
     targets: RateTargets;
 }) {
+    const { t } = useTranslation();
+
     return (
         <Card className="shadow-none">
             <CardHeader className="flex items-start justify-between gap-2 space-y-0">
                 <div className="grid gap-1.5">
                     <CardTitle>
-                        Store, product &amp; courier performance
+                        {t('Store, product & courier performance')}
                     </CardTitle>
                     <CardDescription>
-                        Ranked by orders this period — rates read against
-                        the {targets.confirmation}% confirmation and{' '}
-                        {targets.delivery}% delivery targets
+                        {t('Ranked by orders this period — rates read against the :confirmation% confirmation and :delivery% delivery targets', {
+                            confirmation: targets.confirmation,
+                            delivery: targets.delivery,
+                        })}
                     </CardDescription>
                 </div>
             </CardHeader>
@@ -304,29 +312,29 @@ export function PerformanceTable({
             <CardContent>
                 <Tabs defaultValue="stores">
                     <TabsList>
-                        <TabsTrigger value="stores">Stores</TabsTrigger>
-                        <TabsTrigger value="products">Products</TabsTrigger>
-                        <TabsTrigger value="couriers">Couriers</TabsTrigger>
+                        <TabsTrigger value="stores">{t('Stores')}</TabsTrigger>
+                        <TabsTrigger value="products">{t('Products')}</TabsTrigger>
+                        <TabsTrigger value="couriers">{t('Couriers')}</TabsTrigger>
                     </TabsList>
                     <TabsContent value="stores">
                         <RowsTable
                             rows={stores}
                             targets={targets}
-                            emptyMessage="No store activity in this period yet."
+                            emptyMessage={t('No store activity in this period yet.')}
                         />
                     </TabsContent>
                     <TabsContent value="products">
                         <RowsTable
                             rows={products}
                             targets={targets}
-                            emptyMessage="No product activity in this period yet."
+                            emptyMessage={t('No product activity in this period yet.')}
                         />
                     </TabsContent>
                     <TabsContent value="couriers">
                         <RowsTable
                             rows={couriers}
                             targets={targets}
-                            emptyMessage="No shipments in this period yet."
+                            emptyMessage={t('No shipments in this period yet.')}
                             hideConfirmation
                         />
                     </TabsContent>

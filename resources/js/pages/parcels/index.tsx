@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useTableFilters } from '@/hooks/use-table-filters';
+import { useTranslation } from '@/hooks/use-translation';
 import { deliveryStatusLabels } from '@/lib/order-status';
 import { dashboard } from '@/routes';
 import { index as parcelsIndex } from '@/routes/parcels';
@@ -57,6 +58,8 @@ export default function ParcelsIndex({
     filters: ParcelFilters;
     deliveryAccounts: DeliveryAccount[];
 }) {
+    const { t } = useTranslation();
+
     const { draft, updateFilters, resetFilters, hasActiveFilters } =
         useTableFilters(parcelsIndex().url, filters, FILTER_KEYS);
 
@@ -95,11 +98,12 @@ export default function ParcelsIndex({
     const columns = useMemo(
         () =>
             createColumns({
+                t,
                 filters,
                 routeUrl: parcelsIndex().url,
                 onViewHistory: openHistory,
             }),
-        [filters],
+        [filters, t],
     );
 
     const table = useReactTable({
@@ -110,18 +114,18 @@ export default function ParcelsIndex({
 
     return (
         <>
-            <Head title="Parcels" />
+            <Head title={t('Parcels')} />
 
             <div className="space-y-6 p-4">
                 <Heading
-                    title="Parcels"
-                    description="Track parcels registered with your delivery couriers."
+                    title={t('Parcels')}
+                    description={t('Track parcels registered with your delivery couriers.')}
                 />
 
                 <DataTableCard>
                     <DataTableCardFilters>
                         <div className="grid gap-1.5">
-                            <Label>Delivery status</Label>
+                            <Label>{t('Delivery status')}</Label>
                             <Select
                                 value={draft.delivery_status ?? NONE}
                                 onValueChange={(value) =>
@@ -132,11 +136,11 @@ export default function ParcelsIndex({
                                 }
                             >
                                 <SelectTrigger className="w-48">
-                                    <SelectValue placeholder="All statuses" />
+                                    <SelectValue placeholder={t('All statuses')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value={NONE}>
-                                        All statuses
+                                        {t('All statuses')}
                                     </SelectItem>
                                     {Object.entries(deliveryStatusLabels).map(
                                         ([value, label]) => (
@@ -154,7 +158,7 @@ export default function ParcelsIndex({
 
                         <div className="grid gap-1.5">
                             <Label htmlFor="parcels-courier-filter">
-                                Courier
+                                {t('Courier')}
                             </Label>
                             <MultiCombobox
                                 id="parcels-courier-filter"
@@ -174,14 +178,14 @@ export default function ParcelsIndex({
                                                 : undefined,
                                     })
                                 }
-                                placeholder="All couriers"
+                                placeholder={t('All couriers')}
                                 searchPlaceholder="Search couriers…"
-                                emptyMessage="No couriers found."
+                                emptyMessage={t('No couriers found.')}
                             />
                         </div>
 
                         <div className="grid gap-1.5">
-                            <Label htmlFor="date_from">From</Label>
+                            <Label htmlFor="date_from">{t('From')}</Label>
                             <Input
                                 id="date_from"
                                 type="date"
@@ -197,7 +201,7 @@ export default function ParcelsIndex({
                         </div>
 
                         <div className="grid gap-1.5">
-                            <Label htmlFor="date_to">To</Label>
+                            <Label htmlFor="date_to">{t('To')}</Label>
                             <Input
                                 id="date_to"
                                 type="date"
@@ -222,7 +226,7 @@ export default function ParcelsIndex({
                     <DataTableCardToolbar>
                         <Input
                             className="max-w-sm"
-                            placeholder="Search by reference, tracking number, or exact phone…"
+                            placeholder={t('Search by reference, tracking number, or exact phone…')}
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
                         />
@@ -233,7 +237,7 @@ export default function ParcelsIndex({
                         <DataTable
                             table={table}
                             columnCount={columns.length}
-                            emptyMessage="No parcels yet. Parcels appear here once an order is shipped with a courier."
+                            emptyMessage={t('No parcels yet. Parcels appear here once an order is shipped with a courier.')}
                         />
                     </DataTableCardTable>
 

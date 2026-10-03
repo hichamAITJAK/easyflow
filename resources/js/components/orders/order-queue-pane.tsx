@@ -50,6 +50,7 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from '@/hooks/use-translation';
 import {
     confirmationStatusDotColors,
     confirmationStatusLabels,
@@ -111,6 +112,8 @@ export function OrderQueuePane({
     /** Not shown once the order has shipped — same edit lock the backend enforces. */
     onEdit?: (order: Order) => void;
 }) {
+    const { t } = useTranslation();
+
     const [pendingStatus, setPendingStatus] =
         useState<OrderConfirmationStatus | null>(null);
     const [cancelOpen, setCancelOpen] = useState(false);
@@ -161,7 +164,7 @@ export function OrderQueuePane({
                     // time this lands, so "Confirmed" alone left them unsure
                     // which order it applied to.
                     toast.success(
-                        `${confirmationStatusLabels[value]} · ${order.customer_name ?? order.reference ?? `#${order.id}`}`,
+                        `${t(confirmationStatusLabels[value])} · ${order.customer_name ?? order.reference ?? `#${order.id}`}`,
                     );
                 },
                 onError: () => {
@@ -170,12 +173,11 @@ export function OrderQueuePane({
                     // whether the write half-landed and is left re-pressing
                     // an audited transition.
                     toast.error(
-                        `Couldn't save "${confirmationStatusLabels[value]}"`,
+                        `Couldn't save "${t(confirmationStatusLabels[value])}"`,
                         {
-                            description:
-                                'The order is unchanged. Check your connection and try again.',
+                            description: t('The order is unchanged. Check your connection and try again.'),
                             action: {
-                                label: 'Retry',
+                                label: t('Retry'),
                                 onClick: () => applyStatus(value, order.id),
                             },
                         },
@@ -300,17 +302,17 @@ export function OrderQueuePane({
     if (error && !order) {
         return (
             <Empty className="h-full border-none" role="alert">
-                <EmptyTitle>Couldn't load this order</EmptyTitle>
+                <EmptyTitle>{t("Couldn't load this order")}</EmptyTitle>
                 {/* The button below already says "try again", so this says
                     the one thing it can't: the order itself is fine, only
                     the fetch failed. */}
                 <EmptyDescription>
-                    The order wasn't changed — this is a connection problem.
+                    {t("The order wasn't changed — this is a connection problem.")}
                 </EmptyDescription>
                 {onRetry && (
                     <Button type="button" variant="outline" onClick={onRetry}>
                         <RotateCcw className="size-4" />
-                        Retry
+                        {t('Retry')}
                     </Button>
                 )}
             </Empty>
@@ -323,7 +325,7 @@ export function OrderQueuePane({
                 className="space-y-4 p-6"
                 role="status"
                 aria-busy="true"
-                aria-label="Loading order"
+                aria-label={t('Loading order')}
             >
                 <Skeleton className="h-8 w-48" />
                 <Skeleton className="h-32 w-full" />
@@ -346,7 +348,7 @@ export function OrderQueuePane({
                         variant="ghost"
                         size="icon"
                         className="size-11 shrink-0 lg:size-8"
-                        aria-label="Back to queue"
+                        aria-label={t('Back to queue')}
                         onClick={onBack}
                     >
                         <ChevronLeft />
@@ -357,7 +359,7 @@ export function OrderQueuePane({
                         className="truncate text-lg leading-tight font-semibold"
                         title={order.customer_name ?? undefined}
                     >
-                        {order.customer_name ?? 'Unnamed customer'}
+                        {order.customer_name ?? t('Unnamed customer')}
                     </h2>
                     <div className="mt-0.5 flex items-center gap-2">
                         {order.customer_phone ? (
@@ -366,7 +368,7 @@ export function OrderQueuePane({
                             </span>
                         ) : (
                             <span className="text-sm text-muted-foreground">
-                                No phone on file
+                                {t('No phone on file')}
                             </span>
                         )}
                         <span aria-hidden className="text-muted-foreground/40">
@@ -412,7 +414,7 @@ export function OrderQueuePane({
                         >
                             <a ref={callLinkRef} href={`tel:${digits}`}>
                                 <Phone className="size-4" />
-                                Call
+                                {t('Call')}
                                 <Kbd aria-hidden>C</Kbd>
                             </a>
                         </Button>
@@ -428,7 +430,7 @@ export function OrderQueuePane({
                             disabled
                         >
                             <Phone className="size-4" />
-                            Call
+                            {t('Call')}
                         </Button>
                     )}
                     {/* Carries WhatsApp's own green and mark: this opens an
@@ -452,7 +454,7 @@ export function OrderQueuePane({
                                 rel="noopener noreferrer"
                             >
                                 <WhatsAppIcon />
-                                WhatsApp
+                                {t('WhatsApp')}
                             </a>
                         </Button>
                     ) : (
@@ -463,7 +465,7 @@ export function OrderQueuePane({
                             disabled
                         >
                             <WhatsAppIcon />
-                            WhatsApp
+                            {t('WhatsApp')}
                         </Button>
                     )}
                 </div>
@@ -488,12 +490,12 @@ export function OrderQueuePane({
                                 type="button"
                                 className="h-12 flex-1 text-base"
                                 disabled={updating}
-                                aria-label={`Change status. Currently ${confirmationStatusLabels[order.confirmation_status]}`}
+                                aria-label={t('Change status. Currently :status', { status: t(confirmationStatusLabels[order.confirmation_status]) })}
                             >
                                 {updating && pendingStatus ? (
                                     <>
                                         <Loader2 className="animate-spin" />
-                                        Saving{' '}
+                                        {t('Saving')}{' '}
                                         {
                                             confirmationStatusLabels[
                                                 pendingStatus
@@ -620,7 +622,7 @@ export function OrderQueuePane({
                                 type="button"
                                 variant="outline"
                                 className="h-12 w-12 shrink-0"
-                                aria-label="More actions"
+                                aria-label={t('More actions')}
                             >
                                 <MoreHorizontal />
                             </Button>
@@ -631,7 +633,7 @@ export function OrderQueuePane({
                                     onSelect={() => onEdit(order)}
                                 >
                                     <Pencil />
-                                    Edit order
+                                    {t('Edit order')}
                                 </DropdownMenuItem>
                             )}
 
@@ -643,8 +645,7 @@ export function OrderQueuePane({
                                                 order.customer_phone ?? '',
                                             )
                                             .then(() =>
-                                                toast.success(
-                                                    'Phone number copied',
+                                                toast.success(t('Phone number copied'),
                                                 ),
                                             )
                                             .catch(() =>
@@ -655,7 +656,7 @@ export function OrderQueuePane({
                                     }}
                                 >
                                     <Copy />
-                                    Copy phone number
+                                    {t('Copy phone number')}
                                 </DropdownMenuItem>
                             )}
 
@@ -675,7 +676,7 @@ export function OrderQueuePane({
                                 onSelect={() => setCancelOpen(true)}
                             >
                                 <Ban />
-                                Cancel order
+                                {t('Cancel order')}
                             </DropdownMenuItem>
 
                             {/* Blocks this phone number from ordering again
@@ -690,7 +691,7 @@ export function OrderQueuePane({
                                     onSelect={() => setBlacklistOpen(true)}
                                 >
                                     <ShieldBan />
-                                    Blacklist client
+                                    {t('Blacklist client')}
                                 </DropdownMenuItem>
                             )}
                         </DropdownMenuContent>
@@ -703,8 +704,8 @@ export function OrderQueuePane({
                 no confirmation at all on the most consequential action here. */}
             <output aria-live="polite" className="sr-only">
                 {updating && pendingStatus
-                    ? `Saving ${confirmationStatusLabels[pendingStatus]}…`
-                    : `${confirmationStatusLabels[order.confirmation_status]} — ${order.customer_name ?? 'this order'}`}
+                    ? t('Saving :status…', { status: t(confirmationStatusLabels[pendingStatus]) })
+                    : `${t(confirmationStatusLabels[order.confirmation_status])} — ${order.customer_name ?? t('this order')}`}
             </output>
 
             {/* Refreshes on close: blacklisting flags the order it was
@@ -745,15 +746,15 @@ export function OrderQueuePane({
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>
-                            Mark this as a fake order?
+                            {t('Mark this as a fake order?')}
                         </AlertDialogTitle>
                         {/* Leads with the consequence that reaches beyond
                             this order — the count against the customer is
                             the part the agent can't undo from here. */}
                         <AlertDialogDescription>
-                            This counts against{' '}
+                            {t('This counts against')}{' '}
                             <span className="font-medium text-foreground">
-                                {order.customer_name ?? 'this customer'}
+                                {order.customer_name ?? t('this customer')}
                             </span>
                             {order.customer_phone
                                 ? ` (${order.customer_phone})`
@@ -764,7 +765,7 @@ export function OrderQueuePane({
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Don't mark it</AlertDialogCancel>
+                        <AlertDialogCancel>{t("Don't mark it")}</AlertDialogCancel>
                         <AlertDialogAction
                             className={buttonVariants({
                                 variant: 'destructive',

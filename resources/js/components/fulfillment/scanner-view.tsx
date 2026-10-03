@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useBarcodeScanner } from '@/hooks/use-barcode-scanner';
 
+import { useTranslation } from '@/hooks/use-translation';
 /**
  * The camera viewfinder plus its manual fallback.
  *
@@ -21,6 +22,8 @@ export function ScannerView({
     onScan: (value: string) => void;
     busy: boolean;
 }) {
+    const { t } = useTranslation();
+
     const { status, error, start, stop, elementId } = useBarcodeScanner(onScan);
     const [manual, setManual] = useState('');
     const manualRef = useRef<HTMLInputElement>(null);
@@ -66,8 +69,8 @@ export function ScannerView({
                         )}
                         <p className="text-sm text-muted-foreground">
                             {cameraBroken
-                                ? 'Camera unavailable'
-                                : 'Point the camera at the parcel label'}
+                                ? t('Camera unavailable')
+                                : t('Point the camera at the parcel label')}
                         </p>
                     </div>
                 )}
@@ -98,12 +101,12 @@ export function ScannerView({
                 {live ? (
                     <>
                         <CameraOff className="size-5" />
-                        Stop camera
+                        {t('Stop camera')}
                     </>
                 ) : (
                     <>
                         <Camera className="size-5" />
-                        Scan with camera
+                        {t('Scan with camera')}
                     </>
                 )}
             </Button>
@@ -115,7 +118,7 @@ export function ScannerView({
                         ref={manualRef}
                         value={manual}
                         onChange={(event) => setManual(event.target.value)}
-                        placeholder="Or type / scan tracking number"
+                        placeholder={t('Or type / scan tracking number')}
                         className="h-12 pl-9"
                         autoComplete="off"
                         autoCapitalize="characters"
@@ -131,7 +134,7 @@ export function ScannerView({
                     className="h-12"
                     disabled={busy || manual.trim() === ''}
                 >
-                    Look up
+                    {t('Look up')}
                 </Button>
             </form>
         </div>

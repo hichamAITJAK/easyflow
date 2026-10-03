@@ -26,6 +26,7 @@ import {
     InputGroupAddon,
     InputGroupInput,
 } from '@/components/ui/input-group';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
@@ -59,20 +60,22 @@ export default function Profile({
     status?: string;
     avatarOptions?: string[];
 }) {
+    const { t } = useTranslation();
+
     const { auth } = usePage<PageProps>().props;
     const user = auth.user;
 
     return (
         <>
-            <Head title="Profile settings" />
+            <Head title={t('Profile settings')} />
 
-            <h1 className="sr-only">Profile settings</h1>
+            <h1 className="sr-only">{t('Profile settings')}</h1>
 
             <div className="space-y-6">
                 <Heading
                     variant="small"
-                    title="Profile"
-                    description="Update your photo, name, email, and phone number"
+                    title={t('Profile')}
+                    description={t('Update your photo, name, email, and phone number')}
                 />
 
                 <Form
@@ -100,7 +103,7 @@ export default function Profile({
                                             className="gap-1.5"
                                         >
                                             <ShieldCheck className="size-3 text-muted-foreground" />
-                                            {roleLabel[user.role]}
+                                            {t(roleLabel[user.role])}
                                         </Badge>
                                         <Badge
                                             variant="outline"
@@ -118,9 +121,7 @@ export default function Profile({
                                         </Badge>
                                     </div>
                                     <FieldDescription className="-mt-2 max-w-sm">
-                                        Role and account status are managed by
-                                        your Owner or Manager from the team
-                                        page.
+                                        {t('Role and account status are managed by your Owner or Manager from the team page.')}
                                     </FieldDescription>
                                 </CardContent>
                             </Card>
@@ -129,17 +130,17 @@ export default function Profile({
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <IdCard className="size-5 text-muted-foreground" />
-                                        Identity
+                                        {t('Identity')}
                                     </CardTitle>
                                     <CardDescription>
-                                        Your name and contact details.
+                                        {t('Your name and contact details.')}
                                     </CardDescription>
                                 </CardHeader>
 
                                 <CardContent className="space-y-6">
                                     <Field>
                                         <FieldLabel htmlFor="name">
-                                            Name{' '}
+                                            {t('Name')}{' '}
                                             <span className="text-destructive">
                                                 *
                                             </span>
@@ -151,7 +152,7 @@ export default function Profile({
                                                 name="name"
                                                 required
                                                 autoComplete="name"
-                                                placeholder="Full name"
+                                                placeholder={t('Full name')}
                                             />
                                         </InputGroup>
                                         <FieldError
@@ -164,7 +165,7 @@ export default function Profile({
                                     <div className="grid gap-6 sm:grid-cols-2">
                                         <Field>
                                             <FieldLabel htmlFor="email">
-                                                Email address{' '}
+                                                {t('Email address')}{' '}
                                                 <span className="text-destructive">
                                                     *
                                                 </span>
@@ -180,7 +181,7 @@ export default function Profile({
                                                     name="email"
                                                     required
                                                     autoComplete="username"
-                                                    placeholder="Email address"
+                                                    placeholder={t('Email address')}
                                                 />
                                             </InputGroup>
                                             <FieldError
@@ -192,7 +193,7 @@ export default function Profile({
 
                                         <Field>
                                             <FieldLabel htmlFor="phone">
-                                                Phone number
+                                                {t('Phone number')}
                                             </FieldLabel>
                                             <InputGroup>
                                                 <InputGroupAddon aria-hidden="true">
@@ -221,8 +222,7 @@ export default function Profile({
                                             <Alert variant="warning">
                                                 <UserIcon />
                                                 <AlertTitle>
-                                                    Your email address is
-                                                    unverified
+                                                    {t('Your email address is unverified')}
                                                 </AlertTitle>
                                                 <AlertDescription>
                                                     <p>
@@ -239,10 +239,7 @@ export default function Profile({
                                                     {status ===
                                                         'verification-link-sent' && (
                                                         <p className="font-medium text-emerald-600 dark:text-emerald-400">
-                                                            A new verification
-                                                            link has been sent
-                                                            to your email
-                                                            address.
+                                                            {t('A new verification link has been sent to your email address.')}
                                                         </p>
                                                     )}
                                                 </AlertDescription>
@@ -270,7 +267,7 @@ export default function Profile({
 Profile.layout = {
     breadcrumbs: [
         {
-            title: 'Profile settings',
+            title: t('Profile settings'),
             href: edit(),
         },
     ],

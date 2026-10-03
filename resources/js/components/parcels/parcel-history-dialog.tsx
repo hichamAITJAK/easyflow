@@ -8,6 +8,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatDateTime } from '@/lib/format';
 import { statusEventLabel } from '@/lib/order-status';
 import { cn } from '@/lib/utils';
@@ -32,6 +33,8 @@ export function ParcelHistoryDialog({
     onOpenChange: (open: boolean) => void;
     order: Order | null;
 }) {
+    const { t } = useTranslation();
+
     // Keyed by order id rather than reset on close: clearing it in the
     // effect's early-return branch would be a synchronous setState inside an
     // effect, which cascades an extra render on every open/close. Reading
@@ -103,11 +106,11 @@ export function ParcelHistoryDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Parcel history</DialogTitle>
+                    <DialogTitle>{t('Parcel history')}</DialogTitle>
                     <DialogDescription>
                         {order?.reference
-                            ? `Every recorded status change for ${order.reference}.`
-                            : 'Every recorded status change for this parcel.'}
+                            ? t('Every recorded status change for :reference.', { reference: order.reference })
+                            : t('Every recorded status change for this parcel.')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -116,7 +119,7 @@ export function ParcelHistoryDialog({
                     flash "No status changes recorded yet." */}
                 {loading || (!current && !failed) ? (
                     <div className="space-y-4" aria-live="polite">
-                        <span className="sr-only">Loading parcel history…</span>
+                        <span className="sr-only">{t('Loading parcel history…')}</span>
                         {[0, 1, 2].map((key) => (
                             <div key={key} className="flex gap-3">
                                 <Skeleton className="mt-1 size-2.5 shrink-0 rounded-full" />
@@ -129,12 +132,11 @@ export function ParcelHistoryDialog({
                     </div>
                 ) : failed ? (
                     <p className="py-6 text-center text-sm text-muted-foreground">
-                        Couldn’t load this parcel’s history. Close and try
-                        again.
+                        {t('Couldn’t load this parcel’s history. Close and try again.')}
                     </p>
                 ) : events.length === 0 ? (
                     <p className="py-6 text-center text-sm text-muted-foreground">
-                        No status changes recorded yet.
+                        {t('No status changes recorded yet.')}
                     </p>
                 ) : (
                     <ol className="space-y-4">
@@ -166,7 +168,7 @@ export function ParcelHistoryDialog({
                                             )}
                                         >
                                             {event.from_status
-                                                ? `${statusEventLabel(event.from_status)} → ${statusEventLabel(event.to_status)}`
+                                                ? `${t(statusEventLabel(event.from_status))} → ${t(statusEventLabel(event.to_status))}`
                                                 : statusEventLabel(
                                                       event.to_status,
                                                   )}
@@ -180,7 +182,7 @@ export function ParcelHistoryDialog({
                                                 have no human actor. */}
                                             {event.changed_by_user
                                                 ? ` · ${event.changed_by_user.name}`
-                                                : ' · Courier'}
+                                                : t('· Courier')}
                                         </span>
                                         {event.note && (
                                             <p className="mt-1 text-sm text-muted-foreground">

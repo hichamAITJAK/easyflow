@@ -17,6 +17,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { useTranslation } from '@/hooks/use-translation';
 import { edit } from '@/routes/security';
 
 type Props = {
@@ -25,20 +26,22 @@ type Props = {
     ManageTwoFactorProps;
 
 export default function Security(props: Props) {
+    const { t } = useTranslation();
+
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
 
     return (
         <>
-            <Head title="Security settings" />
+            <Head title={t('Security settings')} />
 
-            <h1 className="sr-only">Security settings</h1>
+            <h1 className="sr-only">{t('Security settings')}</h1>
 
             <div className="space-y-6">
                 <Heading
                     variant="small"
-                    title="Update password"
-                    description="Ensure your account is using a long, random password to stay secure"
+                    title={t('Update password')}
+                    description={t('Ensure your account is using a long, random password to stay secure')}
                 />
 
                 <Form
@@ -69,11 +72,10 @@ export default function Security(props: Props) {
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <ShieldCheck className="size-5 text-muted-foreground" />
-                                        Password
+                                        {t('Password')}
                                     </CardTitle>
                                     <CardDescription>
-                                        Choose a long, random password to keep
-                                        your account secure.
+                                        {t('Choose a long, random password to keep your account secure.')}
                                     </CardDescription>
                                 </CardHeader>
 
@@ -81,7 +83,7 @@ export default function Security(props: Props) {
                                     <Field>
                                         <FieldLabel htmlFor="current_password">
                                             <Lock className="size-3.5 text-muted-foreground" />
-                                            Current password
+                                            {t('Current password')}
                                         </FieldLabel>
 
                                         <PasswordInput
@@ -90,7 +92,7 @@ export default function Security(props: Props) {
                                             name="current_password"
                                             className="h-10 w-full"
                                             autoComplete="current-password"
-                                            placeholder="Current password"
+                                            placeholder={t('Current password')}
                                         />
 
                                         <FieldError
@@ -107,7 +109,7 @@ export default function Security(props: Props) {
                                         <Field>
                                             <FieldLabel htmlFor="password">
                                                 <KeyRound className="size-3.5 text-muted-foreground" />
-                                                New password
+                                                {t('New password')}
                                             </FieldLabel>
 
                                             <PasswordInput
@@ -116,7 +118,7 @@ export default function Security(props: Props) {
                                                 name="password"
                                                 className="h-10 w-full"
                                                 autoComplete="new-password"
-                                                placeholder="New password"
+                                                placeholder={t('New password')}
                                                 passwordrules={
                                                     props.passwordRules
                                                 }
@@ -134,7 +136,7 @@ export default function Security(props: Props) {
 
                                         <Field>
                                             <FieldLabel htmlFor="password_confirmation">
-                                                Confirm password
+                                                {t('Confirm password')}
                                             </FieldLabel>
 
                                             <PasswordInput
@@ -142,7 +144,7 @@ export default function Security(props: Props) {
                                                 name="password_confirmation"
                                                 className="h-10 w-full"
                                                 autoComplete="new-password"
-                                                placeholder="Confirm password"
+                                                placeholder={t('Confirm password')}
                                                 passwordrules={
                                                     props.passwordRules
                                                 }

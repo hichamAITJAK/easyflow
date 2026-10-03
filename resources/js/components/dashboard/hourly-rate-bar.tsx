@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useMemo } from 'react';
 import {
     Area,
     AreaChart,
@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
 
+import { useTranslation } from '@/hooks/use-translation';
+import type { Translator } from '@/lib/i18n';
 export type HourlyRatePoint = {
     /** Hour of day, 0-23. */
     hour: number;
@@ -22,9 +24,9 @@ export type HourlyRatePoint = {
     attempts: number;
 };
 
-const chartConfig = {
-    rate: { label: 'Confirmation rate', color: 'var(--color-chart-1)' },
-} satisfies ChartConfig;
+const buildChartConfig = (t: Translator) => ({
+    rate: { label: t('Confirmation rate'), color: 'var(--color-chart-1)' },
+}) satisfies ChartConfig;
 
 const hourLabel = (hour: number) => `${String(hour).padStart(2, '0')}h`;
 
@@ -42,13 +44,16 @@ const MIN_ATTEMPTS_FOR_BEST = 10;
  * nothing failed), and low-attempt hours can't claim the peak.
  */
 export function HourlyRateBar({ data }: { data: HourlyRatePoint[] }) {
+    const { t } = useTranslation();
+    const chartConfig = useMemo(() => buildChartConfig(t), [t]);
+
     const fillId = `hourly-fill-${useId().replace(/:/g, '')}`;
     const active = data.filter((point) => point.rate !== null);
 
     if (active.length === 0) {
         return (
             <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-                No confirmation activity in this period yet.
+                {t('No confirmation activity in this period yet.')}
             </div>
         );
     }
@@ -60,8 +65,7 @@ export function HourlyRateBar({ data }: { data: HourlyRatePoint[] }) {
     );
 
     const best = (eligible.length > 0 ? eligible : active).reduce(
-        (top, point) => ((point.rate ?? 0) > (top.rate ?? 0) ? point : top),
-    );
+        (top, point) => ((point.rate ?? 0) > (top.rate ?? 0) ? point : top), );
 
     return (
         <ChartContainer config={chartConfig} className="h-64 w-full">
@@ -109,7 +113,7 @@ export function HourlyRateBar({ data }: { data: HourlyRatePoint[] }) {
                             formatter={(value) => (
                                 <>
                                     <span className="text-muted-foreground">
-                                        Confirmation rate
+                                        {t('Confirmation rate')}
                                     </span>
                                     <span className="ml-auto font-mono font-medium tabular-nums">
                                         {value}%
@@ -158,8 +162,7 @@ export function HourlyRateBarWithNote({ data }: { data: HourlyRatePoint[] }) {
         <>
             <HourlyRateBar data={data} />
             <p className="mt-2 text-xs text-muted-foreground">
-                Best hour considers hours with at least{' '}
-                {MIN_ATTEMPTS_FOR_BEST} calls.
+                {t('Best hour considers hours with at least :count calls.', { count: MIN_ATTEMPTS_FOR_BEST })}
             </p>
         </>
     );
