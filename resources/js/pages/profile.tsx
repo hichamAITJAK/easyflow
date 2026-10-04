@@ -19,6 +19,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { useInitials } from '@/hooks/use-initials';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { dashboard } from '@/routes';
 import type { Auth, UserRole, UserStatus } from '@/types';
@@ -45,7 +46,8 @@ const roleLabels: Record<UserRole, string> = {
 
 const statusClasses: Record<UserStatus, string> = {
     active: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300',
-    invited: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+    invited:
+        'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
     disabled: 'bg-muted text-muted-foreground',
 };
 
@@ -85,6 +87,8 @@ export default function Profile({
     stats: ProfileStats;
     ordersByDay: { date: string; count: number }[];
 }) {
+    const { t } = useTranslation();
+
     const { auth } = usePage<PageProps>().props;
     const user = auth.user;
     const getInitials = useInitials();
@@ -99,12 +103,12 @@ export default function Profile({
 
     return (
         <>
-            <Head title="Profile" />
+            <Head title={t('Profile')} />
 
             <div className="space-y-6 p-4">
                 <Heading
-                    title="Profile"
-                    description="Your account and performance overview."
+                    title={t('Profile')}
+                    description={t('Your account and performance overview.')}
                 />
 
                 <Card>
@@ -125,7 +129,7 @@ export default function Profile({
                                     {user.name}
                                 </h2>
                                 <Badge variant="outline">
-                                    {roleLabels[user.role]}
+                                    {t(roleLabels[user.role])}
                                 </Badge>
                                 <Badge
                                     variant="outline"
@@ -146,24 +150,26 @@ export default function Profile({
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Calendar className="size-4" />
-                                    Member since {memberSince}
+                                    {t('Member since :memberSince', {
+                                        memberSince,
+                                    })}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {user.two_factor_enabled ? (
                                         <>
                                             <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-500" />
-                                            Two-factor enabled
+                                            {t('Two-factor enabled')}
                                         </>
                                     ) : (
                                         <>
                                             <ShieldOff className="size-4" />
-                                            Two-factor disabled
+                                            {t('Two-factor disabled')}
                                         </>
                                     )}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <BadgeCheck className="size-4" />
-                                    Last login: {lastLogin}
+                                    {t('Last login: :lastLogin', { lastLogin })}
                                 </div>
                             </div>
                         </div>
@@ -172,33 +178,33 @@ export default function Profile({
 
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
                     <StatTile
-                        label="Orders assigned"
+                        label={t('Orders assigned')}
                         value={String(stats.orders_assigned)}
                     />
                     <StatTile
-                        label="Confirmed"
+                        label={t('Confirmed')}
                         value={String(stats.orders_confirmed)}
                     />
                     <StatTile
-                        label="Delivered"
+                        label={t('Delivered')}
                         value={String(stats.orders_delivered)}
                         accent="success"
                     />
                     <StatTile
-                        label="Cancelled"
+                        label={t('Cancelled')}
                         value={String(stats.orders_cancelled)}
                         accent="destructive"
                     />
                     <StatTile
-                        label="Confirmation rate"
+                        label={t('Confirmation rate')}
                         value={`${stats.confirmation_rate}%`}
                     />
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Orders assigned</CardTitle>
-                        <CardDescription>Last 14 days</CardDescription>
+                        <CardTitle>{t('Orders assigned')}</CardTitle>
+                        <CardDescription>{t('Last 14 days')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <OrdersBarChart data={ordersByDay} />

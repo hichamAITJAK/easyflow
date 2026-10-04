@@ -14,6 +14,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatCalendarDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { InvoiceStatus } from '@/types';
@@ -41,7 +42,13 @@ export type InvoicePreview = {
 const money = (value: string | number): string =>
     `${Number(value).toFixed(2)} MAD`;
 
-function MetaBlock({ label, children }: { label: string; children: React.ReactNode }) {
+function MetaBlock({
+    label,
+    children,
+}: {
+    label: string;
+    children: React.ReactNode;
+}) {
     return (
         <div>
             <div className="text-[10px] font-medium tracking-[0.09em] text-muted-foreground uppercase">
@@ -69,6 +76,8 @@ export function InvoicePreviewDialog({
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
+    const { t } = useTranslation();
+
     /**
      * Keyed by invoice id rather than reset in the effect body: reopening on
      * a different invoice must never show the previous one's figures while
@@ -121,21 +130,24 @@ export function InvoicePreviewDialog({
             <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
                 <DialogHeader className="sr-only">
                     <DialogTitle>
-                        Invoice {preview?.invoice_number ?? ''}
+                        {t('Invoice :invoice_number', {
+                            invoice_number: preview?.invoice_number ?? '',
+                        })}
                     </DialogTitle>
                     <DialogDescription>
-                        Preview of the invoice before downloading it.
+                        {t('Preview of the invoice before downloading it.')}
                     </DialogDescription>
                 </DialogHeader>
 
                 {failed ? (
                     <div className="py-10 text-center">
                         <p className="text-sm font-medium">
-                            This invoice could not be loaded
+                            {t('This invoice could not be loaded')}
                         </p>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Close this and try again — the download still
-                            works.
+                            {t(
+                                'Close this and try again — the download still works.',
+                            )}
                         </p>
                     </div>
                 ) : !preview ? (
@@ -152,7 +164,7 @@ export function InvoicePreviewDialog({
                             </span>
                             <div className="text-right">
                                 <div className="text-lg font-semibold tracking-tight">
-                                    Invoice
+                                    {t('Invoice')}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
                                     {preview.invoice_number}
@@ -161,8 +173,8 @@ export function InvoicePreviewDialog({
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                            <MetaBlock label="Billed to">
-                                {preview.agent?.name ?? 'Unassigned agent'}
+                            <MetaBlock label={t('Billed to')}>
+                                {preview.agent?.name ?? t('Unassigned agent')}
                                 {preview.agent?.email && (
                                     <div className="text-muted-foreground">
                                         {preview.agent.email}
@@ -170,13 +182,13 @@ export function InvoicePreviewDialog({
                                 )}
                             </MetaBlock>
 
-                            <MetaBlock label="Period">
+                            <MetaBlock label={t('Period')}>
                                 {preview.period_start && preview.period_end
                                     ? `${formatCalendarDate(preview.period_start)} – ${formatCalendarDate(preview.period_end)}`
                                     : '—'}
                             </MetaBlock>
 
-                            <MetaBlock label="Status">
+                            <MetaBlock label={t('Status')}>
                                 <span
                                     className={cn(
                                         'font-semibold tracking-wide uppercase',
@@ -195,16 +207,16 @@ export function InvoicePreviewDialog({
                                 <thead>
                                     <tr className="border-b">
                                         <th className="pb-2 text-left text-[10px] font-medium tracking-[0.09em] text-muted-foreground uppercase">
-                                            Order
+                                            {t('Order')}
                                         </th>
                                         <th className="pb-2 text-left text-[10px] font-medium tracking-[0.09em] text-muted-foreground uppercase">
-                                            Date
+                                            {t('Date')}
                                         </th>
                                         <th className="pb-2 text-left text-[10px] font-medium tracking-[0.09em] text-muted-foreground uppercase">
-                                            Type
+                                            {t('Type')}
                                         </th>
                                         <th className="pb-2 text-right text-[10px] font-medium tracking-[0.09em] text-muted-foreground uppercase">
-                                            Amount
+                                            {t('Amount')}
                                         </th>
                                     </tr>
                                 </thead>
@@ -215,8 +227,9 @@ export function InvoicePreviewDialog({
                                                 colSpan={4}
                                                 className="py-4 text-muted-foreground"
                                             >
-                                                No line items are attached to
-                                                this invoice.
+                                                {t(
+                                                    'No line items are attached to this invoice.',
+                                                )}
                                             </td>
                                         </tr>
                                     ) : (
@@ -269,7 +282,9 @@ export function InvoicePreviewDialog({
                             </table>
 
                             <div className="mt-3 flex items-baseline justify-between border-t-2 border-foreground pt-2">
-                                <span className="font-semibold">Total</span>
+                                <span className="font-semibold">
+                                    {t('Total')}
+                                </span>
                                 <span className="text-base font-semibold tabular-nums">
                                     {money(preview.total_amount)}
                                 </span>
@@ -292,7 +307,7 @@ export function InvoicePreviewDialog({
                         <Button asChild variant="outline">
                             <a href={downloadInvoice(invoiceId).url}>
                                 <Download />
-                                Download PDF
+                                {t('Download PDF')}
                             </a>
                         </Button>
                     )}

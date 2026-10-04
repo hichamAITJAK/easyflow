@@ -15,10 +15,9 @@ import {
     Store,
     Truck,
     Users,
-    Wallet
-    
+    Wallet,
 } from 'lucide-react';
-import type {LucideIcon} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import {
     Area,
@@ -38,14 +37,19 @@ import {
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+} from '@/components/ui/card';
 import {
     ChartContainer,
     ChartTooltip,
-    ChartTooltipContent
-    
+    ChartTooltipContent,
 } from '@/components/ui/chart';
-import type {ChartConfig} from '@/components/ui/chart';
+import type { ChartConfig } from '@/components/ui/chart';
 import {
     Empty,
     EmptyDescription,
@@ -55,7 +59,11 @@ import {
 } from '@/components/ui/empty';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { MultiCombobox } from '@/components/ui/multi-combobox';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import {
     Select,
     SelectContent,
@@ -72,11 +80,15 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import reports, { index as reportsIndex } from '@/routes/reports';
 import { reportDefinitions } from './report-data';
-import type { ReportChart as ReportChartType, ReportColumn } from './report-data';
+import type {
+    ReportChart as ReportChartType,
+    ReportColumn,
+} from './report-data';
 
 type ReportPagination = {
     current_page: number;
@@ -119,7 +131,13 @@ const reportIcons: Record<string, LucideIcon> = {
     'geography-time': MapPinned,
 };
 
-export default function ReportsIndex({ filterOptions }: { filterOptions: FilterOptions }) {
+export default function ReportsIndex({
+    filterOptions,
+}: {
+    filterOptions: FilterOptions;
+}) {
+    const { t } = useTranslation();
+
     const [reportId, setReportId] = useState<string>('');
     const [city, setCity] = useState<string>('all');
     // Store and courier are multi-select: an empty list means "all",
@@ -148,7 +166,10 @@ export default function ReportsIndex({ filterOptions }: { filterOptions: FilterO
         setError(null);
     }
 
-    async function fetchReport(targetReport: NonNullable<typeof report>, targetPage: number) {
+    async function fetchReport(
+        targetReport: NonNullable<typeof report>,
+        targetPage: number,
+    ) {
         setLoading(true);
         setError(null);
 
@@ -168,8 +189,12 @@ export default function ReportsIndex({ filterOptions }: { filterOptions: FilterO
                     store: store.length > 0 ? store : undefined,
                     courier: courier.length > 0 ? courier : undefined,
                     agent: agent !== 'all' ? agent : undefined,
-                    confirmation_status: confirmationStatus !== 'all' ? confirmationStatus : undefined,
-                    delivery_status: deliveryStatus !== 'all' ? deliveryStatus : undefined,
+                    confirmation_status:
+                        confirmationStatus !== 'all'
+                            ? confirmationStatus
+                            : undefined,
+                    delivery_status:
+                        deliveryStatus !== 'all' ? deliveryStatus : undefined,
                     reason: reason !== 'all' ? reason : undefined,
                     include_test_orders: includeTestOrders,
                     page: targetPage,
@@ -191,8 +216,8 @@ export default function ReportsIndex({ filterOptions }: { filterOptions: FilterO
 
     function handleGenerate() {
         if (!report) {
-return;
-}
+            return;
+        }
 
         setResult(null);
         void fetchReport(report, 1);
@@ -200,8 +225,8 @@ return;
 
     function handlePageChange(nextPage: number) {
         if (!report) {
-return;
-}
+            return;
+        }
 
         void fetchReport(report, nextPage);
     }
@@ -209,14 +234,19 @@ return;
     const dateLabel =
         dateRange.from && dateRange.to
             ? `${dateRange.from.toLocaleDateString()} – ${dateRange.to.toLocaleDateString()}`
-            : 'All time';
+            : t('All time');
 
     return (
         <>
-            <Head title="Reports" />
+            <Head title={t('Reports')} />
 
             <div className="space-y-6 p-4">
-                <Heading title="Reports" description="Pick a report, configure filters, then generate." />
+                <Heading
+                    title={t('Reports')}
+                    description={t(
+                        'Pick a report, configure filters, then generate.',
+                    )}
+                />
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {reportDefinitions.map((r) => {
@@ -231,26 +261,32 @@ return;
                                 onClick={() => handleSelectReport(r.id)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
-handleSelectReport(r.id);
-}
+                                        handleSelectReport(r.id);
+                                    }
                                 }}
                                 className={cn(
                                     'cursor-pointer py-0 transition-colors hover:border-primary/50',
-                                    active && 'border-primary ring-1 ring-primary',
+                                    active &&
+                                        'border-primary ring-1 ring-primary',
                                 )}
                             >
                                 <CardContent className="flex items-center gap-3 py-4">
                                     <div
                                         className={cn(
                                             'flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground',
-                                            active && 'bg-primary text-primary-foreground',
+                                            active &&
+                                                'bg-primary text-primary-foreground',
                                         )}
                                     >
                                         <Icon className="size-4.5" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="truncate text-sm font-medium">{r.title}</p>
-                                        <p className="truncate text-xs text-muted-foreground">{r.description}</p>
+                                        <p className="truncate text-sm font-medium">
+                                            {r.title}
+                                        </p>
+                                        <p className="truncate text-xs text-muted-foreground">
+                                            {r.description}
+                                        </p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -262,19 +298,34 @@ handleSelectReport(r.id);
                     <Card>
                         <CardContent className="flex flex-wrap items-end gap-3">
                             <Field className="w-56">
-                                <FieldLabel>Date range</FieldLabel>
+                                <FieldLabel>{t('Date range')}</FieldLabel>
                                 <Popover>
                                     <PopoverTrigger asChild>
-                                        <Button variant="outline" className="w-full justify-start font-normal">
+                                        <Button
+                                            variant="outline"
+                                            className="w-full justify-start font-normal"
+                                        >
                                             <CalendarIcon />
                                             {dateLabel}
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
+                                    <PopoverContent
+                                        className="w-auto p-0"
+                                        align="start"
+                                    >
                                         <Calendar
                                             mode="range"
-                                            selected={dateRange.from ? { from: dateRange.from, to: dateRange.to } : undefined}
-                                            onSelect={(range) => setDateRange(range ?? {})}
+                                            selected={
+                                                dateRange.from
+                                                    ? {
+                                                          from: dateRange.from,
+                                                          to: dateRange.to,
+                                                      }
+                                                    : undefined
+                                            }
+                                            onSelect={(range) =>
+                                                setDateRange(range ?? {})
+                                            }
                                             numberOfMonths={2}
                                         />
                                     </PopoverContent>
@@ -283,13 +334,23 @@ handleSelectReport(r.id);
 
                             {report.id === 'geography-time' && (
                                 <Field className="w-44">
-                                    <FieldLabel htmlFor="city-select">City</FieldLabel>
-                                    <Select value={city} onValueChange={setCity}>
-                                        <SelectTrigger id="city-select" className="w-full">
+                                    <FieldLabel htmlFor="city-select">
+                                        {t('City')}
+                                    </FieldLabel>
+                                    <Select
+                                        value={city}
+                                        onValueChange={setCity}
+                                    >
+                                        <SelectTrigger
+                                            id="city-select"
+                                            className="w-full"
+                                        >
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">All cities</SelectItem>
+                                            <SelectItem value="all">
+                                                {t('All cities')}
+                                            </SelectItem>
                                             {filterOptions.cities.map((c) => (
                                                 <SelectItem key={c} value={c}>
                                                     {c}
@@ -301,7 +362,9 @@ handleSelectReport(r.id);
                             )}
 
                             <Field className="w-52">
-                                <FieldLabel htmlFor="store-select">Store</FieldLabel>
+                                <FieldLabel htmlFor="store-select">
+                                    {t('Store')}
+                                </FieldLabel>
                                 <MultiCombobox
                                     id="store-select"
                                     className="w-full"
@@ -311,15 +374,22 @@ handleSelectReport(r.id);
                                     }))}
                                     value={store}
                                     onChange={setStore}
-                                    placeholder="All stores"
+                                    placeholder={t('All stores')}
                                     searchPlaceholder="Search stores…"
                                     emptyMessage="No stores found."
                                 />
                             </Field>
 
-                            {['courier-performance', 'settlements', 'agent-performance', 'geography-time'].includes(report.id) && (
+                            {[
+                                'courier-performance',
+                                'settlements',
+                                'agent-performance',
+                                'geography-time',
+                            ].includes(report.id) && (
                                 <Field className="w-52">
-                                    <FieldLabel htmlFor="courier-select">Courier</FieldLabel>
+                                    <FieldLabel htmlFor="courier-select">
+                                        {t('Courier')}
+                                    </FieldLabel>
                                     <MultiCombobox
                                         id="courier-select"
                                         className="w-full"
@@ -328,22 +398,36 @@ handleSelectReport(r.id);
                                         )}
                                         value={courier}
                                         onChange={setCourier}
-                                        placeholder="All couriers"
+                                        placeholder={t('All couriers')}
                                         searchPlaceholder="Search couriers…"
                                         emptyMessage="No couriers found."
                                     />
                                 </Field>
                             )}
 
-                            {['agent-performance', 'commissions', 'cancellations'].includes(report.id) && (
+                            {[
+                                'agent-performance',
+                                'commissions',
+                                'cancellations',
+                            ].includes(report.id) && (
                                 <Field className="w-44">
-                                    <FieldLabel htmlFor="agent-select">Agent</FieldLabel>
-                                    <Select value={agent} onValueChange={setAgent}>
-                                        <SelectTrigger id="agent-select" className="w-full">
+                                    <FieldLabel htmlFor="agent-select">
+                                        {t('Agent')}
+                                    </FieldLabel>
+                                    <Select
+                                        value={agent}
+                                        onValueChange={setAgent}
+                                    >
+                                        <SelectTrigger
+                                            id="agent-select"
+                                            className="w-full"
+                                        >
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">All agents</SelectItem>
+                                            <SelectItem value="all">
+                                                {t('All agents')}
+                                            </SelectItem>
                                             {filterOptions.agents.map((a) => (
                                                 <SelectItem key={a} value={a}>
                                                     {a}
@@ -354,39 +438,79 @@ handleSelectReport(r.id);
                                 </Field>
                             )}
 
-                            {['revenue', 'agent-performance', 'cancellations', 'stranded-orders'].includes(report.id) && (
+                            {[
+                                'revenue',
+                                'agent-performance',
+                                'cancellations',
+                                'stranded-orders',
+                            ].includes(report.id) && (
                                 <Field className="w-44">
-                                    <FieldLabel htmlFor="confirmation-status-select">Confirmation status</FieldLabel>
-                                    <Select value={confirmationStatus} onValueChange={setConfirmationStatus}>
-                                        <SelectTrigger id="confirmation-status-select" className="w-full">
+                                    <FieldLabel htmlFor="confirmation-status-select">
+                                        {t('Confirmation status')}
+                                    </FieldLabel>
+                                    <Select
+                                        value={confirmationStatus}
+                                        onValueChange={setConfirmationStatus}
+                                    >
+                                        <SelectTrigger
+                                            id="confirmation-status-select"
+                                            className="w-full"
+                                        >
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">Any status</SelectItem>
-                                            {filterOptions.confirmationStatuses.map((s) => (
-                                                <SelectItem key={s} value={s}>
-                                                    {s}
-                                                </SelectItem>
-                                            ))}
+                                            <SelectItem value="all">
+                                                {t('Any status')}
+                                            </SelectItem>
+                                            {filterOptions.confirmationStatuses.map(
+                                                (s) => (
+                                                    <SelectItem
+                                                        key={s}
+                                                        value={s}
+                                                    >
+                                                        {s}
+                                                    </SelectItem>
+                                                ),
+                                            )}
                                         </SelectContent>
                                     </Select>
                                 </Field>
                             )}
 
-                            {['courier-performance', 'cancellations', 'stranded-orders', 'geography-time'].includes(report.id) && (
+                            {[
+                                'courier-performance',
+                                'cancellations',
+                                'stranded-orders',
+                                'geography-time',
+                            ].includes(report.id) && (
                                 <Field className="w-44">
-                                    <FieldLabel htmlFor="delivery-status-select">Delivery status</FieldLabel>
-                                    <Select value={deliveryStatus} onValueChange={setDeliveryStatus}>
-                                        <SelectTrigger id="delivery-status-select" className="w-full">
+                                    <FieldLabel htmlFor="delivery-status-select">
+                                        {t('Delivery status')}
+                                    </FieldLabel>
+                                    <Select
+                                        value={deliveryStatus}
+                                        onValueChange={setDeliveryStatus}
+                                    >
+                                        <SelectTrigger
+                                            id="delivery-status-select"
+                                            className="w-full"
+                                        >
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">Any status</SelectItem>
-                                            {filterOptions.deliveryStatuses.map((s) => (
-                                                <SelectItem key={s} value={s}>
-                                                    {s}
-                                                </SelectItem>
-                                            ))}
+                                            <SelectItem value="all">
+                                                {t('Any status')}
+                                            </SelectItem>
+                                            {filterOptions.deliveryStatuses.map(
+                                                (s) => (
+                                                    <SelectItem
+                                                        key={s}
+                                                        value={s}
+                                                    >
+                                                        {s}
+                                                    </SelectItem>
+                                                ),
+                                            )}
                                         </SelectContent>
                                     </Select>
                                 </Field>
@@ -394,32 +518,62 @@ handleSelectReport(r.id);
 
                             {report.id === 'cancellations' && (
                                 <Field className="w-48">
-                                    <FieldLabel htmlFor="reason-select">Reason</FieldLabel>
-                                    <Select value={reason} onValueChange={setReason}>
-                                        <SelectTrigger id="reason-select" className="w-full">
+                                    <FieldLabel htmlFor="reason-select">
+                                        {t('Reason')}
+                                    </FieldLabel>
+                                    <Select
+                                        value={reason}
+                                        onValueChange={setReason}
+                                    >
+                                        <SelectTrigger
+                                            id="reason-select"
+                                            className="w-full"
+                                        >
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">Any reason</SelectItem>
-                                            {filterOptions.cancellationReasons.map((r) => (
-                                                <SelectItem key={r} value={r}>
-                                                    {r}
-                                                </SelectItem>
-                                            ))}
+                                            <SelectItem value="all">
+                                                {t('Any reason')}
+                                            </SelectItem>
+                                            {filterOptions.cancellationReasons.map(
+                                                (r) => (
+                                                    <SelectItem
+                                                        key={r}
+                                                        value={r}
+                                                    >
+                                                        {r}
+                                                    </SelectItem>
+                                                ),
+                                            )}
                                         </SelectContent>
                                     </Select>
                                 </Field>
                             )}
 
                             <Field className="flex-row items-center gap-2">
-                                <Switch id="include-test-orders" checked={includeTestOrders} onCheckedChange={setIncludeTestOrders} />
-                                <FieldLabel htmlFor="include-test-orders" className="font-normal">
-                                    Include test orders
+                                <Switch
+                                    id="include-test-orders"
+                                    checked={includeTestOrders}
+                                    onCheckedChange={setIncludeTestOrders}
+                                />
+                                <FieldLabel
+                                    htmlFor="include-test-orders"
+                                    className="font-normal"
+                                >
+                                    {t('Include test orders')}
                                 </FieldLabel>
                             </Field>
 
-                            <Button onClick={handleGenerate} disabled={loading} className="ml-auto">
-                                {loading ? <LoaderCircle className="animate-spin" /> : <Sparkles />}
+                            <Button
+                                onClick={handleGenerate}
+                                disabled={loading}
+                                className="ml-auto"
+                            >
+                                {loading ? (
+                                    <LoaderCircle className="animate-spin" />
+                                ) : (
+                                    <Sparkles />
+                                )}
                                 Generate report
                             </Button>
                         </CardContent>
@@ -451,28 +605,47 @@ function ReportResult({
     onPageChange,
     loading,
 }: {
-    report: { id: string; title: string; description: string; columns: ReportColumn[]; chart: ReportChartType };
+    report: {
+        id: string;
+        title: string;
+        description: string;
+        columns: ReportColumn[];
+        chart: ReportChartType;
+    };
     result: ReportResultData;
     onPageChange: (page: number) => void;
     loading: boolean;
 }) {
+    const { t } = useTranslation();
+
     const pagination = result.pagination;
 
     return (
         <div className="space-y-4">
             <div className="flex items-center gap-2">
-                <h2 className="font-heading text-lg font-medium">{report.title}</h2>
+                <h2 className="font-heading text-lg font-medium">
+                    {report.title}
+                </h2>
             </div>
-            <p className="text-sm text-muted-foreground">{report.description}</p>
+            <p className="text-sm text-muted-foreground">
+                {report.description}
+            </p>
 
             {report.chart && result.chartData.length > 0 && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Overview</CardTitle>
-                        <CardDescription>Chart summary for the selected period, grouped across all selected days.</CardDescription>
+                        <CardTitle>{t('Overview')}</CardTitle>
+                        <CardDescription>
+                            {t(
+                                'Chart summary for the selected period, grouped across all selected days.',
+                            )}
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ReportChart chart={report.chart} data={result.chartData} />
+                        <ReportChart
+                            chart={report.chart}
+                            data={result.chartData}
+                        />
                     </CardContent>
                 </Card>
             )}
@@ -483,7 +656,13 @@ function ReportResult({
                         <TableHeader>
                             <TableRow>
                                 {report.columns.map((col) => (
-                                    <TableHead key={col.key} className={cn(col.align === 'right' && 'text-right')}>
+                                    <TableHead
+                                        key={col.key}
+                                        className={cn(
+                                            col.align === 'right' &&
+                                                'text-right',
+                                        )}
+                                    >
                                         {col.label}
                                     </TableHead>
                                 ))}
@@ -491,19 +670,29 @@ function ReportResult({
                         </TableHeader>
                         <TableBody
                             aria-busy={loading}
-                            className={cn('transition-opacity', loading && 'pointer-events-none opacity-50')}
+                            className={cn(
+                                'transition-opacity',
+                                loading && 'pointer-events-none opacity-50',
+                            )}
                         >
                             {result.rows.length === 0 ? (
                                 <TableRow className="hover:bg-transparent">
-                                    <TableCell colSpan={report.columns.length} className="p-0">
+                                    <TableCell
+                                        colSpan={report.columns.length}
+                                        className="p-0"
+                                    >
                                         <Empty className="border-none py-12">
                                             <EmptyHeader>
                                                 <EmptyMedia variant="icon">
                                                     <Inbox />
                                                 </EmptyMedia>
-                                                <EmptyTitle>No results</EmptyTitle>
+                                                <EmptyTitle>
+                                                    {t('No results')}
+                                                </EmptyTitle>
                                                 <EmptyDescription>
-                                                    No rows match the selected filters.
+                                                    {t(
+                                                        'No rows match the selected filters.',
+                                                    )}
                                                 </EmptyDescription>
                                             </EmptyHeader>
                                         </Empty>
@@ -513,7 +702,13 @@ function ReportResult({
                                 result.rows.map((row, i) => (
                                     <TableRow key={i}>
                                         {report.columns.map((col) => (
-                                            <TableCell key={col.key} className={cn(col.align === 'right' && 'text-right')}>
+                                            <TableCell
+                                                key={col.key}
+                                                className={cn(
+                                                    col.align === 'right' &&
+                                                        'text-right',
+                                                )}
+                                            >
                                                 {row[col.key]}
                                             </TableCell>
                                         ))}
@@ -527,15 +722,23 @@ function ReportResult({
                 {pagination && pagination.last_page > 1 && (
                     <DataTableCardFooter>
                         <span className="text-sm text-muted-foreground">
-                            Page {pagination.current_page} of {pagination.last_page} ({pagination.total} total)
+                            {t('Page :page of :pages (:total total)', {
+                                page: pagination.current_page,
+                                pages: pagination.last_page,
+                                total: pagination.total,
+                            })}
                         </span>
                         <div className="flex items-center gap-1">
                             <Button
                                 variant="outline"
                                 size="icon"
                                 className="size-8"
-                                disabled={loading || pagination.current_page <= 1}
-                                onClick={() => onPageChange(pagination.current_page - 1)}
+                                disabled={
+                                    loading || pagination.current_page <= 1
+                                }
+                                onClick={() =>
+                                    onPageChange(pagination.current_page - 1)
+                                }
                             >
                                 <ChevronLeft />
                             </Button>
@@ -543,8 +746,14 @@ function ReportResult({
                                 variant="outline"
                                 size="icon"
                                 className="size-8"
-                                disabled={loading || pagination.current_page >= pagination.last_page}
-                                onClick={() => onPageChange(pagination.current_page + 1)}
+                                disabled={
+                                    loading ||
+                                    pagination.current_page >=
+                                        pagination.last_page
+                                }
+                                onClick={() =>
+                                    onPageChange(pagination.current_page + 1)
+                                }
                             >
                                 <ChevronRight />
                             </Button>
@@ -572,9 +781,17 @@ function ReportChart({
             <ChartContainer config={config} className="h-64 w-full">
                 <BarChart data={data}>
                     <CartesianGrid vertical={false} />
-                    <XAxis dataKey={chart.nameKey} tickLine={false} axisLine={false} />
+                    <XAxis
+                        dataKey={chart.nameKey}
+                        tickLine={false}
+                        axisLine={false}
+                    />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey={chart.dataKey} fill={`var(--color-${chart.dataKey})`} radius={4} />
+                    <Bar
+                        dataKey={chart.dataKey}
+                        fill={`var(--color-${chart.dataKey})`}
+                        radius={4}
+                    />
                 </BarChart>
             </ChartContainer>
         );
@@ -582,17 +799,31 @@ function ReportChart({
 
     if (chart.type === 'line' && data) {
         const config = Object.fromEntries(
-            chart.dataKeys.map((d) => [d.key, { label: d.label, color: d.color }]),
+            chart.dataKeys.map((d) => [
+                d.key,
+                { label: d.label, color: d.color },
+            ]),
         ) satisfies ChartConfig;
 
         return (
             <ChartContainer config={config} className="h-64 w-full">
                 <LineChart data={data}>
                     <CartesianGrid vertical={false} />
-                    <XAxis dataKey={chart.nameKey} tickLine={false} axisLine={false} />
+                    <XAxis
+                        dataKey={chart.nameKey}
+                        tickLine={false}
+                        axisLine={false}
+                    />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     {chart.dataKeys.map((d) => (
-                        <Line key={d.key} type="monotone" dataKey={d.key} stroke={`var(--color-${d.key})`} strokeWidth={2} dot={false} />
+                        <Line
+                            key={d.key}
+                            type="monotone"
+                            dataKey={d.key}
+                            stroke={`var(--color-${d.key})`}
+                            strokeWidth={2}
+                            dot={false}
+                        />
                     ))}
                 </LineChart>
             </ChartContainer>
@@ -601,7 +832,10 @@ function ReportChart({
 
     if (chart.type === 'area' && data) {
         const config = Object.fromEntries(
-            chart.dataKeys.map((d) => [d.key, { label: d.label, color: d.color }]),
+            chart.dataKeys.map((d) => [
+                d.key,
+                { label: d.label, color: d.color },
+            ]),
         ) satisfies ChartConfig;
 
         return (
@@ -609,14 +843,34 @@ function ReportChart({
                 <AreaChart data={data}>
                     <defs>
                         {chart.dataKeys.map((d) => (
-                            <linearGradient key={d.key} id={`fill-${d.key}`} x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor={`var(--color-${d.key})`} stopOpacity={0.35} />
-                                <stop offset="95%" stopColor={`var(--color-${d.key})`} stopOpacity={0.02} />
+                            <linearGradient
+                                key={d.key}
+                                id={`fill-${d.key}`}
+                                x1="0"
+                                y1="0"
+                                x2="0"
+                                y2="1"
+                            >
+                                <stop
+                                    offset="5%"
+                                    stopColor={`var(--color-${d.key})`}
+                                    stopOpacity={0.35}
+                                />
+                                <stop
+                                    offset="95%"
+                                    stopColor={`var(--color-${d.key})`}
+                                    stopOpacity={0.02}
+                                />
                             </linearGradient>
                         ))}
                     </defs>
                     <CartesianGrid vertical={false} />
-                    <XAxis dataKey={chart.nameKey} tickLine={false} axisLine={false} interval={2} />
+                    <XAxis
+                        dataKey={chart.nameKey}
+                        tickLine={false}
+                        axisLine={false}
+                        interval={2}
+                    />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     {chart.dataKeys.map((d) => (
                         <Area

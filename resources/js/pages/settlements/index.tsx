@@ -34,13 +34,19 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { dashboard } from '@/routes';
-import type { CourierSettlement, CourierSettlementStatus, DeliveryAccount } from '@/types';
+import type {
+    CourierSettlement,
+    CourierSettlementStatus,
+    DeliveryAccount,
+} from '@/types';
 
 const statusClasses: Record<CourierSettlementStatus, string> = {
     pending: 'bg-muted text-muted-foreground',
-    reconciled: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300',
+    reconciled:
+        'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300',
     disputed: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
 };
 
@@ -65,6 +71,8 @@ export default function SettlementsIndex({
     settlements: CourierSettlement[];
     deliveryAccounts: DeliveryAccount[];
 }) {
+    const { t } = useTranslation();
+
     const [deliveryAccountId, setDeliveryAccountId] = useState('');
     const [periodStart, setPeriodStart] = useState('');
     const [periodEnd, setPeriodEnd] = useState('');
@@ -137,28 +145,32 @@ export default function SettlementsIndex({
 
     return (
         <>
-            <Head title="Courier settlements" />
+            <Head title={t('Courier settlements')} />
 
             <div className="space-y-6 p-4">
                 <Heading
-                    title="Courier settlements"
-                    description="Compare what a courier owes you against what they actually paid, for a chosen period."
+                    title={t('Courier settlements')}
+                    description={t(
+                        'Compare what a courier owes you against what they actually paid, for a chosen period.',
+                    )}
                 />
 
                 <div className="space-y-4 rounded-lg border p-4">
                     <h2 className="text-sm font-medium">
-                        Reconcile a period
+                        {t('Reconcile a period')}
                     </h2>
 
                     <FieldGroup className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
                         <Field>
-                            <FieldLabel>Delivery account</FieldLabel>
+                            <FieldLabel>{t('Delivery account')}</FieldLabel>
                             <Select
                                 value={deliveryAccountId}
                                 onValueChange={setDeliveryAccountId}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Choose an account" />
+                                    <SelectValue
+                                        placeholder={t('Choose an account')}
+                                    />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {deliveryAccounts.map((account) => (
@@ -175,35 +187,33 @@ export default function SettlementsIndex({
 
                         <Field>
                             <FieldLabel htmlFor="period_start">
-                                Period start
+                                {t('Period start')}
                             </FieldLabel>
                             <DatePicker
                                 value={periodStart}
                                 onChange={(value) =>
                                     setPeriodStart(value ?? '')
                                 }
-                                placeholder="Pick a start date"
+                                placeholder={t('Pick a start date')}
                                 className="w-full"
                             />
                         </Field>
 
                         <Field>
                             <FieldLabel htmlFor="period_end">
-                                Period end
+                                {t('Period end')}
                             </FieldLabel>
                             <DatePicker
                                 value={periodEnd}
-                                onChange={(value) =>
-                                    setPeriodEnd(value ?? '')
-                                }
-                                placeholder="Pick an end date"
+                                onChange={(value) => setPeriodEnd(value ?? '')}
+                                placeholder={t('Pick an end date')}
                                 className="w-full"
                             />
                         </Field>
 
                         <Field>
                             <FieldLabel htmlFor="actual_amount">
-                                Actual amount received
+                                {t('Actual amount received')}
                             </FieldLabel>
                             <Input
                                 id="actual_amount"
@@ -233,11 +243,11 @@ export default function SettlementsIndex({
 
                     <div className="flex items-center gap-4">
                         <span className="text-sm text-muted-foreground">
-                            Expected:{' '}
+                            {t('Expected:')}{' '}
                             {!canFetchExpected
                                 ? '—'
                                 : loadingExpected
-                                  ? 'Calculating…'
+                                  ? t('Calculating…')
                                   : expectedAmount !== null
                                     ? money(expectedAmount)
                                     : '—'}
@@ -252,7 +262,7 @@ export default function SettlementsIndex({
                                 actualAmount === ''
                             }
                         >
-                            Record settlement
+                            {t('Record settlement')}
                         </Button>
                     </div>
                 </div>
@@ -262,13 +272,13 @@ export default function SettlementsIndex({
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Courier</TableHead>
-                                    <TableHead>Period</TableHead>
-                                    <TableHead>Expected</TableHead>
-                                    <TableHead>Actual</TableHead>
-                                    <TableHead>Difference</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Reconciled</TableHead>
+                                    <TableHead>{t('Courier')}</TableHead>
+                                    <TableHead>{t('Period')}</TableHead>
+                                    <TableHead>{t('Expected')}</TableHead>
+                                    <TableHead>{t('Actual')}</TableHead>
+                                    <TableHead>{t('Difference')}</TableHead>
+                                    <TableHead>{t('Status')}</TableHead>
+                                    <TableHead>{t('Reconciled')}</TableHead>
                                     <TableHead />
                                 </TableRow>
                             </TableHeader>
@@ -282,12 +292,14 @@ export default function SettlementsIndex({
                                                         <Wallet />
                                                     </EmptyMedia>
                                                     <EmptyTitle>
-                                                        No settlements yet
+                                                        {t(
+                                                            'No settlements yet',
+                                                        )}
                                                     </EmptyTitle>
                                                     <EmptyDescription>
-                                                        Reconcile a period
-                                                        above to record your
-                                                        first settlement.
+                                                        {t(
+                                                            'Reconcile a period above to record your first settlement.',
+                                                        )}
                                                     </EmptyDescription>
                                                 </EmptyHeader>
                                             </Empty>
@@ -354,7 +366,7 @@ export default function SettlementsIndex({
                                                             )
                                                         }
                                                     >
-                                                        Dispute
+                                                        {t('Dispute')}
                                                     </Button>
                                                 )}
                                             </TableCell>

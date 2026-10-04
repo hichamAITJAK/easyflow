@@ -1,3 +1,4 @@
+import { useTranslation } from '@/hooks/use-translation';
 import { formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +20,8 @@ const fullDateLabel = (iso: string) =>
  * hit target, matching the rest of the row.
  */
 export function OrdersBarChart({ data }: { data: Point[] }) {
+    const { t } = useTranslation();
+
     const max = Math.max(1, ...data.map((point) => point.count));
     const allZero = data.every((point) => point.count === 0);
 
@@ -34,7 +37,7 @@ export function OrdersBarChart({ data }: { data: Point[] }) {
                             className="group relative flex h-full flex-1 items-end justify-center"
                         >
                             {/* Tooltip */}
-                            <div className="pointer-events-none absolute bottom-full z-10 mb-2 hidden -translate-x-1/2 flex-col items-center whitespace-nowrap rounded-md border bg-popover px-2 py-1 text-xs shadow-md group-hover:flex group-focus-visible:flex">
+                            <div className="pointer-events-none absolute bottom-full z-10 mb-2 hidden -translate-x-1/2 flex-col items-center rounded-md border bg-popover px-2 py-1 text-xs whitespace-nowrap shadow-md group-hover:flex group-focus-visible:flex">
                                 <span className="font-semibold text-popover-foreground tabular-nums">
                                     {point.count}{' '}
                                     {point.count === 1 ? 'order' : 'orders'}
@@ -48,11 +51,14 @@ export function OrdersBarChart({ data }: { data: Point[] }) {
                             <div
                                 tabIndex={0}
                                 className={cn(
-                                    'w-full max-w-6 rounded-t-[4px] bg-primary/85 transition-colors group-hover:bg-primary group-focus-visible:bg-primary outline-none',
+                                    'w-full max-w-6 rounded-t-[4px] bg-primary/85 transition-colors outline-none group-hover:bg-primary group-focus-visible:bg-primary',
                                     point.count === 0 && 'bg-muted',
                                 )}
                                 style={{
-                                    height: point.count === 0 ? 2 : `${Math.max(heightPct, 4)}%`,
+                                    height:
+                                        point.count === 0
+                                            ? 2
+                                            : `${Math.max(heightPct, 4)}%`,
                                 }}
                             />
                         </div>
@@ -73,7 +79,7 @@ export function OrdersBarChart({ data }: { data: Point[] }) {
 
             {allZero && (
                 <p className="mt-2 text-center text-sm text-muted-foreground">
-                    No orders assigned in the last 14 days.
+                    {t('No orders assigned in the last 14 days.')}
                 </p>
             )}
         </div>

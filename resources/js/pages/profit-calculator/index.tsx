@@ -44,6 +44,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { calculateFunnel } from './funnel';
@@ -174,10 +175,7 @@ function ExpandableTotal({
             </div>
 
             <CollapsibleContent
-                className={cn(
-                    'mt-2 space-y-1.5 border-l-2 pl-3',
-                    railTone,
-                )}
+                className={cn('mt-2 space-y-1.5 border-l-2 pl-3', railTone)}
             >
                 {children}
             </CollapsibleContent>
@@ -224,6 +222,8 @@ function MoneyRow({
 }
 
 export default function ProfitCalculatorIndex() {
+    const { t } = useTranslation();
+
     const [goalDelivered, setGoalDelivered] = useState('100');
     const [confirmationRate, setConfirmationRate] = useState('50');
     const [deliveryRate, setDeliveryRate] = useState('50');
@@ -328,12 +328,14 @@ export default function ProfitCalculatorIndex() {
 
     return (
         <>
-            <Head title="Profit calculator" />
+            <Head title={t('Profit calculator')} />
 
             <div className="space-y-6 p-4">
                 <Heading
-                    title="Profit calculator"
-                    description="Set a delivered-orders goal and see what it takes to get there: the money in, the leads needed, and what is left at the end."
+                    title={t('Profit calculator')}
+                    description={t(
+                        'Set a delivered-orders goal and see what it takes to get there: the money in, the leads needed, and what is left at the end.',
+                    )}
                 />
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -353,18 +355,19 @@ export default function ProfitCalculatorIndex() {
                                     <span className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground">
                                         <Target className="size-4" />
                                     </span>
-                                    Goal
+                                    {t('Goal')}
                                 </CardTitle>
                                 <CardDescription>
-                                    How many delivered orders you want, and the
-                                    rates you expect to hit along the way.
+                                    {t(
+                                        'How many delivered orders you want, and the rates you expect to hit along the way.',
+                                    )}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="grid gap-6 sm:grid-cols-3">
                                     <Field>
                                         <FieldLabel htmlFor="goal_delivered">
-                                            Delivered orders
+                                            {t('Delivered orders')}
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupAddon aria-hidden="true">
@@ -386,13 +389,15 @@ export default function ProfitCalculatorIndex() {
                                             />
                                         </InputGroup>
                                         <FieldDescription>
-                                            Your target, delivered and paid.
+                                            {t(
+                                                'Your target, delivered and paid.',
+                                            )}
                                         </FieldDescription>
                                     </Field>
 
                                     <Field>
                                         <FieldLabel htmlFor="confirmation_rate">
-                                            Confirmation rate
+                                            {t('Confirmation rate')}
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupAddon aria-hidden="true">
@@ -414,13 +419,13 @@ export default function ProfitCalculatorIndex() {
                                             />
                                         </InputGroup>
                                         <FieldDescription>
-                                            Leads your agents confirm.
+                                            {t('Leads your agents confirm.')}
                                         </FieldDescription>
                                     </Field>
 
                                     <Field>
                                         <FieldLabel htmlFor="delivery_rate">
-                                            Delivery rate
+                                            {t('Delivery rate')}
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupAddon aria-hidden="true">
@@ -442,7 +447,9 @@ export default function ProfitCalculatorIndex() {
                                             />
                                         </InputGroup>
                                         <FieldDescription>
-                                            Shipped parcels actually delivered.
+                                            {t(
+                                                'Shipped parcels actually delivered.',
+                                            )}
                                         </FieldDescription>
                                     </Field>
                                 </div>
@@ -455,14 +462,14 @@ export default function ProfitCalculatorIndex() {
                                     <span className="flex size-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
                                         <DollarSign className="size-4" />
                                     </span>
-                                    Price and product
+                                    {t('Price and product')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="grid gap-6 sm:grid-cols-2">
                                     <Field>
                                         <FieldLabel htmlFor="selling_price">
-                                            Selling price
+                                            {t('Selling price')}
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupAddon aria-hidden="true">
@@ -483,13 +490,15 @@ export default function ProfitCalculatorIndex() {
                                             />
                                         </InputGroup>
                                         <FieldDescription>
-                                            What the customer hands the courier.
+                                            {t(
+                                                'What the customer hands the courier.',
+                                            )}
                                         </FieldDescription>
                                     </Field>
 
                                     <Field>
                                         <FieldLabel htmlFor="product_cost">
-                                            Product cost
+                                            {t('Product cost')}
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupAddon aria-hidden="true">
@@ -510,8 +519,9 @@ export default function ProfitCalculatorIndex() {
                                             />
                                         </InputGroup>
                                         <FieldDescription>
-                                            Paid on every parcel shipped, not
-                                            just the delivered ones.
+                                            {t(
+                                                'Paid on every parcel shipped, not just the delivered ones.',
+                                            )}
                                         </FieldDescription>
                                     </Field>
                                 </div>
@@ -524,18 +534,19 @@ export default function ProfitCalculatorIndex() {
                                     <span className="flex size-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
                                         <Receipt className="size-4" />
                                     </span>
-                                    Costs
+                                    {t('Costs')}
                                 </CardTitle>
                                 <CardDescription>
-                                    Each lands at a different stage — that is
-                                    what makes the rates above matter.
+                                    {t(
+                                        'Each lands at a different stage — that is what makes the rates above matter.',
+                                    )}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <div className="grid gap-6 sm:grid-cols-2">
                                     <Field>
                                         <FieldLabel htmlFor="ad_cost">
-                                            Ad cost per lead
+                                            {t('Ad cost per lead')}
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupAddon aria-hidden="true">
@@ -556,8 +567,9 @@ export default function ProfitCalculatorIndex() {
                                             />
                                         </InputGroup>
                                         <FieldDescription>
-                                            Paid on every lead, confirmed or
-                                            not.
+                                            {t(
+                                                'Paid on every lead, confirmed or not.',
+                                            )}
                                         </FieldDescription>
                                     </Field>
 
@@ -572,7 +584,7 @@ export default function ProfitCalculatorIndex() {
                                         setup screen stay in agreement. */}
                                     <Field>
                                         <FieldLabel htmlFor="confirmation_cost">
-                                            Agent commission
+                                            {t('Agent commission')}
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupAddon aria-hidden="true">
@@ -604,17 +616,23 @@ export default function ProfitCalculatorIndex() {
                                                 >
                                                     <SelectTrigger
                                                         size="sm"
-                                                        aria-label="Commission is paid per"
+                                                        aria-label={t(
+                                                            'Commission is paid per',
+                                                        )}
                                                         className="h-6 gap-1 border-0 bg-transparent px-1.5 text-xs text-muted-foreground shadow-none focus-visible:ring-0 dark:bg-transparent"
                                                     >
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent align="end">
                                                         <SelectItem value="confirmed">
-                                                            per confirmed order
+                                                            {t(
+                                                                'per confirmed order',
+                                                            )}
                                                         </SelectItem>
                                                         <SelectItem value="delivered">
-                                                            per delivered order
+                                                            {t(
+                                                                'per delivered order',
+                                                            )}
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -622,14 +640,16 @@ export default function ProfitCalculatorIndex() {
                                         </InputGroup>
                                         <FieldDescription>
                                             {commissionTrigger === 'delivered'
-                                                ? 'Only orders that arrive earn commission.'
+                                                ? t(
+                                                      'Only orders that arrive earn commission.',
+                                                  )
                                                 : 'Every confirmed order earns it, delivered or not.'}
                                         </FieldDescription>
                                     </Field>
 
                                     <Field>
                                         <FieldLabel htmlFor="delivery_cost">
-                                            Delivery fee
+                                            {t('Delivery fee')}
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupAddon aria-hidden="true">
@@ -650,14 +670,15 @@ export default function ProfitCalculatorIndex() {
                                             />
                                         </InputGroup>
                                         <FieldDescription>
-                                            Kept by the courier out of what it
-                                            collects — not billed to you.
+                                            {t(
+                                                'Kept by the courier out of what it collects — not billed to you.',
+                                            )}
                                         </FieldDescription>
                                     </Field>
 
                                     <Field>
                                         <FieldLabel htmlFor="return_cost">
-                                            Return fee
+                                            {t('Return fee')}
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupAddon aria-hidden="true">
@@ -678,14 +699,15 @@ export default function ProfitCalculatorIndex() {
                                             />
                                         </InputGroup>
                                         <FieldDescription>
-                                            Billed to you on each parcel that
-                                            comes back.
+                                            {t(
+                                                'Billed to you on each parcel that comes back.',
+                                            )}
                                         </FieldDescription>
                                     </Field>
 
                                     <Field>
                                         <FieldLabel htmlFor="packaging_cost">
-                                            Packaging cost
+                                            {t('Packaging cost')}
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupAddon aria-hidden="true">
@@ -706,13 +728,15 @@ export default function ProfitCalculatorIndex() {
                                             />
                                         </InputGroup>
                                         <FieldDescription>
-                                            Box and label, per parcel shipped.
+                                            {t(
+                                                'Box and label, per parcel shipped.',
+                                            )}
                                         </FieldDescription>
                                     </Field>
 
                                     <Field>
                                         <FieldLabel htmlFor="spoilage_rate">
-                                            Unsellable returns
+                                            {t('Unsellable returns')}
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupAddon aria-hidden="true">
@@ -734,8 +758,9 @@ export default function ProfitCalculatorIndex() {
                                             />
                                         </InputGroup>
                                         <FieldDescription>
-                                            Share of returns you cannot resell.
-                                            The rest go back to stock.
+                                            {t(
+                                                'Share of returns you cannot resell. The rest go back to stock.',
+                                            )}
                                         </FieldDescription>
                                     </Field>
                                 </div>
@@ -748,19 +773,19 @@ export default function ProfitCalculatorIndex() {
                                     <span className="flex size-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
                                         <Wallet className="size-4" />
                                     </span>
-                                    Other charges
+                                    {t('Other charges')}
                                 </CardTitle>
                                 <CardDescription>
-                                    Fixed costs that are not per order — rent,
-                                    subscriptions, internet. Taken off the
-                                    profit as a flat sum.
+                                    {t(
+                                        'Fixed costs that are not per order — rent, subscriptions, internet. Taken off the profit as a flat sum.',
+                                    )}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-muted-foreground">
                                         {customCharges.length === 0
-                                            ? 'None added yet.'
+                                            ? t('None added yet.')
                                             : `${money(extraCharges)} total`}
                                     </span>
                                     <Button
@@ -771,7 +796,7 @@ export default function ProfitCalculatorIndex() {
                                         className="gap-1.5"
                                     >
                                         <Plus className="size-3.5" />
-                                        Add charge
+                                        {t('Add charge')}
                                     </Button>
                                 </div>
 
@@ -795,7 +820,9 @@ export default function ProfitCalculatorIndex() {
                                                                 },
                                                             )
                                                         }
-                                                        placeholder="Rent, subscriptions…"
+                                                        placeholder={t(
+                                                            'Rent, subscriptions…',
+                                                        )}
                                                     />
                                                 </InputGroup>
                                                 <InputGroup className="w-40">
@@ -855,15 +882,15 @@ export default function ProfitCalculatorIndex() {
                             <CardContent className="space-y-5 pt-6">
                                 {unreachable ? (
                                     <p className="text-sm text-primary-foreground">
-                                        A rate of 0% makes this goal
-                                        unreachable — no number of leads gets
-                                        there.
+                                        {t(
+                                            'A rate of 0% makes this goal unreachable — no number of leads gets there.',
+                                        )}
                                     </p>
                                 ) : (
                                     <>
                                         <div>
                                             <div className="text-xs font-semibold tracking-widest text-primary-foreground uppercase">
-                                                Investment needed
+                                                {t('Investment needed')}
                                             </div>
                                             <div className="mt-1 text-3xl font-bold tabular-nums">
                                                 {money(result.investment)}
@@ -875,8 +902,9 @@ export default function ProfitCalculatorIndex() {
                                                 4.5:1, so hierarchy comes from
                                                 size and weight instead. */}
                                             <p className="mt-1.5 text-xs text-primary-foreground">
-                                                Everything you pay out before
-                                                the courier settles.
+                                                {t(
+                                                    'Everything you pay out before the courier settles.',
+                                                )}
                                             </p>
                                         </div>
 
@@ -885,7 +913,7 @@ export default function ProfitCalculatorIndex() {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <div className="text-xs font-semibold tracking-widest text-primary-foreground uppercase">
-                                                    Leads needed
+                                                    {t('Leads needed')}
                                                 </div>
                                                 <div className="mt-1 text-xl font-bold tabular-nums">
                                                     {orders(
@@ -895,7 +923,7 @@ export default function ProfitCalculatorIndex() {
                                             </div>
                                             <div>
                                                 <div className="text-xs font-semibold tracking-widest text-primary-foreground uppercase">
-                                                    Profit margin
+                                                    {t('Profit margin')}
                                                 </div>
                                                 {/* Success/destructive would be
                                                     illegible on this blue, so
@@ -907,7 +935,9 @@ export default function ProfitCalculatorIndex() {
                                                         <>
                                                             {result.profit <
                                                                 0 && (
-                                                                <span aria-hidden>
+                                                                <span
+                                                                    aria-hidden
+                                                                >
                                                                     −
                                                                 </span>
                                                             )}
@@ -929,29 +959,29 @@ export default function ProfitCalculatorIndex() {
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-base">
-                                    Breakdown
+                                    {t('Breakdown')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-5">
                                 <div className="space-y-2">
                                     <StageRow
-                                        label="Leads"
+                                        label={t('Leads')}
                                         count={result.leadsRequired}
                                         note="to generate"
                                     />
                                     <StageRow
-                                        label="Confirmed"
+                                        label={t('Confirmed')}
                                         count={result.confirmed}
                                         note={`${toNumber(confirmationRate)}% of leads`}
                                     />
                                     <StageRow
-                                        label="Delivered"
+                                        label={t('Delivered')}
                                         count={result.delivered}
                                         note="your goal"
                                         tone="good"
                                     />
                                     <StageRow
-                                        label="Returned"
+                                        label={t('Returned')}
                                         count={result.returned}
                                         note="shipped, not delivered"
                                         tone="bad"
@@ -964,39 +994,41 @@ export default function ProfitCalculatorIndex() {
                                     keeps its fee, so the delivery cost never
                                     appears as a payout — it is withheld here. */}
                                 <ExpandableTotal
-                                    label="Courier sends you"
+                                    label={t('Courier sends you')}
                                     total={money(result.courierRemittance)}
                                     totalTone="text-success-text"
                                     railTone="border-success/30"
                                     itemCount={2}
                                 >
                                     <MoneyRow
-                                        label="Collected at the door"
+                                        label={t('Collected at the door')}
                                         detail={`× ${orders(result.delivered)}`}
                                         amount={result.grossCollected}
                                         sign="none"
                                     />
                                     <MoneyRow
-                                        label="Courier keeps"
+                                        label={t('Courier keeps')}
                                         detail="delivery fees"
                                         amount={result.deliveryFeesWithheld}
                                     />
                                 </ExpandableTotal>
 
                                 <ExpandableTotal
-                                    label="Total invested"
+                                    label={t('Total invested')}
                                     total={`− ${money(result.investment)}`}
                                     totalTone="text-destructive-text"
                                     railTone="border-destructive/30"
-                                    itemCount={result.stockRecovered > 0 ? 6 : 5}
+                                    itemCount={
+                                        result.stockRecovered > 0 ? 6 : 5
+                                    }
                                 >
                                     <MoneyRow
-                                        label="Ads"
+                                        label={t('Ads')}
                                         detail={`× ${orders(result.leadsRequired)} leads`}
                                         amount={result.adSpend}
                                     />
                                     <MoneyRow
-                                        label="Agent commission"
+                                        label={t('Agent commission')}
                                         detail={
                                             commissionTrigger === 'delivered'
                                                 ? `× ${orders(result.delivered)} delivered`
@@ -1005,25 +1037,25 @@ export default function ProfitCalculatorIndex() {
                                         amount={result.confirmationSpend}
                                     />
                                     <MoneyRow
-                                        label="Product"
+                                        label={t('Product')}
                                         detail={`× ${orders(result.shipped)} shipped`}
                                         amount={result.productSpend}
                                     />
                                     {result.stockRecovered > 0 && (
                                         <MoneyRow
-                                            label="Stock recovered"
+                                            label={t('Stock recovered')}
                                             detail="resellable returns"
                                             amount={result.stockRecovered}
                                             sign="plus"
                                         />
                                     )}
                                     <MoneyRow
-                                        label="Packaging"
+                                        label={t('Packaging')}
                                         detail={`× ${orders(result.shipped)}`}
                                         amount={result.packagingSpend}
                                     />
                                     <MoneyRow
-                                        label="Return fees"
+                                        label={t('Return fees')}
                                         detail={`× ${orders(result.returned)}`}
                                         amount={result.returnSpend}
                                     />
@@ -1046,7 +1078,7 @@ export default function ProfitCalculatorIndex() {
                                 >
                                     <div className="flex items-baseline justify-between gap-3">
                                         <span className="text-sm font-semibold">
-                                            Profit
+                                            {t('Profit')}
                                         </span>
                                         <span
                                             className={cn(
@@ -1083,7 +1115,7 @@ export default function ProfitCalculatorIndex() {
                                     </div>
                                     <div className="rounded-lg border bg-muted/30 p-3">
                                         <div className="text-xs text-muted-foreground">
-                                            Per delivered
+                                            {t('Per delivered')}
                                         </div>
                                         <div
                                             className={cn(
@@ -1100,7 +1132,7 @@ export default function ProfitCalculatorIndex() {
                                     </div>
                                     <div className="rounded-lg border bg-muted/30 p-3">
                                         <div className="text-xs text-muted-foreground">
-                                            Margin
+                                            {t('Margin')}
                                         </div>
                                         <div
                                             className={cn(
@@ -1115,7 +1147,7 @@ export default function ProfitCalculatorIndex() {
                                     </div>
                                     <div className="rounded-lg border bg-muted/30 p-3">
                                         <div className="text-xs text-muted-foreground">
-                                            Cost per delivered
+                                            {t('Cost per delivered')}
                                         </div>
                                         <div className="text-sm font-semibold tabular-nums">
                                             {hasInput
@@ -1137,21 +1169,22 @@ export default function ProfitCalculatorIndex() {
                                     <span className="flex size-6 items-center justify-center rounded-md bg-muted text-muted-foreground">
                                         <Wallet className="size-3.5" />
                                     </span>
-                                    Clean profit
+                                    {t('Clean profit')}
                                 </CardTitle>
                                 <CardDescription>
-                                    After fixed charges that are not tied to
-                                    this product.
+                                    {t(
+                                        'After fixed charges that are not tied to this product.',
+                                    )}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <MoneyRow
-                                    label="Profit"
+                                    label={t('Profit')}
                                     amount={result.profit}
                                     sign="none"
                                 />
                                 <MoneyRow
-                                    label="Other charges"
+                                    label={t('Other charges')}
                                     amount={extraCharges}
                                 />
 
@@ -1170,7 +1203,7 @@ export default function ProfitCalculatorIndex() {
                                     )}
                                 >
                                     <span className="text-sm font-semibold">
-                                        Clean profit
+                                        {t('Clean profit')}
                                     </span>
                                     <span
                                         className={cn(
@@ -1190,7 +1223,7 @@ export default function ProfitCalculatorIndex() {
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="rounded-lg border bg-muted/30 p-3">
                                         <div className="text-xs text-muted-foreground">
-                                            Clean margin
+                                            {t('Clean margin')}
                                         </div>
                                         <div
                                             className={cn(
@@ -1205,7 +1238,7 @@ export default function ProfitCalculatorIndex() {
                                     </div>
                                     <div className="rounded-lg border bg-muted/30 p-3">
                                         <div className="text-xs text-muted-foreground">
-                                            Clean ROI
+                                            {t('Clean ROI')}
                                         </div>
                                         <div
                                             className={cn(
@@ -1229,7 +1262,8 @@ export default function ProfitCalculatorIndex() {
                         <Card
                             className={cn(
                                 'transition-colors',
-                                belowBreakEven && 'border-warning/40 bg-warning/5',
+                                belowBreakEven &&
+                                    'border-warning/40 bg-warning/5',
                             )}
                         >
                             <CardHeader>
@@ -1244,7 +1278,7 @@ export default function ProfitCalculatorIndex() {
                                     >
                                         <Scale className="size-3.5" />
                                     </span>
-                                    Break-even
+                                    {t('Break-even')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -1258,7 +1292,7 @@ export default function ProfitCalculatorIndex() {
                                     <>
                                         <div className="flex items-baseline justify-between gap-3">
                                             <span className="text-sm text-muted-foreground">
-                                                Delivery rate needed
+                                                {t('Delivery rate needed')}
                                             </span>
                                             <span
                                                 className={cn(
@@ -1278,7 +1312,16 @@ export default function ProfitCalculatorIndex() {
                                         <div
                                             className="relative mt-3 h-1.5 overflow-hidden rounded-full bg-muted"
                                             role="img"
-                                            aria-label={`Your delivery rate is ${toNumber(deliveryRate)} percent; break-even needs ${breakEven.toFixed(1)} percent.`}
+                                            aria-label={t(
+                                                'Your delivery rate is :rate percent; break-even needs :breakEven percent.',
+                                                {
+                                                    rate: toNumber(
+                                                        deliveryRate,
+                                                    ),
+                                                    breakEven:
+                                                        breakEven.toFixed(1),
+                                                },
+                                            )}
                                         >
                                             <div
                                                 /* The darker text-grade amber,
@@ -1306,8 +1349,22 @@ export default function ProfitCalculatorIndex() {
 
                                         <p className="mt-2 text-xs text-muted-foreground">
                                             {belowBreakEven
-                                                ? `You are at ${toNumber(deliveryRate)}% — below break-even.`
-                                                : `You are at ${toNumber(deliveryRate)}% — above break-even.`}
+                                                ? t(
+                                                      'You are at :rate% — below break-even.',
+                                                      {
+                                                          rate: toNumber(
+                                                              deliveryRate,
+                                                          ),
+                                                      },
+                                                  )
+                                                : t(
+                                                      'You are at :rate% — above break-even.',
+                                                      {
+                                                          rate: toNumber(
+                                                              deliveryRate,
+                                                          ),
+                                                      },
+                                                  )}
                                         </p>
                                     </>
                                 )}
