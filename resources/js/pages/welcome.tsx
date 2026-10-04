@@ -17,6 +17,7 @@ import type { ReactNode, RefObject } from 'react';
 import AppWordmark from '@/components/app-wordmark';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import { dashboard, login } from '@/routes';
 import type { PageProps } from '@/types';
@@ -145,7 +146,7 @@ const footerColumns = [
         links: [
             { label: 'Features', href: '#features' },
             { label: 'Integrations', href: '#integrations' },
-                ],
+        ],
     },
     {
         title: 'Platform',
@@ -226,14 +227,16 @@ function SectionBadge({ children }: { children: ReactNode }) {
 }
 
 export default function Welcome() {
+    const { t } = useTranslation();
+
     const { auth, name } = usePage<PageProps>().props;
     const isAuthed = Boolean(auth?.user);
     const primaryHref = isAuthed ? dashboard() : login();
-    const primaryLabel = isAuthed ? 'Go to Dashboard' : 'Get Started';
+    const primaryLabel = isAuthed ? t('Go to Dashboard') : t('Get Started');
 
     return (
         <div className="dark theme-scope bg-background text-foreground">
-            <Head title="Welcome" />
+            <Head title={t('Welcome')} />
 
             <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur">
                 <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
@@ -251,7 +254,7 @@ export default function Welcome() {
                                 href={link.href}
                                 className="transition-colors hover:text-foreground"
                             >
-                                {link.label}
+                                {t(link.label)}
                             </a>
                         ))}
                     </nav>
@@ -262,7 +265,7 @@ export default function Welcome() {
                                 href={login()}
                                 className="hidden text-sm text-muted-foreground transition-colors hover:text-foreground sm:block"
                             >
-                                Log in
+                                {t('Log in')}
                             </Link>
                         )}
                         <Button asChild size="sm">
@@ -303,25 +306,24 @@ export default function Welcome() {
                     <div className="mx-auto max-w-3xl">
                         <Reveal className="flex justify-center">
                             <SectionBadge>
-                                Now connecting Shopify, YouCan & more
+                                {t('Now connecting Shopify, YouCan & more')}
                             </SectionBadge>
                         </Reveal>
 
                         <Reveal delay={100}>
                             <h1 className="mt-6 text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
-                                Your COD Business,{' '}
+                                {t('Your COD Business,')}{' '}
                                 <span className="text-primary">
-                                    Fully Under Control.
+                                    {t('Fully Under Control.')}
                                 </span>
                             </h1>
                         </Reveal>
 
                         <Reveal delay={200}>
                             <p className="mx-auto mt-6 max-w-xl text-lg text-balance text-muted-foreground">
-                                EasyFlow brings your stores, confirmation team,
-                                and delivery couriers into one workspace, so
-                                orders move from checkout to doorstep without
-                                the spreadsheet chaos.
+                                {t(
+                                    'EasyFlow brings your stores, confirmation team, and delivery couriers into one workspace, so orders move from checkout to doorstep without the spreadsheet chaos.',
+                                )}
                             </p>
                         </Reveal>
 
@@ -331,7 +333,7 @@ export default function Welcome() {
                         >
                             <Button asChild size="lg">
                                 <Link href={primaryHref}>
-                                    {isAuthed ? primaryLabel : 'Get Started'}
+                                    {isAuthed ? primaryLabel : t('Get Started')}
                                 </Link>
                             </Button>
                         </Reveal>
@@ -370,34 +372,36 @@ export default function Welcome() {
                                 <div className="flex flex-col gap-4">
                                     <div className="flex items-center justify-between">
                                         <p className="text-sm font-medium">
-                                            Welcome back, Leandro
+                                            {t('Welcome back, Leandro')}
                                         </p>
                                         <Badge variant="secondary">
-                                            3 stores connected
+                                            {t('3 stores connected')}
                                         </Badge>
                                     </div>
 
                                     <div className="grid gap-3 sm:grid-cols-3">
                                         {[
                                             {
-                                                label: 'Active Orders',
+                                                label: t('Active Orders'),
                                                 value: '128',
                                             },
                                             {
-                                                label: 'Pending Confirmation',
+                                                label: t(
+                                                    'Pending Confirmation',
+                                                ),
                                                 value: '34',
                                             },
                                             {
-                                                label: 'Delivered Today',
+                                                label: t('Delivered Today'),
                                                 value: '56',
                                             },
                                         ].map((stat) => (
                                             <div
-                                                key={stat.label}
+                                                key={t(stat.label)}
                                                 className="rounded-lg border border-border bg-muted/20 p-3"
                                             >
                                                 <p className="text-xs text-muted-foreground">
-                                                    {stat.label}
+                                                    {t(stat.label)}
                                                 </p>
                                                 <p className="mt-1 text-xl font-semibold">
                                                     {stat.value}
@@ -411,13 +415,13 @@ export default function Welcome() {
                                             <thead className="bg-muted/30 text-xs text-muted-foreground">
                                                 <tr>
                                                     <th className="px-3 py-2 font-medium">
-                                                        Order
+                                                        {t('Order')}
                                                     </th>
                                                     <th className="px-3 py-2 font-medium">
-                                                        Courier
+                                                        {t('Courier')}
                                                     </th>
                                                     <th className="px-3 py-2 font-medium">
-                                                        Status
+                                                        {t('Status')}
                                                     </th>
                                                 </tr>
                                             </thead>
@@ -432,13 +436,15 @@ export default function Welcome() {
                                                     {
                                                         order: '#10244',
                                                         courier: 'Sendit',
-                                                        status: 'In Transit',
+                                                        status: t('In Transit'),
                                                         tone: 'bg-blue-500/15 text-blue-500',
                                                     },
                                                     {
                                                         order: '#10243',
                                                         courier: 'OzonExpress',
-                                                        status: 'Awaiting Confirmation',
+                                                        status: t(
+                                                            'Awaiting Confirmation',
+                                                        ),
                                                         tone: 'bg-yellow-500/15 text-yellow-500',
                                                     },
                                                 ].map((row) => (
@@ -477,14 +483,14 @@ export default function Welcome() {
                     <div className="mx-auto max-w-6xl">
                         <Reveal className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
                             <div>
-                                <SectionBadge>Platform</SectionBadge>
+                                <SectionBadge>{t('Platform')}</SectionBadge>
                                 <h2 className="mt-4 text-3xl font-semibold tracking-tight">
-                                    Multi-store COD management
+                                    {t('Multi-store COD management')}
                                 </h2>
                                 <p className="mt-3 max-w-xl text-muted-foreground">
-                                    From the moment an order comes in to the
-                                    moment it's delivered, EasyFlow keeps every
-                                    store and courier working together.
+                                    {t(
+                                        "From the moment an order comes in to the moment it's delivered, EasyFlow keeps every store and courier working together.",
+                                    )}
                                 </p>
                             </div>
                         </Reveal>
@@ -492,7 +498,7 @@ export default function Welcome() {
                         <div className="mt-12 grid gap-4 sm:grid-cols-2">
                             {coreFeatures.map((feature, index) => (
                                 <Reveal
-                                    key={feature.title}
+                                    key={t(feature.title)}
                                     delay={index * 80}
                                     className="rounded-xl border border-border bg-card p-6"
                                 >
@@ -500,10 +506,10 @@ export default function Welcome() {
                                         <feature.icon className="size-5" />
                                     </div>
                                     <h3 className="mt-4 text-lg font-medium">
-                                        {feature.title}
+                                        {t(feature.title)}
                                     </h3>
                                     <p className="mt-2 text-sm text-muted-foreground">
-                                        {feature.description}
+                                        {t(feature.description)}
                                     </p>
                                     <ul className="mt-4 space-y-2">
                                         {feature.points.map((point) => (
@@ -528,20 +534,21 @@ export default function Welcome() {
                 >
                     <div className="mx-auto max-w-6xl text-center">
                         <Reveal>
-                            <SectionBadge>Enterprise-Grade</SectionBadge>
+                            <SectionBadge>{t('Enterprise-Grade')}</SectionBadge>
                             <h2 className="mt-4 text-3xl font-semibold tracking-tight">
-                                Built for serious COD operations
+                                {t('Built for serious COD operations')}
                             </h2>
                             <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-                                Everything your confirmation, dispatch, and
-                                management teams need, in one place.
+                                {t(
+                                    'Everything your confirmation, dispatch, and management teams need, in one place.',
+                                )}
                             </p>
                         </Reveal>
 
                         <div className="mt-12 grid gap-4 text-left sm:grid-cols-2 lg:grid-cols-3">
                             {bentoFeatures.map((feature, index) => (
                                 <Reveal
-                                    key={feature.title}
+                                    key={t(feature.title)}
                                     delay={index * 80}
                                     className="rounded-xl border border-border bg-card p-6"
                                 >
@@ -549,10 +556,10 @@ export default function Welcome() {
                                         <feature.icon className="size-5" />
                                     </div>
                                     <h3 className="mt-4 font-medium">
-                                        {feature.title}
+                                        {t(feature.title)}
                                     </h3>
                                     <p className="mt-2 text-sm text-muted-foreground">
-                                        {feature.description}
+                                        {t(feature.description)}
                                     </p>
                                 </Reveal>
                             ))}
@@ -564,19 +571,19 @@ export default function Welcome() {
                     <div className="mx-auto max-w-6xl">
                         <Reveal className="text-center">
                             <h2 className="text-3xl font-semibold tracking-tight">
-                                Transform Your Business
+                                {t('Transform Your Business')}
                             </h2>
                             <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-                                EasyFlow replaces the spreadsheets and manual
-                                handoffs between your stores, confirmation team,
-                                and couriers.
+                                {t(
+                                    'EasyFlow replaces the spreadsheets and manual handoffs between your stores, confirmation team, and couriers.',
+                                )}
                             </p>
                         </Reveal>
 
                         <div className="mt-12 grid gap-4 sm:grid-cols-2">
                             {useCases.map((useCase, index) => (
                                 <Reveal
-                                    key={useCase.title}
+                                    key={t(useCase.title)}
                                     delay={index * 80}
                                     className="rounded-xl border border-border bg-card p-6"
                                 >
@@ -584,10 +591,10 @@ export default function Welcome() {
                                         {useCase.tag}
                                     </Badge>
                                     <h3 className="mt-4 text-lg font-medium">
-                                        {useCase.title}
+                                        {t(useCase.title)}
                                     </h3>
                                     <p className="mt-2 text-sm text-muted-foreground">
-                                        {useCase.description}
+                                        {t(useCase.description)}
                                     </p>
                                 </Reveal>
                             ))}
@@ -599,13 +606,12 @@ export default function Welcome() {
                     <Reveal className="mx-auto max-w-2xl text-center">
                         <Zap className="mx-auto size-8 text-primary" />
                         <blockquote className="mt-6 text-xl text-balance">
-                            &ldquo;Having every store, courier, and order in one
-                            workspace changed how our confirmation team works.
-                            We stopped chasing spreadsheets and started shipping
-                            faster.&rdquo;
+                            {t(
+                                '“Having every store, courier, and order in one workspace changed how our confirmation team works. We stopped chasing spreadsheets and started shipping faster.”',
+                            )}
                         </blockquote>
                         <p className="mt-6 text-sm text-muted-foreground">
-                            Early EasyFlow merchant
+                            {t('Early EasyFlow merchant')}
                         </p>
                     </Reveal>
                 </section>
@@ -613,17 +619,20 @@ export default function Welcome() {
                 <section className="border-t border-border/60 px-6 py-24 text-center">
                     <Reveal>
                         <h2 className="text-3xl font-semibold tracking-tight text-balance">
-                            Bring your COD operations{' '}
-                            <span className="text-primary">online today.</span>
+                            {t('Bring your COD operations')}{' '}
+                            <span className="text-primary">
+                                {t('online today.')}
+                            </span>
                         </h2>
                         <p className="mx-auto mt-3 max-w-md text-muted-foreground">
-                            Connect your first store and start routing orders to
-                            your couriers in minutes.
+                            {t(
+                                'Connect your first store and start routing orders to your couriers in minutes.',
+                            )}
                         </p>
                         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                             <Button asChild size="lg">
                                 <Link href={primaryHref}>
-                                    {isAuthed ? primaryLabel : 'Get Started'}
+                                    {isAuthed ? primaryLabel : t('Get Started')}
                                 </Link>
                             </Button>
                         </div>
@@ -641,25 +650,26 @@ export default function Welcome() {
                             <AppWordmark className="h-7" />
                         </Link>
                         <p className="mt-3 max-w-xs text-sm text-muted-foreground">
-                            EasyFlow helps COD businesses manage stores, orders,
-                            and couriers from one workspace.
+                            {t(
+                                'EasyFlow helps COD businesses manage stores, orders, and couriers from one workspace.',
+                            )}
                         </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-10">
                         {footerColumns.map((column) => (
-                            <div key={column.title}>
+                            <div key={t(column.title)}>
                                 <p className="text-sm font-medium">
-                                    {column.title}
+                                    {t(column.title)}
                                 </p>
                                 <ul className="mt-3 space-y-2">
                                     {column.links.map((link) => (
-                                        <li key={link.label}>
+                                        <li key={t(link.label)}>
                                             <a
                                                 href={link.href}
                                                 className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                                             >
-                                                {link.label}
+                                                {t(link.label)}
                                             </a>
                                         </li>
                                     ))}
@@ -670,8 +680,8 @@ export default function Welcome() {
                 </div>
 
                 <div className="mx-auto mt-10 max-w-6xl border-t border-border/60 pt-6 text-sm text-muted-foreground">
-                    &copy; {new Date().getFullYear()} {name}. All rights
-                    reserved.
+                    &copy; {new Date().getFullYear()} {name}.{' '}
+                    {t('All rights reserved.')}
                 </div>
             </footer>
         </div>

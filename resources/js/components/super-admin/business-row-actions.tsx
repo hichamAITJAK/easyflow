@@ -1,5 +1,6 @@
 import { Ban, Eye, PauseCircle, Pencil, PlayCircle } from 'lucide-react';
 import type { ComponentType, ReactNode } from 'react';
+import type { Translator } from '@/lib/i18n';
 import type { Business } from '@/types';
 
 type ActionItemProps = {
@@ -23,6 +24,7 @@ export type BusinessRowAction = {
  * rather than offered and then refused.
  */
 export function businessRowActions({
+    t,
     business,
     onView,
     onEdit,
@@ -30,6 +32,7 @@ export function businessRowActions({
     onReactivate,
     onCancel,
 }: {
+    t: Translator;
     business: Business;
     onView: (business: Business) => void;
     onEdit: (business: Business) => void;
@@ -40,13 +43,13 @@ export function businessRowActions({
     const actions: BusinessRowAction[] = [
         {
             key: 'view',
-            label: 'View details',
+            label: t('View details'),
             icon: Eye,
             onSelect: () => onView(business),
         },
         {
             key: 'edit',
-            label: 'Edit business',
+            label: t('Edit business'),
             icon: Pencil,
             onSelect: () => onEdit(business),
         },
@@ -55,7 +58,7 @@ export function businessRowActions({
     if (business.status === 'active') {
         actions.push({
             key: 'suspend',
-            label: 'Suspend',
+            label: t('Suspend'),
             icon: PauseCircle,
             variant: 'destructive',
             onSelect: () => onSuspend(business),
@@ -65,7 +68,7 @@ export function businessRowActions({
     if (business.status === 'suspended') {
         actions.push({
             key: 'reactivate',
-            label: 'Reactivate',
+            label: t('Reactivate'),
             icon: PlayCircle,
             onSelect: () => onReactivate(business),
         });
@@ -74,7 +77,7 @@ export function businessRowActions({
     if (business.status !== 'cancelled') {
         actions.push({
             key: 'cancel',
-            label: 'Cancel business',
+            label: t('Cancel business'),
             icon: Ban,
             variant: 'destructive',
             onSelect: () => onCancel(business),

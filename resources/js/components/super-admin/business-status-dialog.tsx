@@ -8,6 +8,7 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { useTranslation } from '@/hooks/use-translation';
 import type { Business } from '@/types';
 
 export type BusinessStatusIntent = 'suspend' | 'cancel';
@@ -21,21 +22,21 @@ const INTENTS: Record<
     BusinessStatusIntent,
     {
         status: string;
-        title: (name: string) => string;
+        title: string;
         description: string;
         confirm: string;
     }
 > = {
     suspend: {
         status: 'suspended',
-        title: (name) => `Suspend ${name}?`,
+        title: 'Suspend :name?',
         description:
             'Everyone at this business is signed out of the web and mobile apps until you reactivate them. Their data, stores, and orders are kept.',
         confirm: 'Suspend business',
     },
     cancel: {
         status: 'cancelled',
-        title: (name) => `Cancel ${name}?`,
+        title: 'Cancel :name?',
         description:
             'Everyone at this business loses access immediately, and a cancelled business cannot be reactivated from this panel. Their data is kept.',
         confirm: 'Cancel business',
@@ -53,6 +54,8 @@ export function BusinessStatusDialog({
     business: Business | null;
     intent: BusinessStatusIntent;
 }) {
+    const { t } = useTranslation();
+
     if (!business) {
         return null;
     }
@@ -62,8 +65,10 @@ export function BusinessStatusDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
-                <DialogTitle>{copy.title(business.name)}</DialogTitle>
-                <DialogDescription>{copy.description}</DialogDescription>
+                <DialogTitle>
+                    {t(copy.title, { name: business.name })}
+                </DialogTitle>
+                <DialogDescription>{t(copy.description)}</DialogDescription>
 
                 <Form
                     {...BusinessController.updateStatus.form(business.id)}
@@ -83,14 +88,14 @@ export function BusinessStatusDialog({
                                     variant="secondary"
                                     onClick={() => onOpenChange(false)}
                                 >
-                                    Keep as is
+                                    {t('Keep as is')}
                                 </Button>
                                 <Button
                                     type="submit"
                                     variant="destructive"
                                     disabled={processing}
                                 >
-                                    {copy.confirm}
+                                    {t(copy.confirm)}
                                 </Button>
                             </DialogFooter>
                         </>

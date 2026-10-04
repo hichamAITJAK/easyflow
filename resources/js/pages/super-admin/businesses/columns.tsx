@@ -14,6 +14,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { formatDate } from '@/lib/format';
+import type { Translator } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { Business, BusinessFilters, BusinessStatus } from '@/types';
 
@@ -36,6 +37,7 @@ const STATUS_LABELS: Record<BusinessStatus, string> = {
 };
 
 export function createColumns({
+    t,
     filters,
     routeUrl,
     onView,
@@ -44,6 +46,7 @@ export function createColumns({
     onReactivate,
     onCancel,
 }: {
+    t: Translator;
     filters: BusinessFilters;
     routeUrl: string;
     onView: (business: Business) => void;
@@ -88,7 +91,7 @@ export function createColumns({
                         STATUS_STYLES[row.original.status],
                     )}
                 >
-                    {STATUS_LABELS[row.original.status]}
+                    {t(STATUS_LABELS[row.original.status])}
                 </Badge>
             ),
         },
@@ -118,10 +121,11 @@ export function createColumns({
         {
             id: 'actions',
             enableHiding: false,
-            header: () => <span className="sr-only">Actions</span>,
+            header: () => <span className="sr-only">{t('Actions')}</span>,
             cell: ({ row }) => {
                 const business = row.original;
                 const actions = businessRowActions({
+                    t,
                     business,
                     onView,
                     onEdit,
@@ -138,7 +142,9 @@ export function createColumns({
                                     variant="ghost"
                                     size="icon"
                                     className="size-8"
-                                    aria-label={`Actions for ${business.name}`}
+                                    aria-label={t('Actions for :name', {
+                                        name: business.name,
+                                    })}
                                 >
                                     <MoreHorizontal />
                                 </Button>

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Field, FieldDescription } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/hooks/use-translation';
 import SuperAdminLayout from '@/layouts/super-admin/layout';
 import {
     show as showBusiness,
@@ -27,6 +28,8 @@ export default function SuperAdminBusinessesEdit({
 }: {
     business: EditableBusiness;
 }) {
+    const { t } = useTranslation();
+
     const [name, setName] = useState(business.name);
     const [slug, setSlug] = useState(business.slug);
     const [processing, setProcessing] = useState(false);
@@ -59,13 +62,13 @@ export default function SuperAdminBusinessesEdit({
                         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
                         <ArrowLeft className="size-4" />
-                        Go back to {business.name}
+                        {t('Go back to :name', { name: business.name })}
                     </Link>
                 </div>
 
                 <Heading
-                    title="Edit business"
-                    description="Rename a tenant or correct its slug."
+                    title={t('Edit business')}
+                    description={t('Rename a tenant or correct its slug.')}
                 />
 
                 <form onSubmit={handleSubmit} className="space-y-8">
@@ -75,7 +78,7 @@ export default function SuperAdminBusinessesEdit({
                                 htmlFor="name"
                                 className="text-sm font-semibold"
                             >
-                                Business name{' '}
+                                {t('Business name')}{' '}
                                 <span className="text-destructive">*</span>
                             </Label>
                             <Input
@@ -96,7 +99,8 @@ export default function SuperAdminBusinessesEdit({
                                 htmlFor="slug"
                                 className="text-sm font-semibold"
                             >
-                                Slug <span className="text-destructive">*</span>
+                                {t('Slug')}{' '}
+                                <span className="text-destructive">*</span>
                             </Label>
                             <Input
                                 id="slug"
@@ -108,8 +112,9 @@ export default function SuperAdminBusinessesEdit({
                                 className="h-10 font-mono"
                             />
                             <FieldDescription>
-                                Lowercase letters, numbers, and single hyphens.
-                                Must be unique across every business.
+                                {t(
+                                    'Lowercase letters, numbers, and single hyphens. Must be unique across every business.',
+                                )}
                             </FieldDescription>
                             <InputError message={errors.slug} />
                         </Field>
@@ -117,7 +122,9 @@ export default function SuperAdminBusinessesEdit({
 
                     <div className="flex items-center justify-end gap-3 border-t pt-6">
                         <Button type="button" variant="outline" asChild>
-                            <Link href={showBusiness(business.id)}>Cancel</Link>
+                            <Link href={showBusiness(business.id)}>
+                                {t('Cancel')}
+                            </Link>
                         </Button>
                         <Button
                             type="submit"

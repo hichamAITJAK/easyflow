@@ -1,10 +1,5 @@
 import { Link } from '@inertiajs/react';
-import {
-    Building2,
-    ShieldCheck,
-    Store,
-    Truck,
-} from 'lucide-react';
+import { Building2, ShieldCheck, Store, Truck } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { AppShell } from '@/components/app-shell';
@@ -23,6 +18,7 @@ import {
     SidebarMenuItem,
     SidebarTrigger,
 } from '@/components/ui/sidebar';
+import { useTranslation } from '@/hooks/use-translation';
 import { index as businessesIndex } from '@/routes/super-admin/businesses';
 import { index as couriersIndex } from '@/routes/super-admin/couriers';
 import { index as platformsIndex } from '@/routes/super-admin/platforms';
@@ -55,6 +51,8 @@ const navItems: NavItem[] = [
 ];
 
 function SuperAdminSidebar() {
+    const { t } = useTranslation();
+
     return (
         <Sidebar collapsible="icon" variant="sidebar">
             <SidebarHeader>
@@ -70,7 +68,7 @@ function SuperAdminSidebar() {
                                         EasyFlow
                                     </span>
                                     <span className="truncate font-mono text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
-                                        Platform
+                                        {t('Platform')}
                                     </span>
                                 </div>
                             </Link>
@@ -97,6 +95,8 @@ function SuperAdminSidebar() {
  * "Platform" marker instead of a workspace identity.
  */
 export default function SuperAdminLayout({ children }: PropsWithChildren) {
+    const { t } = useTranslation();
+
     return (
         <AppShell variant="sidebar">
             <SuperAdminSidebar />
@@ -109,7 +109,7 @@ export default function SuperAdminLayout({ children }: PropsWithChildren) {
                         className="gap-1.5 border-amber-500/30 bg-amber-500/10 font-medium text-amber-600 dark:text-amber-400"
                     >
                         <ShieldCheck className="size-3" />
-                        Super Admin
+                        {t('Super Admin')}
                     </Badge>
 
                     <div className="ml-auto flex items-center">

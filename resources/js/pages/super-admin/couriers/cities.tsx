@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useTableFilters } from '@/hooks/use-table-filters';
+import { useTranslation } from '@/hooks/use-translation';
 import SuperAdminLayout from '@/layouts/super-admin/layout';
 import {
     cities as courierCities,
@@ -38,6 +39,8 @@ export default function SuperAdminCourierCities({
     cities: Paginated<CourierCity>;
     filters: CourierCityFilters;
 }) {
+    const { t } = useTranslation();
+
     const routeUrl = courierCities(courier.id).url;
 
     const { updateFilters } = useTableFilters(routeUrl, filters, FILTER_KEYS);
@@ -84,7 +87,7 @@ export default function SuperAdminCourierCities({
             {
                 accessorKey: 'arabic_name',
                 id: 'arabic name',
-                header: 'Arabic name',
+                header: t('Arabic name'),
                 cell: ({ row }) => (
                     <span dir="rtl" className="text-muted-foreground">
                         {row.original.arabic_name ?? '—'}
@@ -94,7 +97,8 @@ export default function SuperAdminCourierCities({
             {
                 accessorKey: 'external_courrier_id',
                 id: 'courier id',
-                header: () => sortHeader('Courier ID', 'external_courrier_id'),
+                header: () =>
+                    sortHeader(t('Courier ID'), 'external_courrier_id'),
                 cell: ({ row }) => (
                     <span className="font-mono text-xs text-muted-foreground">
                         {row.original.external_courrier_id ?? '—'}
@@ -121,14 +125,16 @@ export default function SuperAdminCourierCities({
                         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
                         <ArrowLeft className="size-4" />
-                        Go back to couriers
+                        {t('Go back to couriers')}
                     </Link>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <Heading
                         title={`${courier.name} cities`}
-                        description="The delivery destinations tenants can pick from when creating a parcel with this courier."
+                        description={t(
+                            'The delivery destinations tenants can pick from when creating a parcel with this courier.',
+                        )}
                     />
 
                     {courier.syncable && (
@@ -143,7 +149,7 @@ export default function SuperAdminCourierCities({
                             }
                         >
                             <RefreshCw />
-                            Sync from {courier.name}
+                            {t('Sync from :name', { name: courier.name })}
                         </Button>
                     )}
                 </div>
@@ -152,10 +158,10 @@ export default function SuperAdminCourierCities({
                     <DataTableCardToolbar>
                         <Input
                             className="w-full max-w-sm sm:w-64"
-                            placeholder="Search city name or ID…"
+                            placeholder={t('Search city name or ID…')}
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
-                            aria-label="Search cities"
+                            aria-label={t('Search cities')}
                         />
                         <div className="flex items-center gap-2">
                             <DataTablePerPageSelect
@@ -175,15 +181,23 @@ export default function SuperAdminCourierCities({
                             emptyIcon={<MapPin />}
                             emptyMessage={
                                 search
-                                    ? 'No cities match this search'
-                                    : 'No cities yet'
+                                    ? t('No cities match this search')
+                                    : t('No cities yet')
                             }
                             emptyDescription={
                                 search
-                                    ? 'Try a different city name or courier ID.'
+                                    ? t(
+                                          'Try a different city name or courier ID.',
+                                      )
                                     : courier.syncable
-                                      ? `Run a sync to pull ${courier.name}'s covered cities.`
-                                      : `No cities API is wired up for ${courier.name}, so its cities are managed in code.`
+                                      ? t(
+                                            "Run a sync to pull :name's covered cities.",
+                                            { name: courier.name },
+                                        )
+                                      : t(
+                                            'No cities API is wired up for :name, so its cities are managed in code.',
+                                            { name: courier.name },
+                                        )
                             }
                         />
                     </DataTableCardTable>

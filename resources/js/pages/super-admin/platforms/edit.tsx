@@ -10,6 +10,7 @@ import { Field, FieldDescription } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslation } from '@/hooks/use-translation';
 import SuperAdminLayout from '@/layouts/super-admin/layout';
 import {
     index as platformsIndex,
@@ -29,6 +30,8 @@ export default function SuperAdminPlatformsEdit({
 }: {
     platform: EditablePlatform;
 }) {
+    const { t } = useTranslation();
+
     const [name, setName] = useState(platform.name);
     const [description, setDescription] = useState(platform.description ?? '');
     const [logo, setLogo] = useState<File | null>(null);
@@ -72,20 +75,22 @@ export default function SuperAdminPlatformsEdit({
                         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
                         <ArrowLeft className="size-4" />
-                        Go back to platforms
+                        {t('Go back to platforms')}
                     </Link>
                 </div>
 
                 <Heading
                     title={`Edit ${platform.name}`}
-                    description="How this platform is presented to tenants in the store connection flow."
+                    description={t(
+                        'How this platform is presented to tenants in the store connection flow.',
+                    )}
                 />
 
                 <form onSubmit={handleSubmit} className="space-y-8">
                     <div className="grid gap-6">
                         <Field>
                             <Label className="text-sm font-semibold">
-                                Logo
+                                {t('Logo')}
                             </Label>
                             <LogoDropzone
                                 initialPreviewUrl={platform.logo_url}
@@ -99,8 +104,9 @@ export default function SuperAdminPlatformsEdit({
                                 onRemove={() => setRemoveLogo(true)}
                             />
                             <FieldDescription>
-                                Shown next to the platform name in the store
-                                connection flow.
+                                {t(
+                                    'Shown next to the platform name in the store connection flow.',
+                                )}
                             </FieldDescription>
                             <InputError message={errors.logo} />
                         </Field>
@@ -110,7 +116,8 @@ export default function SuperAdminPlatformsEdit({
                                 htmlFor="name"
                                 className="text-sm font-semibold"
                             >
-                                Name <span className="text-destructive">*</span>
+                                {t('Name')}{' '}
+                                <span className="text-destructive">*</span>
                             </Label>
                             <Input
                                 id="name"
@@ -126,7 +133,7 @@ export default function SuperAdminPlatformsEdit({
 
                         <Field>
                             <Label className="text-sm font-semibold">
-                                Slug
+                                {t('Slug')}
                             </Label>
                             <Input
                                 value={platform.slug}
@@ -135,9 +142,9 @@ export default function SuperAdminPlatformsEdit({
                                 className="h-10 font-mono"
                             />
                             <FieldDescription>
-                                Fixed. The integration code looks this platform
-                                up by its slug, so changing it would break every
-                                store already connected through it.
+                                {t(
+                                    'Fixed. The integration code looks this platform up by its slug, so changing it would break every store already connected through it.',
+                                )}
                             </FieldDescription>
                         </Field>
 
@@ -146,7 +153,7 @@ export default function SuperAdminPlatformsEdit({
                                 htmlFor="description"
                                 className="text-sm font-semibold"
                             >
-                                Description
+                                {t('Description')}
                             </Label>
                             <Textarea
                                 id="description"
@@ -157,8 +164,9 @@ export default function SuperAdminPlatformsEdit({
                                 rows={3}
                             />
                             <FieldDescription>
-                                Shown under the platform name when a tenant
-                                picks where to connect from.
+                                {t(
+                                    'Shown under the platform name when a tenant picks where to connect from.',
+                                )}
                             </FieldDescription>
                             <InputError message={errors.description} />
                         </Field>
@@ -166,7 +174,7 @@ export default function SuperAdminPlatformsEdit({
 
                     <div className="flex items-center justify-end gap-3 border-t pt-6">
                         <Button type="button" variant="outline" asChild>
-                            <Link href={platformsIndex()}>Cancel</Link>
+                            <Link href={platformsIndex()}>{t('Cancel')}</Link>
                         </Button>
                         <Button
                             type="submit"

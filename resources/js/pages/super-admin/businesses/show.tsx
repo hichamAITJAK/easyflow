@@ -27,6 +27,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTranslation } from '@/hooks/use-translation';
 import SuperAdminLayout from '@/layouts/super-admin/layout';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -35,12 +36,7 @@ import {
     index as businessesIndex,
     status as businessStatus,
 } from '@/routes/super-admin/businesses';
-import type {
-    Business,
-    BusinessStatus,
-    Store,
-    User,
-} from '@/types';
+import type { Business, BusinessStatus, Store, User } from '@/types';
 
 const STATUS_STYLES: Record<BusinessStatus, string> = {
     active: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
@@ -82,6 +78,8 @@ export default function SuperAdminBusinessesShow({
     users: User[];
     stores: Store[];
 }) {
+    const { t } = useTranslation();
+
     const [statusIntent, setStatusIntent] =
         useState<BusinessStatusIntent | null>(null);
 
@@ -96,7 +94,7 @@ export default function SuperAdminBusinessesShow({
                         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
                         <ArrowLeft className="size-4" />
-                        Go back to businesses
+                        {t('Go back to businesses')}
                     </Link>
                 </div>
 
@@ -126,7 +124,7 @@ export default function SuperAdminBusinessesShow({
                         <Button variant="outline" asChild>
                             <Link href={editBusiness(business.id)}>
                                 <Pencil />
-                                Edit
+                                {t('Edit')}
                             </Link>
                         </Button>
 
@@ -142,7 +140,7 @@ export default function SuperAdminBusinessesShow({
                                 }
                             >
                                 <PlayCircle />
-                                Reactivate
+                                {t('Reactivate')}
                             </Button>
                         )}
 
@@ -152,7 +150,7 @@ export default function SuperAdminBusinessesShow({
                                 onClick={() => setStatusIntent('suspend')}
                             >
                                 <PauseCircle />
-                                Suspend
+                                {t('Suspend')}
                             </Button>
                         )}
 
@@ -162,34 +160,43 @@ export default function SuperAdminBusinessesShow({
                                 onClick={() => setStatusIntent('cancel')}
                             >
                                 <Ban />
-                                Cancel
+                                {t('Cancel')}
                             </Button>
                         )}
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    <Stat label="Users" value={business.users_count ?? 0} />
-                    <Stat label="Stores" value={business.stores_count ?? 0} />
                     <Stat
-                        label="Products"
+                        label={t('Users')}
+                        value={business.users_count ?? 0}
+                    />
+                    <Stat
+                        label={t('Stores')}
+                        value={business.stores_count ?? 0}
+                    />
+                    <Stat
+                        label={t('Products')}
                         value={business.products_count ?? 0}
                     />
-                    <Stat label="Orders" value={business.orders_count ?? 0} />
+                    <Stat
+                        label={t('Orders')}
+                        value={business.orders_count ?? 0}
+                    />
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Team</CardTitle>
+                        <CardTitle>{t('Team')}</CardTitle>
                         <CardDescription>
-                            Everyone with an account at this business.
+                            {t('Everyone with an account at this business.')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="px-0">
                         {users.length === 0 ? (
                             <Empty className="border-none py-8">
                                 <EmptyHeader>
-                                    <EmptyTitle>No users yet</EmptyTitle>
+                                    <EmptyTitle>{t('No users yet')}</EmptyTitle>
                                 </EmptyHeader>
                             </Empty>
                         ) : (
@@ -197,12 +204,12 @@ export default function SuperAdminBusinessesShow({
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead className="pl-6">
-                                            Name
+                                            {t('Name')}
                                         </TableHead>
-                                        <TableHead>Role</TableHead>
-                                        <TableHead>Status</TableHead>
+                                        <TableHead>{t('Role')}</TableHead>
+                                        <TableHead>{t('Status')}</TableHead>
                                         <TableHead className="pr-6">
-                                            Last login
+                                            {t('Last login')}
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -220,8 +227,10 @@ export default function SuperAdminBusinessesShow({
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                {ROLE_LABELS[user.role] ??
-                                                    user.role}
+                                                {t(
+                                                    ROLE_LABELS[user.role] ??
+                                                        user.role,
+                                                )}
                                             </TableCell>
                                             <TableCell className="capitalize">
                                                 {user.status}
@@ -243,9 +252,9 @@ export default function SuperAdminBusinessesShow({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Stores</CardTitle>
+                        <CardTitle>{t('Stores')}</CardTitle>
                         <CardDescription>
-                            E-commerce stores connected by this business.
+                            {t('E-commerce stores connected by this business.')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="px-0">
@@ -255,7 +264,9 @@ export default function SuperAdminBusinessesShow({
                                     <EmptyMedia variant="icon">
                                         <Ban />
                                     </EmptyMedia>
-                                    <EmptyTitle>No stores connected</EmptyTitle>
+                                    <EmptyTitle>
+                                        {t('No stores connected')}
+                                    </EmptyTitle>
                                 </EmptyHeader>
                             </Empty>
                         ) : (
@@ -263,12 +274,12 @@ export default function SuperAdminBusinessesShow({
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead className="pl-6">
-                                            Store
+                                            {t('Store')}
                                         </TableHead>
-                                        <TableHead>Platform</TableHead>
-                                        <TableHead>Connection</TableHead>
+                                        <TableHead>{t('Platform')}</TableHead>
+                                        <TableHead>{t('Connection')}</TableHead>
                                         <TableHead className="pr-6">
-                                            Last synced
+                                            {t('Last synced')}
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>

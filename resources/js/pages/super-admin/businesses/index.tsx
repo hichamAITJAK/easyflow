@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useTableFilters } from '@/hooks/use-table-filters';
+import { useTranslation } from '@/hooks/use-translation';
 import SuperAdminLayout from '@/layouts/super-admin/layout';
 import {
     create as createBusiness,
@@ -64,6 +65,8 @@ export default function SuperAdminBusinessesIndex({
     businesses: Paginated<Business>;
     filters: BusinessFilters;
 }) {
+    const { t } = useTranslation();
+
     const routeUrl = businessesIndex().url;
 
     const { draft, updateFilters, resetFilters, hasActiveFilters } =
@@ -101,6 +104,7 @@ export default function SuperAdminBusinessesIndex({
     const columns = useMemo(
         () =>
             createColumns({
+                t,
                 filters,
                 routeUrl,
                 onView: (business) => router.get(showBusiness(business.id)),
@@ -132,18 +136,18 @@ export default function SuperAdminBusinessesIndex({
 
     return (
         <SuperAdminLayout>
-            <Head title="Businesses" />
+            <Head title={t('Businesses')} />
 
             <div className="space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <Heading
-                        title="Businesses"
-                        description="Every tenant onboarded onto EasyFlow."
+                        title={t('Businesses')}
+                        description={t('Every tenant onboarded onto EasyFlow.')}
                     />
                     <Button asChild>
                         <Link href={createBusiness()}>
                             <Plus />
-                            Add business
+                            {t('Add business')}
                         </Link>
                     </Button>
                 </div>
@@ -153,12 +157,12 @@ export default function SuperAdminBusinessesIndex({
                         <div className="flex flex-wrap items-center gap-2">
                             <Input
                                 className="w-full max-w-sm sm:w-64"
-                                placeholder="Search by name or slug…"
+                                placeholder={t('Search by name or slug…')}
                                 value={search}
                                 onChange={(event) =>
                                     setSearch(event.target.value)
                                 }
-                                aria-label="Search businesses"
+                                aria-label={t('Search businesses')}
                             />
                             <Select
                                 value={draft.status ?? ANY_STATUS}
@@ -173,20 +177,20 @@ export default function SuperAdminBusinessesIndex({
                             >
                                 <SelectTrigger
                                     className="w-36"
-                                    aria-label="Filter by status"
+                                    aria-label={t('Filter by status')}
                                 >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value={ANY_STATUS}>
-                                        Any status
+                                        {t('Any status')}
                                     </SelectItem>
                                     {STATUS_OPTIONS.map((option) => (
                                         <SelectItem
                                             key={option.value}
                                             value={option.value}
                                         >
-                                            {option.label}
+                                            {t(option.label)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -216,12 +220,14 @@ export default function SuperAdminBusinessesIndex({
                             emptyIcon={<Building2 />}
                             emptyMessage={
                                 hasActiveFilters
-                                    ? 'No businesses match these filters'
-                                    : 'No businesses yet'
+                                    ? t('No businesses match these filters')
+                                    : t('No businesses yet')
                             }
                             emptyDescription={
                                 hasActiveFilters
-                                    ? 'Clear the search or status filter to see every tenant.'
+                                    ? t(
+                                          'Clear the search or status filter to see every tenant.',
+                                      )
                                     : 'Onboard the first tenant to get them set up with an admin account.'
                             }
                         />

@@ -9,13 +9,16 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { formatDateTime } from '@/lib/format';
+import type { Translator } from '@/lib/i18n';
 import type { FailedJob } from '@/types';
 
 export function createColumns({
+    t,
     onInspect,
     onRetry,
     onForget,
 }: {
+    t: Translator;
     onInspect: (job: FailedJob) => void;
     onRetry: (job: FailedJob) => void;
     onForget: (job: FailedJob) => void;
@@ -24,7 +27,7 @@ export function createColumns({
         {
             accessorKey: 'jobName',
             id: 'job',
-            header: 'Job',
+            header: t('Job'),
             cell: ({ row }) => (
                 <div className="grid gap-0.5">
                     <span className="font-medium">{row.original.jobName}</span>
@@ -37,13 +40,13 @@ export function createColumns({
         {
             accessorKey: 'exception',
             id: 'error',
-            header: 'Error',
+            header: t('Error'),
             cell: ({ row }) => (
                 <button
                     type="button"
                     onClick={() => onInspect(row.original)}
                     className="max-w-md truncate text-left text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                    title="View full stack trace"
+                    title={t('View full stack trace')}
                 >
                     {row.original.exception ?? '—'}
                 </button>
@@ -52,7 +55,7 @@ export function createColumns({
         {
             accessorKey: 'connection',
             id: 'connection',
-            header: 'Connection',
+            header: t('Connection'),
             cell: ({ row }) => (
                 <Badge variant="outline" className="font-mono text-xs">
                     {row.original.connection}
@@ -62,7 +65,7 @@ export function createColumns({
         {
             accessorKey: 'failedAt',
             id: 'failed at',
-            header: 'Failed at',
+            header: t('Failed at'),
             cell: ({ row }) => (
                 <span className="text-muted-foreground tabular-nums">
                     {formatDateTime(row.original.failedAt)}
@@ -72,7 +75,7 @@ export function createColumns({
         {
             id: 'actions',
             enableHiding: false,
-            header: () => <span className="sr-only">Actions</span>,
+            header: () => <span className="sr-only">{t('Actions')}</span>,
             cell: ({ row }) => (
                 <div className="flex justify-end">
                     <DropdownMenu>
@@ -81,7 +84,9 @@ export function createColumns({
                                 variant="ghost"
                                 size="icon"
                                 className="size-8"
-                                aria-label={`Actions for ${row.original.jobName}`}
+                                aria-label={t('Actions for :name', {
+                                    name: row.original.jobName,
+                                })}
                             >
                                 <MoreHorizontal />
                             </Button>
@@ -91,20 +96,20 @@ export function createColumns({
                                 onSelect={() => onInspect(row.original)}
                             >
                                 <ScrollText />
-                                View stack trace
+                                {t('View stack trace')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 onSelect={() => onRetry(row.original)}
                             >
                                 <RotateCcw />
-                                Retry job
+                                {t('Retry job')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 variant="destructive"
                                 onSelect={() => onForget(row.original)}
                             >
                                 <Trash2 />
-                                Delete
+                                {t('Delete')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

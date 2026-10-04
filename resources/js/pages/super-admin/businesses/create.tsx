@@ -16,6 +16,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 import SuperAdminLayout from '@/layouts/super-admin/layout';
 import {
     index as businessesIndex,
@@ -44,6 +45,8 @@ const BLANK_FORM: FormState = {
 };
 
 export default function SuperAdminBusinessesCreate() {
+    const { t } = useTranslation();
+
     const [form, setForm] = useState<FormState>(BLANK_FORM);
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Errors>({});
@@ -77,7 +80,7 @@ export default function SuperAdminBusinessesCreate() {
 
     return (
         <SuperAdminLayout>
-            <Head title="Add Business" />
+            <Head title={t('Add Business')} />
 
             <div className="mx-auto max-w-3xl space-y-6">
                 <div>
@@ -86,13 +89,15 @@ export default function SuperAdminBusinessesCreate() {
                         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
                         <ArrowLeft className="size-4" />
-                        Go back to businesses
+                        {t('Go back to businesses')}
                     </Link>
                 </div>
 
                 <Heading
-                    title="Add business"
-                    description="Onboard a new tenant and create its first admin account."
+                    title={t('Add business')}
+                    description={t(
+                        'Onboard a new tenant and create its first admin account.',
+                    )}
                 />
 
                 <form onSubmit={handleSubmit} className="space-y-10">
@@ -100,7 +105,7 @@ export default function SuperAdminBusinessesCreate() {
                         <div className="mb-6 flex items-center gap-2 border-b pb-2">
                             <Building2 className="size-5 text-muted-foreground" />
                             <h2 className="text-lg font-semibold tracking-tight">
-                                Business information
+                                {t('Business information')}
                             </h2>
                         </div>
 
@@ -110,7 +115,7 @@ export default function SuperAdminBusinessesCreate() {
                                     htmlFor="business_name"
                                     className="text-sm font-semibold"
                                 >
-                                    Business name{' '}
+                                    {t('Business name')}{' '}
                                     <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
@@ -123,7 +128,7 @@ export default function SuperAdminBusinessesCreate() {
                                     }
                                     required
                                     autoFocus
-                                    placeholder="e.g. Heaney Group"
+                                    placeholder={t('e.g. Heaney Group')}
                                     className="h-10"
                                 />
                                 <InputError message={errors.business_name} />
@@ -134,7 +139,7 @@ export default function SuperAdminBusinessesCreate() {
                                     htmlFor="business_status"
                                     className="text-sm font-semibold"
                                 >
-                                    Status
+                                    {t('Status')}
                                 </Label>
                                 <Select
                                     value={form.business_status}
@@ -153,19 +158,20 @@ export default function SuperAdminBusinessesCreate() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="active">
-                                            Active
+                                            {t('Active')}
                                         </SelectItem>
                                         <SelectItem value="suspended">
-                                            Suspended
+                                            {t('Suspended')}
                                         </SelectItem>
                                         <SelectItem value="cancelled">
-                                            Cancelled
+                                            {t('Cancelled')}
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <FieldDescription>
-                                    Suspended or cancelled businesses can be
-                                    onboarded ahead of time and activated later.
+                                    {t(
+                                        'Suspended or cancelled businesses can be onboarded ahead of time and activated later.',
+                                    )}
                                 </FieldDescription>
                                 <InputError message={errors.business_status} />
                             </Field>
@@ -176,13 +182,14 @@ export default function SuperAdminBusinessesCreate() {
                         <div className="mb-6 flex items-center gap-2 border-b pb-2">
                             <UserCog className="size-5 text-muted-foreground" />
                             <h2 className="text-lg font-semibold tracking-tight">
-                                Admin user
+                                {t('Admin user')}
                             </h2>
                         </div>
 
                         <p className="-mt-4 mb-6 text-xs text-muted-foreground">
-                            This person gets full access to the business's
-                            workspace — stores, team, orders, and billing.
+                            {t(
+                                "This person gets full access to the business's workspace — stores, team, orders, and billing.",
+                            )}
                         </p>
 
                         <div className="grid gap-6 sm:grid-cols-2">
@@ -191,7 +198,7 @@ export default function SuperAdminBusinessesCreate() {
                                     htmlFor="admin_name"
                                     className="text-sm font-semibold"
                                 >
-                                    Full name{' '}
+                                    {t('Full name')}{' '}
                                     <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
@@ -203,7 +210,7 @@ export default function SuperAdminBusinessesCreate() {
                                         })
                                     }
                                     required
-                                    placeholder="e.g. Amina Tazi"
+                                    placeholder={t('e.g. Amina Tazi')}
                                     className="h-10"
                                 />
                                 <InputError message={errors.admin_name} />
@@ -214,7 +221,7 @@ export default function SuperAdminBusinessesCreate() {
                                     htmlFor="admin_phone"
                                     className="text-sm font-semibold"
                                 >
-                                    Phone
+                                    {t('Phone')}
                                 </Label>
                                 <Input
                                     id="admin_phone"
@@ -225,7 +232,7 @@ export default function SuperAdminBusinessesCreate() {
                                             admin_phone: event.target.value,
                                         })
                                     }
-                                    placeholder="e.g. +212 6 00 00 00 00"
+                                    placeholder={t('e.g. +212 6 00 00 00 00')}
                                     className="h-10"
                                 />
                                 <InputError message={errors.admin_phone} />
@@ -236,7 +243,7 @@ export default function SuperAdminBusinessesCreate() {
                                     htmlFor="admin_email"
                                     className="text-sm font-semibold"
                                 >
-                                    Email{' '}
+                                    {t('Email')}{' '}
                                     <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
@@ -250,11 +257,11 @@ export default function SuperAdminBusinessesCreate() {
                                     }
                                     required
                                     autoComplete="off"
-                                    placeholder="admin@business.com"
+                                    placeholder={t('admin@business.com')}
                                     className="h-10"
                                 />
                                 <FieldDescription>
-                                    They'll sign in with this address.
+                                    {t("They'll sign in with this address.")}
                                 </FieldDescription>
                                 <InputError message={errors.admin_email} />
                             </Field>
@@ -264,7 +271,7 @@ export default function SuperAdminBusinessesCreate() {
                                     htmlFor="admin_password"
                                     className="text-sm font-semibold"
                                 >
-                                    Temporary password{' '}
+                                    {t('Temporary password')}{' '}
                                     <span className="text-destructive">*</span>
                                 </Label>
                                 <PasswordInput
@@ -279,8 +286,9 @@ export default function SuperAdminBusinessesCreate() {
                                     autoComplete="new-password"
                                 />
                                 <FieldDescription>
-                                    Share this with them directly — they can
-                                    change it after signing in.
+                                    {t(
+                                        'Share this with them directly — they can change it after signing in.',
+                                    )}
                                 </FieldDescription>
                                 <InputError message={errors.admin_password} />
                             </Field>
@@ -290,7 +298,7 @@ export default function SuperAdminBusinessesCreate() {
                                     htmlFor="admin_password_confirmation"
                                     className="text-sm font-semibold"
                                 >
-                                    Confirm password{' '}
+                                    {t('Confirm password')}{' '}
                                     <span className="text-destructive">*</span>
                                 </Label>
                                 <PasswordInput
@@ -311,7 +319,7 @@ export default function SuperAdminBusinessesCreate() {
 
                     <div className="flex items-center justify-end gap-3 border-t pt-6">
                         <Button type="button" variant="outline" asChild>
-                            <Link href={businessesIndex()}>Cancel</Link>
+                            <Link href={businessesIndex()}>{t('Cancel')}</Link>
                         </Button>
                         <Button
                             type="submit"

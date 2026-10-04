@@ -48,6 +48,7 @@ import {
 } from '@/components/ui/table';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useTableFilters } from '@/hooks/use-table-filters';
+import { useTranslation } from '@/hooks/use-translation';
 import SuperAdminLayout from '@/layouts/super-admin/layout';
 import { cn } from '@/lib/utils';
 import {
@@ -151,6 +152,8 @@ export default function SuperAdminQueueIndex({
     failedQueues: string[];
     connection: string;
 }) {
+    const { t } = useTranslation();
+
     const routeUrl = queueIndex().url;
 
     const { draft, updateFilters, resetFilters, hasActiveFilters } =
@@ -181,6 +184,7 @@ export default function SuperAdminQueueIndex({
     const columns = useMemo(
         () =>
             createColumns({
+                t,
                 onInspect: setInspecting,
                 onForget: setForgetting,
                 onRetry: (job) =>
@@ -206,13 +210,15 @@ export default function SuperAdminQueueIndex({
 
     return (
         <SuperAdminLayout>
-            <Head title="Queue" />
+            <Head title={t('Queue')} />
 
             <div className="space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <Heading
-                        title="Queue"
-                        description="Background job health across the platform."
+                        title={t('Queue')}
+                        description={t(
+                            'Background job health across the platform.',
+                        )}
                     />
                     <Badge variant="outline" className="font-mono text-xs">
                         {connection}
@@ -221,25 +227,27 @@ export default function SuperAdminQueueIndex({
 
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                     <Stat
-                        label="Waiting"
+                        label={t('Waiting')}
                         value={metrics.pending}
-                        hint="Not yet picked up"
+                        hint={t('Not yet picked up')}
                     />
                     <Stat
-                        label="In progress"
+                        label={t('In progress')}
                         value={metrics.reserved}
-                        hint="Reserved by a worker"
+                        hint={t('Reserved by a worker')}
                     />
                     <Stat
-                        label="Oldest wait"
+                        label={t('Oldest wait')}
                         value={formatLag(metrics.oldestPendingSeconds)}
-                        hint="How far behind workers are"
+                        hint={t('How far behind workers are')}
                         className={lagTone(metrics.oldestPendingSeconds)}
                     />
                     <Stat
-                        label="Failed"
+                        label={t('Failed')}
                         value={metrics.failed}
-                        hint={`${metrics.failedLastDay} in the last 24h`}
+                        hint={t(':count in the last 24h', {
+                            count: metrics.failedLastDay,
+                        })}
                         className={
                             metrics.failed > 0 ? 'text-destructive' : undefined
                         }
@@ -248,28 +256,29 @@ export default function SuperAdminQueueIndex({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Queues</CardTitle>
+                        <CardTitle>{t('Queues')}</CardTitle>
                         <CardDescription>
-                            Depth per queue, so one backed-up queue doesn't hide
-                            behind a healthy total.
+                            {t(
+                                "Depth per queue, so one backed-up queue doesn't hide behind a healthy total.",
+                            )}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="px-0">
                         {queues.length === 0 ? (
                             <p className="px-6 text-sm text-muted-foreground">
-                                Nothing queued right now.
+                                {t('Nothing queued right now.')}
                             </p>
                         ) : (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead className="pl-6">
-                                            Queue
+                                            {t('Queue')}
                                         </TableHead>
-                                        <TableHead>Waiting</TableHead>
-                                        <TableHead>Total</TableHead>
+                                        <TableHead>{t('Waiting')}</TableHead>
+                                        <TableHead>{t('Total')}</TableHead>
                                         <TableHead className="pr-6">
-                                            Oldest wait
+                                            {t('Oldest wait')}
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -309,8 +318,10 @@ export default function SuperAdminQueueIndex({
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <Heading
                             variant="small"
-                            title="Failed jobs"
-                            description="Jobs that exhausted their attempts. Retrying pushes them back onto their original queue."
+                            title={t('Failed jobs')}
+                            description={t(
+                                'Jobs that exhausted their attempts. Retrying pushes them back onto their original queue.',
+                            )}
                         />
 
                         {failed.total > 0 && (
@@ -326,14 +337,14 @@ export default function SuperAdminQueueIndex({
                                     }
                                 >
                                     <RotateCcw />
-                                    Retry all
+                                    {t('Retry all')}
                                 </Button>
                                 <Button
                                     variant="outline"
                                     onClick={() => setFlushing(true)}
                                 >
                                     <Trash2 />
-                                    Delete all
+                                    {t('Delete all')}
                                 </Button>
                             </div>
                         )}
@@ -344,12 +355,12 @@ export default function SuperAdminQueueIndex({
                             <div className="flex flex-wrap items-center gap-2">
                                 <Input
                                     className="w-full max-w-sm sm:w-64"
-                                    placeholder="Search job or error…"
+                                    placeholder={t('Search job or error…')}
                                     value={search}
                                     onChange={(event) =>
                                         setSearch(event.target.value)
                                     }
-                                    aria-label="Search failed jobs"
+                                    aria-label={t('Search failed jobs')}
                                 />
                                 <Select
                                     value={draft.queue ?? ANY_QUEUE}
@@ -365,13 +376,13 @@ export default function SuperAdminQueueIndex({
                                 >
                                     <SelectTrigger
                                         className="w-40"
-                                        aria-label="Filter by queue"
+                                        aria-label={t('Filter by queue')}
                                     >
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value={ANY_QUEUE}>
-                                            Any queue
+                                            {t('Any queue')}
                                         </SelectItem>
                                         {failedQueues.map((queue) => (
                                             <SelectItem
@@ -408,12 +419,16 @@ export default function SuperAdminQueueIndex({
                                 emptyIcon={<CircleCheck />}
                                 emptyMessage={
                                     hasActiveFilters
-                                        ? 'No failed jobs match these filters'
-                                        : 'No failed jobs'
+                                        ? t(
+                                              'No failed jobs match these filters',
+                                          )
+                                        : t('No failed jobs')
                                 }
                                 emptyDescription={
                                     hasActiveFilters
-                                        ? 'Clear the search or queue filter to see every failure.'
+                                        ? t(
+                                              'Clear the search or queue filter to see every failure.',
+                                          )
                                         : 'Every job that has run so far either succeeded or is still being retried.'
                                 }
                             />
@@ -448,16 +463,16 @@ export default function SuperAdminQueueIndex({
                 <DialogContent>
                     <DialogTitle>Delete this failed job?</DialogTitle>
                     <DialogDescription>
-                        The job payload goes with it, so it can no longer be
-                        retried. Retry it instead if the failure might have been
-                        temporary.
+                        {t(
+                            'The job payload goes with it, so it can no longer be retried. Retry it instead if the failure might have been temporary.',
+                        )}
                     </DialogDescription>
                     <DialogFooter className="gap-2">
                         <Button
                             variant="secondary"
                             onClick={() => setForgetting(null)}
                         >
-                            Keep it
+                            {t('Keep it')}
                         </Button>
                         <Button
                             variant="destructive"
@@ -470,7 +485,7 @@ export default function SuperAdminQueueIndex({
                                 }
                             }}
                         >
-                            Delete job
+                            {t('Delete job')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -480,16 +495,17 @@ export default function SuperAdminQueueIndex({
                 <DialogContent>
                     <DialogTitle>Delete every failed job?</DialogTitle>
                     <DialogDescription>
-                        All {failed.total} failed jobs and their payloads are
-                        removed permanently. None of them can be retried
-                        afterwards.
+                        {t(
+                            'All :total failed jobs and their payloads are removed permanently. None of them can be retried afterwards.',
+                            { total: failed.total },
+                        )}
                     </DialogDescription>
                     <DialogFooter className="gap-2">
                         <Button
                             variant="secondary"
                             onClick={() => setFlushing(false)}
                         >
-                            Keep them
+                            {t('Keep them')}
                         </Button>
                         <Button
                             variant="destructive"
@@ -500,7 +516,7 @@ export default function SuperAdminQueueIndex({
                                 })
                             }
                         >
-                            Delete all
+                            {t('Delete all')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

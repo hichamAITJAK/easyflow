@@ -8,6 +8,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useTranslation } from '@/hooks/use-translation';
 import SuperAdminLayout from '@/layouts/super-admin/layout';
 import {
     cities as courierCities,
@@ -21,14 +22,18 @@ export default function SuperAdminCouriersIndex({
 }: {
     couriers: CatalogCourier[];
 }) {
+    const { t } = useTranslation();
+
     return (
         <SuperAdminLayout>
-            <Head title="Couriers" />
+            <Head title={t('Couriers')} />
 
             <div className="space-y-6">
                 <Heading
-                    title="Delivery couriers"
-                    description="The couriers tenants can create parcels with. Each one is backed by its own integration code, so the catalog itself is fixed — you can edit how a courier is presented and refresh its city list."
+                    title={t('Delivery couriers')}
+                    description={t(
+                        'The couriers tenants can create parcels with. Each one is backed by its own integration code, so the catalog itself is fixed — you can edit how a courier is presented and refresh its city list.',
+                    )}
                 />
 
                 <div className="grid gap-4 md:grid-cols-2">
@@ -77,13 +82,13 @@ export default function SuperAdminCouriersIndex({
                                     <Button variant="outline" size="sm" asChild>
                                         <Link href={editCourier(courier.id)}>
                                             <Pencil />
-                                            Edit
+                                            {t('Edit')}
                                         </Link>
                                     </Button>
                                     <Button variant="outline" size="sm" asChild>
                                         <Link href={courierCities(courier.id)}>
                                             <MapPin />
-                                            Cities
+                                            {t('Cities')}
                                         </Link>
                                     </Button>
 
@@ -100,7 +105,7 @@ export default function SuperAdminCouriersIndex({
                                             }
                                         >
                                             <RefreshCw />
-                                            Sync cities
+                                            {t('Sync cities')}
                                         </Button>
                                     ) : (
                                         <Tooltip>
@@ -112,13 +117,14 @@ export default function SuperAdminCouriersIndex({
                                                         disabled
                                                     >
                                                         <RefreshCw />
-                                                        Sync cities
+                                                        {t('Sync cities')}
                                                     </Button>
                                                 </span>
                                             </TooltipTrigger>
                                             <TooltipContent>
-                                                No cities API is wired up for
-                                                this courier yet.
+                                                {t(
+                                                    'No cities API is wired up for this courier yet.',
+                                                )}
                                             </TooltipContent>
                                         </Tooltip>
                                     )}
