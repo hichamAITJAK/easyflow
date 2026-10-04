@@ -482,6 +482,10 @@ class DashboardController extends Controller
                 'confirmationRate' => $orders > 0 ? round(($confirmed / $orders) * 100, 1) : 0,
                 'deliveryRate' => $submitted > 0 ? round(($delivered / $submitted) * 100, 1) : 0,
                 'earned' => round((float) $rows->sum('revenue_delivered'), 2),
+                // The counts behind each rate, so the table can show
+                // "64% (32 / 50)" rather than a bare percentage.
+                'confirmed' => $confirmed,
+                'submitted' => $submitted,
                 'delivered' => $delivered,
             ];
         };
@@ -564,15 +568,10 @@ class DashboardController extends Controller
             ];
         })->filter()->values();
 
-        // `delivered` was only needed to derive avgDeliveryDays.
-        $strip = fn (Collection $items) => $items
-            ->map(fn (array $item) => collect($item)->except('delivered')->all())
-            ->all();
-
         return [
-            'stores' => $strip($stores),
-            'products' => $strip($products),
-            'couriers' => $strip($couriers),
+            'stores' => $stores->all(),
+            'products' => $products->all(),
+            'couriers' => $couriers->all(),
         ];
     }
 

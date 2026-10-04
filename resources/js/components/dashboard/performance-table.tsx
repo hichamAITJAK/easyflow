@@ -1,4 +1,10 @@
-import { ArrowDown, ArrowDownRight, ArrowUp, ArrowUpDown, ArrowUpRight } from 'lucide-react';
+import {
+    ArrowDown,
+    ArrowDownRight,
+    ArrowUp,
+    ArrowUpDown,
+    ArrowUpRight,
+} from 'lucide-react';
 import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -30,6 +36,10 @@ export type PerformanceRow = {
     /** Null for couriers — they only handle post-confirmation orders. */
     confirmationRate: number | null;
     deliveryRate: number;
+    /** Counts behind the rates: confirmed / orders and delivered / submitted. */
+    confirmed: number;
+    submitted: number;
+    delivered: number;
     /** Collected revenue (MAD) from delivered orders. */
     earned: number;
     /** Couriers only: mean shipped → delivered duration in days. */
@@ -58,9 +68,15 @@ type SortKey =
 function RateCell({
     value,
     target,
+    count,
+    total,
 }: {
     value: number | null;
     target: number;
+    /** Numerator shown under the rate. */
+    count: number;
+    /** Denominator shown under the rate. */
+    total: number;
 }) {
     const { t } = useTranslation();
 
@@ -89,10 +105,15 @@ function RateCell({
                     <ArrowDownRight aria-hidden className="size-3.5" />
                 )}
                 {value.toFixed(0)}%
-                {above && <span className="sr-only">{t(', above target')}</span>}
+                {above && (
+                    <span className="sr-only">{t(', above target')}</span>
+                )}
                 {wellBelow && (
                     <span className="sr-only">{t(', well below target')}</span>
                 )}
+            </span>
+            <span className="block text-xs text-muted-foreground">
+                {formatNumber(count)} / {formatNumber(total)}
             </span>
         </TableCell>
     );
@@ -120,7 +141,14 @@ function SortableHead({
                 size="sm"
                 className="-mr-2.5 gap-1"
                 onClick={() => onSort(column)}
-                aria-label={t('Sort by :label', { label }) + (active ? (sort.desc ? t(', descending') : t(', ascending')) : '')}
+                aria-label={
+                    t('Sort by :label', { label }) +
+                    (active
+                        ? sort.desc
+                            ? t(', descending')
+                            : t(', ascending')
+                        : '')
+                }
             >
                 {label}
                 <SortIcon
@@ -164,9 +192,7 @@ function RowsTable({
 
     const toggleSort = (key: SortKey) =>
         setSort((prev) =>
-            prev.key === key
-                ? { key, desc: !prev.desc }
-                : { key, desc: true },
+            prev.key === key ? { key, desc: !prev.desc } : { key, desc: true },
         );
 
     const ranked = [...rows].sort((a, b) => {
@@ -239,21 +265,25 @@ function RowsTable({
                                 </span>
                             </span>
                         </TableCell>
-                        <TableCell className="text-right tabular-nums text-muted-foreground">
+                        <TableCell className="text-right text-muted-foreground tabular-nums">
                             {formatNumber(row.orders)}
                         </TableCell>
                         {!hideConfirmation && (
                             <RateCell
                                 value={row.confirmationRate}
                                 target={targets.confirmation}
+                                count={row.confirmed}
+                                total={row.orders}
                             />
                         )}
                         <RateCell
                             value={row.deliveryRate}
                             target={targets.delivery}
+                            count={row.delivered}
+                            total={row.submitted}
                         />
                         {hideConfirmation && (
-                            <TableCell className="text-right tabular-nums text-muted-foreground">
+                            <TableCell className="text-right text-muted-foreground tabular-nums">
                                 {row.avgDeliveryDays !== undefined
                                     ? `${row.avgDeliveryDays.toFixed(1)}d`
                                     : '—'}
@@ -262,7 +292,9 @@ function RowsTable({
                         <TableCell className="text-right font-medium tabular-nums">
                             {formatCompactNumber(row.earned)} MAD
                             <span className="sr-only">
-                                {t(', exactly :amount MAD', { amount: formatNumber(row.earned) })}
+                                {t(', exactly :amount MAD', {
+                                    amount: formatNumber(row.earned),
+                                })}
                             </span>
                         </TableCell>
                     </TableRow>
@@ -302,10 +334,13 @@ export function PerformanceTable({
                         {t('Store, product & courier performance')}
                     </CardTitle>
                     <CardDescription>
-                        {t('Ranked by orders this period — rates read against the :confirmation% confirmation and :delivery% delivery targets', {
-                            confirmation: targets.confirmation,
-                            delivery: targets.delivery,
-                        })}
+                        {t(
+                            'Ranked by orders this period — rates read against the :confirmation% confirmation and :delivery% delivery targets',
+                            {
+                                confirmation: targets.confirmation,
+                                delivery: targets.delivery,
+                            },
+                        )}
                     </CardDescription>
                 </div>
             </CardHeader>
@@ -314,21 +349,29 @@ export function PerformanceTable({
                 <Tabs defaultValue="stores">
                     <TabsList>
                         <TabsTrigger value="stores">{t('Stores')}</TabsTrigger>
-                        <TabsTrigger value="products">{t('Products')}</TabsTrigger>
-                        <TabsTrigger value="couriers">{t('Couriers')}</TabsTrigger>
+                        <TabsTrigger value="products">
+                            {t('Products')}
+                        </TabsTrigger>
+                        <TabsTrigger value="couriers">
+                            {t('Couriers')}
+                        </TabsTrigger>
                     </TabsList>
                     <TabsContent value="stores">
                         <RowsTable
                             rows={stores}
                             targets={targets}
-                            emptyMessage={t('No store activity in this period yet.')}
+                            emptyMessage={t(
+                                'No store activity in this period yet.',
+                            )}
                         />
                     </TabsContent>
                     <TabsContent value="products">
                         <RowsTable
                             rows={products}
                             targets={targets}
-                            emptyMessage={t('No product activity in this period yet.')}
+                            emptyMessage={t(
+                                'No product activity in this period yet.',
+                            )}
                         />
                     </TabsContent>
                     <TabsContent value="couriers">
