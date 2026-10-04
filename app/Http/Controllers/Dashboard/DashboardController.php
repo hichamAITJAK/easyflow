@@ -109,7 +109,7 @@ class DashboardController extends Controller
             ],
             'stores' => $stores,
             'agents' => $agents,
-            'money' => $this->moneyTiles($businessId, $storeIds, $rows, $previousRows),
+            'money' => $this->moneyTiles($businessId, $rows, $previousRows),
             'ordersPerDay' => $this->ordersPerDay($rows, $since, $windowDays),
             'team' => $this->teamPerformance($businessId, $since, $until),
             'targets' => $this->rateTargets($businessId),
@@ -260,30 +260,17 @@ class DashboardController extends Controller
     }
 
     /**
-     * @param  list<int>  $storeIds
      * @param  Collection<int, DailyStatsSummary>  $rows
      * @param  Collection<int, DailyStatsSummary>  $previousRows
      * @return array<string, mixed>
      */
-    private function moneyTiles(?int $businessId, array $storeIds, Collection $rows, Collection $previousRows): array
+    private function moneyTiles(?int $businessId, Collection $rows, Collection $previousRows): array
     {
         $earned = (float) $rows->sum('revenue_delivered');
         $previousEarned = (float) $previousRows->sum('revenue_delivered');
 
         $commissions = (float) $rows->sum('commission_total');
         $previousCommissions = (float) $previousRows->sum('commission_total');
-
-        // Stock snapshot, not a flow: the value of orders sitting confirmed
-        // and not yet shipped right now. A cheap indexed query on current
-        // state — a daily additive column can't represent it.
-        $pipeline = (float) Order::where('business_id', $businessId)
-            ->where('is_test', false)
-            ->whereIn('confirmation_status', [
-                OrderConfirmationStatus::CONFIRMED,
-                OrderConfirmationStatus::CONFIRMED_FOLLOWUP,
-            ])
-            ->when($storeIds !== [], fn ($query) => $query->whereIn('store_id', $storeIds))
-            ->sum('total_amount');
 
         // Courier money is owned by courier_settlements (UC-15), not the
         // stats table: expected = what pending settlements say couriers
@@ -302,7 +289,6 @@ class DashboardController extends Controller
             'totalEarnedDelta' => $this->percentDelta($earned, $previousEarned),
             'commissions' => round($commissions, 2),
             'commissionsDelta' => $this->percentDelta($commissions, $previousCommissions),
-            'pipeline' => round($pipeline, 2),
             'courierExpected' => round($expected, 2),
             'courierVariance' => $variance !== null ? (float) $variance : null,
         ];

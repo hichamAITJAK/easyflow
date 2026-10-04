@@ -43,7 +43,6 @@ test('the admin dashboard renders every widget prop with the right shape', funct
             ->has('totalEarnedDelta')
             ->has('commissions')
             ->has('commissionsDelta')
-            ->has('pipeline')
             ->has('courierExpected')
             ->has('courierVariance')
         )

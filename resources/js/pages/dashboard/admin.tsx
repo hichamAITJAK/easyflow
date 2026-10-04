@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { CircleAlert, Clock, HandCoins, Info, TriangleAlert, Truck, Wallet, X } from 'lucide-react';
+import { CircleAlert, HandCoins, Info, TriangleAlert, Truck, Wallet, X } from 'lucide-react';
 import { useState } from 'react';
 import { AgentFilter } from '@/components/dashboard/agent-filter';
 import { DashboardFilters } from '@/components/dashboard/dashboard-filters';
@@ -53,7 +53,6 @@ type Props = {
         totalEarnedDelta: number | null;
         commissions: number;
         commissionsDelta: number | null;
-        pipeline: number;
         courierExpected: number;
         courierVariance: number | null;
     };
@@ -262,7 +261,7 @@ export default function AdminDashboard({
                 {/* Money row. Courier money merges expected remittance and
                     the latest settlement variance: same story, money
                     sitting at couriers. */}
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
                     <StatTile
                         label={t('Total earned')}
                         caption="Delivered & collected"
@@ -291,14 +290,6 @@ export default function AdminDashboard({
                         value={money(moneyProps.courierExpected)}
                         exactValue={`${formatNumber(moneyProps.courierExpected)} MAD`}
                         icon={Truck}
-                    />
-
-                    <StatTile
-                        label={t('Confirmed pipeline')}
-                        caption={t('Not yet shipped')}
-                        value={money(moneyProps.pipeline)}
-                        exactValue={`${formatNumber(moneyProps.pipeline)} MAD`}
-                        icon={Clock}
                     />
 
                     <StatTile
