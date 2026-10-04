@@ -189,24 +189,6 @@ export function TeamPerformanceRadial({
                             background={{ fill: 'var(--color-muted)' }}
                             cornerRadius={8}
                         />
-                        <text
-                            x="50%"
-                            y="47%"
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            className="fill-foreground text-2xl font-semibold tabular-nums"
-                        >
-                            {selected.confirmationRate.toFixed(0)}%
-                        </text>
-                        <text
-                            x="50%"
-                            y="58%"
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            className="fill-muted-foreground text-xs"
-                        >
-                            confirmed
-                        </text>
                     </RadialBarChart>
                 </ChartContainer>
 
