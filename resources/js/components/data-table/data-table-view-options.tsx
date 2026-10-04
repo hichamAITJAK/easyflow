@@ -13,12 +13,14 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useTranslation } from '@/hooks/use-translation';
 
 export function DataTableViewOptions<TData>({
     table,
 }: {
     table: Table<TData>;
 }) {
+    const { t } = useTranslation();
     const columns = table
         .getAllColumns()
         .filter(
@@ -35,11 +37,11 @@ export function DataTableViewOptions<TData>({
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="ml-auto">
                     <Settings2 />
-                    View
+                    {t('View')}
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('Toggle columns')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {columns.map((column) => (
                     <DropdownMenuCheckboxItem

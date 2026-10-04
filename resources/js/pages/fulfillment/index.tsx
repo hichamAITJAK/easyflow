@@ -7,6 +7,7 @@ import { ParcelCard } from '@/components/fulfillment/parcel-card';
 import { ScannerView } from '@/components/fulfillment/scanner-view';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTranslation } from '@/hooks/use-translation';
 import FulfillmentLayout from '@/layouts/fulfillment-layout';
 import { fulfillmentApi, FulfillmentApiError } from '@/lib/fulfillment-api';
 import type {
@@ -29,6 +30,8 @@ export default function FulfillmentIndex({
 }: {
     summary: FulfillmentSummary;
 }) {
+    const { t } = useTranslation();
+
     const [tab, setTab] = useState('scan');
     const [summary, setSummary] = useState(initialSummary);
     const [result, setResult] = useState<FulfillmentScanResult | null>(null);
@@ -96,7 +99,9 @@ export default function FulfillmentIndex({
         try {
             const { order } = await fulfillmentApi.confirm(result.order.id);
             buzz('ok');
-            toast.success(`${order.courier_tracking_number ?? 'Parcel'} updated`);
+            toast.success(
+                `${order.courier_tracking_number ?? 'Parcel'} updated`,
+            );
 
             // Clear the card immediately so the next parcel starts from a
             // blank screen — leaving the previous one up is how a parcel
@@ -117,7 +122,7 @@ export default function FulfillmentIndex({
 
             try {
                 await fulfillmentApi.undo(eventId);
-                toast.success('Scan undone');
+                toast.success(t('Scan undone'));
                 await Promise.all([loadActivity(), refreshSummary()]);
             } catch (error) {
                 toast.error(errorMessage(error));
@@ -147,18 +152,18 @@ export default function FulfillmentIndex({
 
     return (
         <FulfillmentLayout>
-            <Head title="Fulfilment" />
+            <Head title={t('Fulfilment')} />
 
             <div className="mx-auto w-full max-w-lg space-y-4 p-4">
                 <div className="grid grid-cols-2 gap-3">
                     <Counter
                         icon={PackageSearch}
-                        label="To prepare"
+                        label={t('To prepare')}
                         value={summary.ready_to_prepare}
                     />
                     <Counter
                         icon={RotateCcw}
-                        label="Returns pending"
+                        label={t('Returns pending')}
                         value={summary.returns_pending}
                     />
                 </div>
@@ -167,13 +172,16 @@ export default function FulfillmentIndex({
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="scan">
                             <ScanLine className="size-4" />
-                            Scan
+                            {t('Scan')}
                         </TabsTrigger>
-                        <TabsTrigger value="activity">Today</TabsTrigger>
+                        <TabsTrigger value="activity">{t('Today')}</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="scan" className="mt-4 space-y-4">
-                        <ScannerView onScan={handleScan} busy={busy || confirming} />
+                        <ScannerView
+                            onScan={handleScan}
+                            busy={busy || confirming}
+                        />
 
                         {result && (
                             <ParcelCard
@@ -216,7 +224,9 @@ function Counter({
                     <p className="text-2xl leading-none font-semibold tabular-nums">
                         {value}
                     </p>
-                    <p className="mt-1 truncate text-xs text-muted-foreground">{label}</p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                        {label}
+                    </p>
                 </div>
             </CardContent>
         </Card>
@@ -240,5 +250,7 @@ function buzz(kind: 'ok' | 'warn' | 'error') {
         return;
     }
 
-    navigator.vibrate(kind === 'ok' ? 40 : kind === 'warn' ? [30, 60, 30] : [80, 50, 80]);
+    navigator.vibrate(
+        kind === 'ok' ? 40 : kind === 'warn' ? [30, 60, 30] : [80, 50, 80],
+    );
 }

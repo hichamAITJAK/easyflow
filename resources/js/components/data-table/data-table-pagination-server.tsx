@@ -7,6 +7,7 @@ import {
     PaginationEllipsis,
     PaginationItem,
 } from '@/components/ui/pagination';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import type { Paginated } from '@/types';
 
@@ -39,13 +40,14 @@ export function DataTablePaginationServer<TData>({
     linksOnly?: boolean;
     countOnly?: boolean;
 }) {
+    const { t } = useTranslation();
     const links = paginated.links;
     const previous = links[0];
     const next = links[links.length - 1];
     const pages = links.slice(1, -1);
 
-    const one = noun?.one ?? 'entry';
-    const many = noun?.many ?? 'entries';
+    const one = t(noun?.one ?? 'entry');
+    const many = t(noun?.many ?? 'entries');
 
     const onOnePage = paginated.last_page <= 1;
 
@@ -69,10 +71,15 @@ export function DataTablePaginationServer<TData>({
             {!linksOnly && (
                 <span className="truncate text-sm text-muted-foreground">
                     {paginated.total === 0
-                        ? `No ${many}`
+                        ? t('No :many', { many })
                         : onOnePage
                           ? `${paginated.total} ${paginated.total === 1 ? one : many}`
-                          : `Showing ${paginated.from} to ${paginated.to} of ${paginated.total} ${many}`}
+                          : t('Showing :from to :to of :total :many', {
+                                from: paginated.from,
+                                to: paginated.to,
+                                total: paginated.total,
+                                many,
+                            })}
                 </span>
             )}
 
@@ -90,7 +97,7 @@ export function DataTablePaginationServer<TData>({
                                 href={previous.url ?? '#'}
                                 preserveScroll
                                 preserveState
-                                aria-label="Go to previous page"
+                                aria-label={t('Go to previous page')}
                                 aria-disabled={!previous.url}
                                 className={cn(
                                     buttonVariants({
@@ -104,7 +111,7 @@ export function DataTablePaginationServer<TData>({
                             >
                                 <ChevronLeftIcon />
                                 <span className="hidden sm:block">
-                                    Previous
+                                    {t('Previous')}
                                 </span>
                             </Link>
                         </PaginationItem>
@@ -144,7 +151,7 @@ export function DataTablePaginationServer<TData>({
                                 href={next.url ?? '#'}
                                 preserveScroll
                                 preserveState
-                                aria-label="Go to next page"
+                                aria-label={t('Go to next page')}
                                 aria-disabled={!next.url}
                                 className={cn(
                                     buttonVariants({
@@ -156,7 +163,9 @@ export function DataTablePaginationServer<TData>({
                                         'pointer-events-none opacity-50',
                                 )}
                             >
-                                <span className="hidden sm:block">Next</span>
+                                <span className="hidden sm:block">
+                                    {t('Next')}
+                                </span>
                                 <ChevronRightIcon />
                             </Link>
                         </PaginationItem>

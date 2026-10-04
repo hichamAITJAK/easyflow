@@ -17,8 +17,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 
 export function DataTablePagination<TData>({ table }: { table: Table<TData> }) {
+    const { t } = useTranslation();
     const { pageIndex, pageSize } = table.getState().pagination;
     const pageCount = table.getPageCount();
 
@@ -29,7 +31,7 @@ export function DataTablePagination<TData>({ table }: { table: Table<TData> }) {
     return (
         <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Rows per page</span>
+                <span>{t('Rows per page')}</span>
                 <Select
                     value={String(pageSize)}
                     onValueChange={(value) => table.setPageSize(Number(value))}
@@ -49,7 +51,10 @@ export function DataTablePagination<TData>({ table }: { table: Table<TData> }) {
 
             <div className="flex items-center gap-4">
                 <span className="text-sm text-muted-foreground">
-                    Page {pageIndex + 1} of {pageCount}
+                    {t('Page :page of :pages', {
+                        page: pageIndex + 1,
+                        pages: pageCount,
+                    })}
                 </span>
                 <div className="flex items-center gap-1">
                     <Button
