@@ -1,5 +1,13 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { CircleAlert, HandCoins, Info, TriangleAlert, Truck, Wallet, X } from 'lucide-react';
+import {
+    CircleAlert,
+    HandCoins,
+    Info,
+    TriangleAlert,
+    Truck,
+    Wallet,
+    X,
+} from 'lucide-react';
 import { useState } from 'react';
 import { AgentFilter } from '@/components/dashboard/agent-filter';
 import { DashboardFilters } from '@/components/dashboard/dashboard-filters';
@@ -7,8 +15,6 @@ import type {
     DashboardFilterValues,
     SimpleOption,
 } from '@/components/dashboard/dashboard-filters';
-import { HourlyRateBarWithNote } from '@/components/dashboard/hourly-rate-bar';
-import type { HourlyRatePoint } from '@/components/dashboard/hourly-rate-bar';
 import { OrdersPerDayCard } from '@/components/dashboard/orders-per-day-card';
 import type { OrdersPerDayPoint } from '@/components/dashboard/orders-per-day-card';
 import { PerformanceTable } from '@/components/dashboard/performance-table';
@@ -18,7 +24,12 @@ import { TeamPerformanceRadial } from '@/components/dashboard/team-performance-r
 import type { AgentPerformance } from '@/components/dashboard/team-performance-radial';
 import { WeeklyRateLine } from '@/components/dashboard/weekly-rate-line';
 import type { WeeklyRatePoint } from '@/components/dashboard/weekly-rate-line';
-import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+    Alert,
+    AlertAction,
+    AlertDescription,
+    AlertTitle,
+} from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -59,8 +70,6 @@ type Props = {
     ordersPerDay: OrdersPerDayPoint[];
     team: AgentPerformance[];
     targets: { confirmation: number; delivery: number };
-    bestHour: HourlyRatePoint[];
-    confirmSpeed: { avgSeconds: number | null; delta: number | null };
     rates: {
         buckets: {
             confirmation: WeeklyRatePoint[];
@@ -83,14 +92,6 @@ type Props = {
 
 function money(value: number): string {
     return formatCompactNumber(value) + ' MAD';
-}
-
-/** 6180 → "1h 43m"; 95 → "2m". */
-function duration(seconds: number): string {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.round((seconds % 3600) / 60);
-
-    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
 function greeting(t: Translator): string {
@@ -131,8 +132,7 @@ const ALERT_TEMPLATES: Record<
         description:
             'No eligible agent covers these orders — assign them manually before they go stale.',
         actionLabel: 'Assign now',
-        href: () =>
-            ordersIndex({ query: { confirmation_status: 'new' } }).url,
+        href: () => ordersIndex({ query: { confirmation_status: 'new' } }).url,
         dismissible: false,
     },
     'stale-transit': {
@@ -163,8 +163,6 @@ export default function AdminDashboard({
     ordersPerDay,
     team,
     targets,
-    bestHour,
-    confirmSpeed,
     rates,
     performanceTable,
     alerts,
@@ -241,7 +239,15 @@ export default function AdminDashboard({
                                             <Button
                                                 size="icon-sm"
                                                 variant="ghost"
-                                                aria-label={t('Dismiss ":title"', { title: template.title(count, t) })}
+                                                aria-label={t(
+                                                    'Dismiss ":title"',
+                                                    {
+                                                        title: template.title(
+                                                            count,
+                                                            t,
+                                                        ),
+                                                    },
+                                                )}
                                                 onClick={() =>
                                                     setDismissedAlerts(
                                                         (prev) => [...prev, id],
@@ -277,7 +283,11 @@ export default function AdminDashboard({
                             moneyProps.courierVariance === null
                                 ? t('Awaiting remittance')
                                 : moneyProps.courierVariance < 0
-                                  ? t(':amount vs received last settlement', { amount: money(moneyProps.courierVariance) })
+                                  ? t(':amount vs received last settlement', {
+                                        amount: money(
+                                            moneyProps.courierVariance,
+                                        ),
+                                    })
                                   : t('Settled in full last period')
                         }
                         captionAccent={
@@ -312,55 +322,15 @@ export default function AdminDashboard({
                     <TeamPerformanceRadial agents={team} targets={targets} />
                 </div>
 
-                {/* Timing + rate quality, side by side at large */}
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                    <Card className="shadow-none">
-                        <CardHeader className="flex flex-wrap items-start justify-between gap-2 space-y-0">
-                            <div className="grid gap-1.5">
-                                <CardTitle>{t('Best hour to confirm')}</CardTitle>
-                                <CardDescription>
-                                    {t('Confirmation rate by call hour')}
-                                </CardDescription>
-                            </div>
-                            {confirmSpeed.avgSeconds !== null && (
-                                <div className="text-right">
-                                    <p className="text-lg font-semibold tabular-nums">
-                                        {duration(confirmSpeed.avgSeconds)}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {t('avg assigned to confirmed')}
-                                        {confirmSpeed.delta !== null && (
-                                            <>
-                                                {' '}
-                                                <span
-                                                    className={
-                                                        confirmSpeed.delta <= 0
-                                                            ? 'text-success'
-                                                            : 'text-destructive'
-                                                    }
-                                                >
-                                                    {confirmSpeed.delta > 0
-                                                        ? '+'
-                                                        : ''}
-                                                    {confirmSpeed.delta}%
-                                                </span>
-                                            </>
-                                        )}
-                                    </p>
-                                </div>
-                            )}
-                        </CardHeader>
-                        <CardContent>
-                            <HourlyRateBarWithNote data={bestHour} />
-                        </CardContent>
-                    </Card>
-
+                {/* Rate quality */}
+                <div className="grid grid-cols-1 gap-4">
                     <Card className="shadow-none">
                         <CardHeader className="flex flex-wrap items-start justify-between gap-2 space-y-0">
                             <div className="grid gap-1.5">
                                 <CardTitle>{t('Rates')}</CardTitle>
                                 <CardDescription>
-                                    Confirmation, delivery and return over the selected period
+                                    Confirmation, delivery and return over the
+                                    selected period
                                 </CardDescription>
                             </div>
                             <AgentFilter
@@ -397,12 +367,17 @@ export default function AdminDashboard({
                                         },
                                     ] as const
                                 ).map((tile) => (
-                                    <div key={tile.key} className="grid gap-0.5">
+                                    <div
+                                        key={tile.key}
+                                        className="grid gap-0.5"
+                                    >
                                         <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                             <span
                                                 aria-hidden
                                                 className="size-2 shrink-0 rounded-full"
-                                                style={{ background: tile.color }}
+                                                style={{
+                                                    background: tile.color,
+                                                }}
                                             />
                                             {tile.label}
                                         </dt>

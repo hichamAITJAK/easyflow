@@ -52,11 +52,6 @@ test('the admin dashboard renders every widget prop with the right shape', funct
             ->has('confirmation')
             ->has('delivery')
         )
-        ->has('bestHour', 24)
-        ->has('confirmSpeed', fn ($speed) => $speed
-            ->has('avgSeconds')
-            ->has('delta')
-        )
         ->has('rates', fn ($rates) => $rates
             ->has('buckets', fn ($buckets) => $buckets
                 ->has('confirmation')

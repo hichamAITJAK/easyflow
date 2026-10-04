@@ -9,7 +9,6 @@ use App\Http\Controllers\Controller;
 use App\Models\CourierSettlement;
 use App\Models\DailyStatsSummary;
 use App\Models\DeliveryAccount;
-use App\Models\HourlyConfirmationStat;
 use App\Models\Order;
 use App\Models\PerformanceTarget;
 use App\Models\Product;
@@ -113,8 +112,6 @@ class DashboardController extends Controller
             'ordersPerDay' => $this->ordersPerDay($rows, $since, $windowDays),
             'team' => $this->teamPerformance($businessId, $since, $until),
             'targets' => $this->rateTargets($businessId),
-            'bestHour' => $this->bestHour($businessId, $since, $until),
-            'confirmSpeed' => $this->confirmSpeed($rows, $previousRows),
             'rates' => $this->rateBuckets(
                 $ratesAgentId === null
                     ? $rows
@@ -395,59 +392,6 @@ class DashboardController extends Controller
             'delivery' => $delivery instanceof PerformanceTarget
                 ? (float) $delivery->target_percentage
                 : (float) config('performance.defaults.delivery_success_rate'),
-        ];
-    }
-
-    /**
-     * Business-wide hour-of-day buckets summed over the window.
-     *
-     * @return array<int, array{hour: int, rate: float|null, attempts: int}>
-     */
-    private function bestHour(?int $businessId, Carbon $since, Carbon $until): array
-    {
-        $byHour = HourlyConfirmationStat::where('business_id', $businessId)
-            ->whereNull('agent_id')
-            ->whereBetween('stat_date', [$since, $until])
-            ->get()
-            ->groupBy('hour');
-
-        return collect(range(0, 23))->map(function (int $hour) use ($byHour) {
-            $buckets = $byHour->get($hour);
-            $attempts = (int) ($buckets?->sum('attempts_count') ?? 0);
-            $confirmed = (int) ($buckets?->sum('confirmed_count') ?? 0);
-
-            return [
-                'hour' => $hour,
-                'rate' => $attempts > 0 ? round(($confirmed / $attempts) * 100) : null,
-                'attempts' => $attempts,
-            ];
-        })->all();
-    }
-
-    /**
-     * @param  Collection<int, DailyStatsSummary>  $rows
-     * @param  Collection<int, DailyStatsSummary>  $previousRows
-     * @return array{avgSeconds: int|null, delta: float|null}
-     */
-    private function confirmSpeed(Collection $rows, Collection $previousRows): array
-    {
-        $average = function (Collection $window): ?float {
-            $confirmed = (int) $window->sum('confirmed_count');
-
-            return $confirmed > 0
-                ? (float) $window->sum('confirm_seconds_total') / $confirmed
-                : null;
-        };
-
-        $current = $average($rows);
-        $previous = $average($previousRows);
-
-        return [
-            'avgSeconds' => $current !== null ? (int) round($current) : null,
-            // For a duration, less is faster — the UI colors accordingly.
-            'delta' => $current !== null && $previous !== null && $previous > 0
-                ? round((($current - $previous) / $previous) * 100, 1)
-                : null,
         ];
     }
 
