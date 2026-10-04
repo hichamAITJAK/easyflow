@@ -4,6 +4,7 @@ import type { PropsWithChildren } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { AppShell } from '@/components/app-shell';
 import { AppearanceDropdown } from '@/components/appearance-dropdown';
+import { LanguageDropdown } from '@/components/language-dropdown';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Badge } from '@/components/ui/badge';
@@ -113,6 +114,7 @@ export default function SuperAdminLayout({ children }: PropsWithChildren) {
                     </Badge>
 
                     <div className="ml-auto flex items-center">
+                        <LanguageDropdown />
                         <AppearanceDropdown />
                     </div>
                 </header>
