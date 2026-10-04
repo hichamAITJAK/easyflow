@@ -64,6 +64,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import type {
     CommissionAmountType,
@@ -132,6 +133,8 @@ export function ConfirmationAgentForm({
     onCancel?: () => void;
     className?: string;
 }) {
+    const { t } = useTranslation();
+
     const isEditing = Boolean(user);
     const formProps = isEditing
         ? UserController.update.form(user!.id)
@@ -397,8 +400,10 @@ export function ConfirmationAgentForm({
                     <div className="flex-1 space-y-6 px-6 py-6 md:px-8">
                         <FormSection
                             icon={IdCard}
-                            title="General & Profile"
-                            description="Identity, contact information, and account credentials."
+                            title={t('General & Profile')}
+                            description={t(
+                                'Identity, contact information, and account credentials.',
+                            )}
                         >
                             <div className="grid gap-6 rounded-md border p-5 md:grid-cols-[16rem_1fr]">
                                 <AvatarPanel
@@ -417,46 +422,54 @@ export function ConfirmationAgentForm({
 
                         <FormSection
                             icon={StoreIcon}
-                            title="Store & Product Assignment Scope"
-                            description="Restrict which stores or products this confirmation agent has permission to access and confirm."
+                            title={t('Store & Product Assignment Scope')}
+                            description={t(
+                                'Restrict which stores or products this confirmation agent has permission to access and confirm.',
+                            )}
                             badge={
                                 (storeScope === 'selected' ||
                                     productScope === 'selected') && (
-                                    <SectionBadge>Scoped Access</SectionBadge>
+                                    <SectionBadge>
+                                        {t('Scoped Access')}
+                                    </SectionBadge>
                                 )
                             }
                         >
                             <div className="space-y-4">
                                 <h4 className="text-sm font-medium">
-                                    Store Scope
+                                    {t('Store Scope')}
                                 </h4>
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <ChoiceCard
                                         selected={storeScope === 'all'}
                                         onSelect={() => setStoreScope('all')}
-                                        title="All Stores"
-                                        description="Can confirm orders across all current and future connected stores."
+                                        title={t('All Stores')}
+                                        description={t(
+                                            'Can confirm orders across all current and future connected stores.',
+                                        )}
                                     />
                                     <ChoiceCard
                                         selected={storeScope === 'selected'}
                                         onSelect={() =>
                                             setStoreScope('selected')
                                         }
-                                        title="Specific Stores"
-                                        description="Limit assignment and order visibility to specific stores only."
+                                        title={t('Specific Stores')}
+                                        description={t(
+                                            'Limit assignment and order visibility to specific stores only.',
+                                        )}
                                     />
                                 </div>
 
                                 {storeScope === 'selected' && (
                                     <div className="rounded-md border p-4">
                                         <Label className="mb-2 block text-xs font-medium">
-                                            Select Assigned Stores
+                                            {t('Select Assigned Stores')}
                                         </Label>
                                         <MultiCombobox
                                             options={storeComboboxOptions}
                                             value={selectedStoreIds}
                                             onChange={setSelectedStoreIds}
-                                            placeholder="Choose stores..."
+                                            placeholder={t('Choose stores...')}
                                         />
                                         {selectedStoreIds.map((storeId) => (
                                             <input
@@ -472,35 +485,41 @@ export function ConfirmationAgentForm({
 
                             <div className="space-y-4 border-t pt-6">
                                 <h4 className="text-sm font-medium">
-                                    Product Scope
+                                    {t('Product Scope')}
                                 </h4>
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <ChoiceCard
                                         selected={productScope === 'all'}
                                         onSelect={() => setProductScope('all')}
-                                        title="All Products"
-                                        description="Can confirm orders containing any catalog items."
+                                        title={t('All Products')}
+                                        description={t(
+                                            'Can confirm orders containing any catalog items.',
+                                        )}
                                     />
                                     <ChoiceCard
                                         selected={productScope === 'selected'}
                                         onSelect={() =>
                                             setProductScope('selected')
                                         }
-                                        title="Specific Products"
-                                        description="Limit agent to handle only orders that include specific products."
+                                        title={t('Specific Products')}
+                                        description={t(
+                                            'Limit agent to handle only orders that include specific products.',
+                                        )}
                                     />
                                 </div>
 
                                 {productScope === 'selected' && (
                                     <div className="rounded-md border p-4">
                                         <Label className="mb-2 block text-xs font-medium">
-                                            Select Assigned Products
+                                            {t('Select Assigned Products')}
                                         </Label>
                                         <MultiCombobox
                                             options={productComboboxOptions}
                                             value={selectedProductIds}
                                             onChange={setSelectedProductIds}
-                                            placeholder="Choose products..."
+                                            placeholder={t(
+                                                'Choose products...',
+                                            )}
                                         />
                                         {selectedProductIds.map((productId) => (
                                             <input
@@ -517,13 +536,15 @@ export function ConfirmationAgentForm({
 
                         <FormSection
                             icon={Wallet}
-                            title="Compensation Structure"
-                            description="Choose whether this agent receives a fixed periodic salary or commission per confirmed/delivered order."
+                            title={t('Compensation Structure')}
+                            description={t(
+                                'Choose whether this agent receives a fixed periodic salary or commission per confirmed/delivered order.',
+                            )}
                             badge={
                                 <SectionBadge>
                                     {paymentMode === 'salary'
-                                        ? 'Salary Mode'
-                                        : 'Commission Mode'}
+                                        ? t('Salary Mode')
+                                        : t('Commission Mode')}
                                 </SectionBadge>
                             }
                         >
@@ -531,7 +552,7 @@ export function ConfirmationAgentForm({
                                 <ChoiceCard
                                     selected={paymentMode === 'salary'}
                                     onSelect={() => setPaymentMode('salary')}
-                                    title="Fixed Salary"
+                                    title={t('Fixed Salary')}
                                     description="Fixed periodic compensation (e.g. 3,000 MAD / month) regardless of order volume."
                                 />
                                 <ChoiceCard
@@ -539,8 +560,10 @@ export function ConfirmationAgentForm({
                                     onSelect={() =>
                                         setPaymentMode('commission')
                                     }
-                                    title="Per-Order Commission"
-                                    description="Earn a fixed fee or percentage for every order successfully confirmed or delivered."
+                                    title={t('Per-Order Commission')}
+                                    description={t(
+                                        'Earn a fixed fee or percentage for every order successfully confirmed or delivered.',
+                                    )}
                                 />
                             </div>
                             <InputError message={errors.payment_mode} />
@@ -562,7 +585,7 @@ export function ConfirmationAgentForm({
                                                     htmlFor="amount_type"
                                                     className="text-sm font-semibold"
                                                 >
-                                                    Amount Type
+                                                    {t('Amount Type')}
                                                 </Label>
                                                 <Select
                                                     value={amountType}
@@ -580,12 +603,14 @@ export function ConfirmationAgentForm({
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="fixed">
-                                                            Fixed amount per
-                                                            order
+                                                            {t(
+                                                                'Fixed amount per order',
+                                                            )}
                                                         </SelectItem>
                                                         <SelectItem value="percentage">
-                                                            Percentage of order
-                                                            total
+                                                            {t(
+                                                                'Percentage of order total',
+                                                            )}
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -600,8 +625,8 @@ export function ConfirmationAgentForm({
                                                     className="text-sm font-semibold"
                                                 >
                                                     {amountType === 'percentage'
-                                                        ? 'Percentage Rate'
-                                                        : 'Commission Rate'}
+                                                        ? t('Percentage Rate')
+                                                        : t('Commission Rate')}
                                                 </Label>
                                                 <InputGroup>
                                                     <InputGroupInput
@@ -647,7 +672,7 @@ export function ConfirmationAgentForm({
                                                     htmlFor="trigger_status"
                                                     className="text-sm font-semibold"
                                                 >
-                                                    Trigger Event
+                                                    {t('Trigger Event')}
                                                 </Label>
                                                 <Select
                                                     value={triggerStatus}
@@ -676,9 +701,9 @@ export function ConfirmationAgentForm({
                                                                         option.value
                                                                     }
                                                                 >
-                                                                    {
-                                                                        option.label
-                                                                    }
+                                                                    {t(
+                                                                        option.label,
+                                                                    )}
                                                                 </SelectItem>
                                                             ),
                                                         )}
@@ -697,14 +722,14 @@ export function ConfirmationAgentForm({
                                                 <div className="flex items-center justify-between">
                                                     <div>
                                                         <h4 className="text-sm font-medium">
-                                                            Store & Product
-                                                            Overrides
+                                                            {t(
+                                                                'Store & Product Overrides',
+                                                            )}
                                                         </h4>
                                                         <p className="text-xs text-muted-foreground">
-                                                            Set custom
-                                                            commission rates for
-                                                            specific stores or
-                                                            products.
+                                                            {t(
+                                                                'Set custom commission rates for specific stores or products.',
+                                                            )}
                                                         </p>
                                                     </div>
                                                     <Button
@@ -714,7 +739,7 @@ export function ConfirmationAgentForm({
                                                         onClick={addOverrideRow}
                                                     >
                                                         <Plus className="size-3.5" />
-                                                        Add Override
+                                                        {t('Add Override')}
                                                     </Button>
                                                 </div>
 
@@ -749,10 +774,14 @@ export function ConfirmationAgentForm({
                                                                         </SelectTrigger>
                                                                         <SelectContent>
                                                                             <SelectItem value="store">
-                                                                                Store
+                                                                                {t(
+                                                                                    'Store',
+                                                                                )}
                                                                             </SelectItem>
                                                                             <SelectItem value="product">
-                                                                                Product
+                                                                                {t(
+                                                                                    'Product',
+                                                                                )}
                                                                             </SelectItem>
                                                                         </SelectContent>
                                                                     </Select>
@@ -799,19 +828,27 @@ export function ConfirmationAgentForm({
                                                                                     ?.label ??
                                                                                     (row.scopeType ===
                                                                                     'store'
-                                                                                        ? 'Select store'
-                                                                                        : 'Select product')}
+                                                                                        ? t(
+                                                                                              'Select store',
+                                                                                          )
+                                                                                        : t(
+                                                                                              'Select product',
+                                                                                          ))}
                                                                                 <ChevronsUpDown className="opacity-50" />
                                                                             </Button>
                                                                         </PopoverTrigger>
                                                                         <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
                                                                             <Command>
-                                                                                <CommandInput placeholder="Search…" />
+                                                                                <CommandInput
+                                                                                    placeholder={t(
+                                                                                        'Search…',
+                                                                                    )}
+                                                                                />
                                                                                 <CommandList>
                                                                                     <CommandEmpty>
-                                                                                        No
-                                                                                        results
-                                                                                        found.
+                                                                                        {t(
+                                                                                            'No results found.',
+                                                                                        )}
                                                                                     </CommandEmpty>
                                                                                     <CommandGroup>
                                                                                         {(row.scopeType ===
@@ -920,7 +957,9 @@ export function ConfirmationAgentForm({
                                                                                 },
                                                                             )
                                                                         }
-                                                                        placeholder="Amount"
+                                                                        placeholder={t(
+                                                                            'Amount',
+                                                                        )}
                                                                     />
 
                                                                     <input
@@ -992,21 +1031,25 @@ export function ConfirmationAgentForm({
 
                         <FormSection
                             icon={Goal}
-                            title="Performance Benchmarks & Targets"
-                            description="Configure custom KPI goals and confirmation quotas for this agent."
+                            title={t('Performance Benchmarks & Targets')}
+                            description={t(
+                                'Configure custom KPI goals and confirmation quotas for this agent.',
+                            )}
                             badge={
                                 (overrideConfirmationRate ||
                                     overrideDeliverySuccess) && (
                                     <SectionBadge>
-                                        Custom KPI Targets
+                                        {t('Custom KPI Targets')}
                                     </SectionBadge>
                                 )
                             }
                         >
                             <KpiTargetCard
                                 icon={TrendingUp}
-                                title="Target Confirmation Rate"
-                                description="Percentage of assigned orders expected to be successfully confirmed."
+                                title={t('Target Confirmation Rate')}
+                                description={t(
+                                    'Percentage of assigned orders expected to be successfully confirmed.',
+                                )}
                                 defaultLabel={`Default (${defaults.confirmation_rate}%)`}
                                 isCustom={overrideConfirmationRate}
                                 onToggleCustom={() =>
@@ -1046,7 +1089,7 @@ export function ConfirmationAgentForm({
                                                     htmlFor="confirmation_rate_period"
                                                     className="text-xs text-muted-foreground"
                                                 >
-                                                    Measured over
+                                                    {t('Measured over')}
                                                 </Label>
                                                 <Select
                                                     value={
@@ -1102,7 +1145,7 @@ export function ConfirmationAgentForm({
                                                     inputMode="decimal"
                                                     min={0}
                                                     step="0.01"
-                                                    placeholder="No bonus"
+                                                    placeholder={t('No bonus')}
                                                     value={
                                                         targets
                                                             .confirmation_rate
@@ -1143,8 +1186,10 @@ export function ConfirmationAgentForm({
 
                             <KpiTargetCard
                                 icon={Truck}
-                                title="Target Delivery Success Rate"
-                                description="Percentage of this agent's shipped orders expected to be delivered rather than returned."
+                                title={t('Target Delivery Success Rate')}
+                                description={t(
+                                    "Percentage of this agent's shipped orders expected to be delivered rather than returned.",
+                                )}
                                 defaultLabel={`Default (${defaults.delivery_success_rate}%)`}
                                 isCustom={overrideDeliverySuccess}
                                 onToggleCustom={() =>
@@ -1185,7 +1230,7 @@ export function ConfirmationAgentForm({
                                                     htmlFor="delivery_success_rate_period"
                                                     className="text-xs text-muted-foreground"
                                                 >
-                                                    Measured over
+                                                    {t('Measured over')}
                                                 </Label>
                                                 <Select
                                                     value={
@@ -1241,7 +1286,7 @@ export function ConfirmationAgentForm({
                                                     inputMode="decimal"
                                                     min={0}
                                                     step="0.01"
-                                                    placeholder="No bonus"
+                                                    placeholder={t('No bonus')}
                                                     value={
                                                         targets
                                                             .delivery_success_rate
@@ -1305,12 +1350,13 @@ export function ConfirmationAgentForm({
                                 <AlertDialogDescription>
                                     {removingOverride && (
                                         <>
-                                            The custom{' '}
-                                            {removingOverride.amountType ===
-                                            'percentage'
-                                                ? 'percentage rate'
-                                                : 'fixed amount'}{' '}
-                                            for{' '}
+                                            {t('The custom :kind for', {
+                                                kind:
+                                                    removingOverride.amountType ===
+                                                    'percentage'
+                                                        ? t('percentage rate')
+                                                        : t('fixed amount'),
+                                            })}{' '}
                                             <strong>
                                                 {removingOverrideLabel}
                                             </strong>{' '}
@@ -1321,7 +1367,9 @@ export function ConfirmationAgentForm({
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel>
+                                    {t('Cancel')}
+                                </AlertDialogCancel>
                                 <AlertDialogAction
                                     variant="destructive"
                                     onClick={() =>
@@ -1329,7 +1377,7 @@ export function ConfirmationAgentForm({
                                         removeOverrideRow(removingOverrideKey)
                                     }
                                 >
-                                    Remove override
+                                    {t('Remove override')}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>

@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import { ImagePreviewDialog } from '@/components/products/image-preview-dialog';
 import { Badge } from '@/components/ui/badge';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 
 export type GalleryImage = {
@@ -43,6 +44,8 @@ export function ImageGallery({
     /** Read-only mode for a synced product's gallery — tiles stay previewable, but upload/reorder/remove/cover are hidden. */
     disabled?: boolean;
 }) {
+    const { t } = useTranslation();
+
     const inputRef = useRef<HTMLInputElement>(null);
     const [dragOver, setDragOver] = useState(false);
     const [uploadingCount, setUploadingCount] = useState(0);
@@ -180,7 +183,7 @@ export function ImageGallery({
                     {index === 0 && (
                         <Badge className="absolute top-1.5 left-1.5 gap-1 px-1.5 py-0.5 text-[10px]">
                             <Star className="size-2.5 fill-current" />
-                            Cover
+                            {t('Cover')}
                         </Badge>
                     )}
 
@@ -194,7 +197,7 @@ export function ImageGallery({
                                     <button
                                         type="button"
                                         onClick={() => setAsCover(index)}
-                                        title="Set as cover image"
+                                        title={t('Set as cover image')}
                                         className="rounded-full bg-background/90 p-1 text-foreground transition-transform hover:scale-110 hover:text-primary"
                                     >
                                         <StarOff className="size-3.5" />
@@ -203,7 +206,7 @@ export function ImageGallery({
                                 <button
                                     type="button"
                                     onClick={() => removeImage(image.key)}
-                                    title="Remove image"
+                                    title={t('Remove image')}
                                     className="rounded-full bg-background/90 p-1 text-foreground transition-transform hover:scale-110 hover:bg-destructive hover:text-destructive-foreground"
                                 >
                                     <Trash2 className="size-3.5" />
@@ -247,7 +250,7 @@ export function ImageGallery({
                         <>
                             <ImageUp className="size-5 text-muted-foreground" />
                             <span className="text-[11px] font-medium text-muted-foreground">
-                                Add images
+                                {t('Add images')}
                             </span>
                         </>
                     )}

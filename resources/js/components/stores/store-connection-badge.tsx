@@ -1,4 +1,5 @@
 import { ConnectionStatusBadge } from '@/components/connection-status-badge';
+import { useTranslation } from '@/hooks/use-translation';
 import type { StoreConnectionStatus } from '@/types';
 
 /**
@@ -10,17 +11,27 @@ export function StoreConnectionBadge({
 }: {
     status: StoreConnectionStatus;
 }) {
+    const { t } = useTranslation();
+
     if (status === 'connected') {
-        return <ConnectionStatusBadge tone="live">Connected</ConnectionStatusBadge>;
+        return (
+            <ConnectionStatusBadge tone="live">
+                {t('Connected')}
+            </ConnectionStatusBadge>
+        );
     }
 
     if (status === 'failed') {
         return (
             <ConnectionStatusBadge tone="error">
-                Connection failed
+                {t('Connection failed')}
             </ConnectionStatusBadge>
         );
     }
 
-    return <ConnectionStatusBadge tone="pending">Connecting…</ConnectionStatusBadge>;
+    return (
+        <ConnectionStatusBadge tone="pending">
+            {t('Connecting…')}
+        </ConnectionStatusBadge>
+    );
 }

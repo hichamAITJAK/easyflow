@@ -6,6 +6,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 
+import { useTranslation } from '@/hooks/use-translation';
 /**
  * Icon-only reset control for a DataTable's filter row. Render conditionally
  * on `hasActiveFilters` from useTableFilters, so it only appears once a
@@ -16,6 +17,8 @@ export function DataTableResetFiltersButton({
 }: {
     onReset: () => void;
 }) {
+    const { t } = useTranslation();
+
     return (
         <Tooltip>
             <TooltipTrigger asChild>
@@ -24,12 +27,12 @@ export function DataTableResetFiltersButton({
                     variant="outline"
                     size="icon"
                     onClick={onReset}
-                    aria-label="Reset filters"
+                    aria-label={t('Reset filters')}
                 >
                     <RotateCcw />
                 </Button>
             </TooltipTrigger>
-            <TooltipContent>Reset filters</TooltipContent>
+            <TooltipContent>{t('Reset filters')}</TooltipContent>
         </Tooltip>
     );
 }

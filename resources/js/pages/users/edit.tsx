@@ -4,13 +4,11 @@ import { ConfirmationAgentForm } from '@/components/confirmation-agent-form';
 import { FulfilmentAgentForm } from '@/components/fulfilment-agent-form';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import { index as usersIndex } from '@/routes/users';
 import type { Product, Store, User } from '@/types';
-import type {
-    PerformanceMetric,
-    PerformanceTargetPeriod,
-} from '@/types/agent';
+import type { PerformanceMetric, PerformanceTargetPeriod } from '@/types/agent';
 
 export default function UsersEdit({
     user,
@@ -27,6 +25,8 @@ export default function UsersEdit({
         period: PerformanceTargetPeriod;
     };
 }) {
+    const { t } = useTranslation();
+
     const isConfirmation = user.role === 'confirmation_agent';
 
     return (
@@ -40,7 +40,7 @@ export default function UsersEdit({
                         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
                         <ArrowLeft className="size-4" />
-                        Go back to team
+                        {t('Go back to team')}
                     </Link>
                 </div>
 
@@ -55,7 +55,9 @@ export default function UsersEdit({
                             }
                         />
                         <Badge variant="outline" className="mt-1 self-start">
-                            {isConfirmation ? 'Confirmation Agent' : 'Fulfilment Agent'}
+                            {isConfirmation
+                                ? t('Confirmation Agent')
+                                : t('Fulfilment Agent')}
                         </Badge>
                     </div>
                 </div>

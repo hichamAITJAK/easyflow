@@ -19,6 +19,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { formatDate } from '@/lib/format';
+import type { Translator } from '@/lib/i18n';
 import type { Product, ProductFilters } from '@/types';
 
 function toggleTest(product: Product) {
@@ -30,6 +31,7 @@ function toggleTest(product: Product) {
 }
 
 export function createColumns({
+    t,
     filters,
     routeUrl,
     onEdit,
@@ -37,6 +39,7 @@ export function createColumns({
     onDelete,
     canManage,
 }: {
+    t: Translator;
     filters: ProductFilters;
     routeUrl: string;
     onEdit: (product: Product) => void;
@@ -59,7 +62,7 @@ export function createColumns({
     return [
         {
             id: 'image',
-            header: 'Image',
+            header: t('Image'),
             enableSorting: false,
             enableHiding: false,
             cell: ({ row }) => {
@@ -82,7 +85,7 @@ export function createColumns({
         },
         {
             accessorKey: 'name',
-            header: () => sortHeader('Name', 'name'),
+            header: () => sortHeader(t('Name'), 'name'),
             cell: ({ row }) => (
                 <span className="font-medium">{row.original.name}</span>
             ),
@@ -90,15 +93,15 @@ export function createColumns({
         {
             id: 'store',
             accessorFn: (product) => product.store?.name ?? '—',
-            header: 'Store',
+            header: t('Store'),
             cell: ({ row }) =>
                 row.original.store?.name ?? (
-                    <span className="text-muted-foreground">Manual</span>
+                    <span className="text-muted-foreground">{t('Manual')}</span>
                 ),
         },
         {
             accessorKey: 'sku',
-            header: () => sortHeader('SKU', 'sku'),
+            header: () => sortHeader(t('SKU'), 'sku'),
             cell: ({ row }) => (
                 <span className="font-mono text-sm">
                     {row.original.sku ?? '—'}
@@ -107,12 +110,12 @@ export function createColumns({
         },
         {
             accessorKey: 'price',
-            header: () => sortHeader('Price', 'price'),
+            header: () => sortHeader(t('Price'), 'price'),
             cell: ({ row }) => row.original.price ?? '—',
         },
         {
             id: 'inventory_quantity',
-            header: 'Inventory',
+            header: t('Inventory'),
             cell: ({ row }) => {
                 const product = row.original;
                 const quantity =
@@ -124,7 +127,7 @@ export function createColumns({
         },
         {
             accessorKey: 'is_active',
-            header: () => sortHeader('Status', 'is_active'),
+            header: () => sortHeader(t('Status'), 'is_active'),
             cell: ({ row }) => (
                 <div className="flex items-center gap-1.5">
                     <Badge
@@ -150,7 +153,7 @@ export function createColumns({
         },
         {
             accessorKey: 'updated_at',
-            header: () => sortHeader('Updated', 'updated_at'),
+            header: () => sortHeader(t('Updated'), 'updated_at'),
             cell: ({ row }) => formatDate(row.original.updated_at),
         },
         {
@@ -172,7 +175,7 @@ export function createColumns({
                                 onSelect={() => onPreview(product)}
                             >
                                 <Eye />
-                                Preview
+                                {t('Preview')}
                             </DropdownMenuItem>
                             {canManage && (
                                 <>
@@ -180,15 +183,15 @@ export function createColumns({
                                         onSelect={() => onEdit(product)}
                                     >
                                         <Pencil />
-                                        Edit
+                                        {t('Edit')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onSelect={() => toggleTest(product)}
                                     >
                                         <FlaskConical />
                                         {product.is_test
-                                            ? 'Unmark as test'
-                                            : 'Mark as test'}
+                                            ? t('Unmark as test')
+                                            : t('Mark as test')}
                                     </DropdownMenuItem>
                                     {product.store_id === null && (
                                         <DropdownMenuItem
@@ -196,7 +199,7 @@ export function createColumns({
                                             onSelect={() => onDelete(product)}
                                         >
                                             <Trash2 />
-                                            Delete
+                                            {t('Delete')}
                                         </DropdownMenuItem>
                                     )}
                                 </>

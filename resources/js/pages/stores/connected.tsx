@@ -3,6 +3,7 @@ import { Check } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import { index as storesIndex } from '@/routes/stores';
 import type { Store } from '@/types';
@@ -10,9 +11,11 @@ import type { Store } from '@/types';
 const FLOW_DOT_DELAYS_MS = [0, 220, 440];
 
 export default function StoresConnected({ store }: { store: Store }) {
+    const { t } = useTranslation();
+
     return (
         <>
-            <Head title="Store connected" />
+            <Head title={t('Store connected')} />
 
             <div className="mx-auto flex max-w-4xl flex-col items-center justify-center space-y-10 p-4 py-16 text-center">
                 <div className="flex items-center gap-4" aria-hidden="true">
@@ -51,18 +54,18 @@ export default function StoresConnected({ store }: { store: Store }) {
 
                 <div className="space-y-2">
                     <h1 className="text-2xl font-semibold tracking-tight">
-                        {store.name} is connected
+                        {t(':name is connected', { name: store.name })}
                     </h1>
                     <p className="mx-auto max-w-md text-muted-foreground">
-                        Recent orders and products from{' '}
-                        {store.platform?.name ?? 'your store'} are importing
-                        now — new ones will sync into EasyFlow automatically
-                        from here.
+                        {t(
+                            'Recent orders and products from :name are importing now — new ones will sync into EasyFlow automatically from here.',
+                            { name: store.platform?.name ?? t('your store') },
+                        )}
                     </p>
                 </div>
 
                 <Button size="lg" className="min-w-48" asChild>
-                    <Link href={storesIndex()}>Done</Link>
+                    <Link href={storesIndex()}>{t('Done')}</Link>
                 </Button>
             </div>
         </>

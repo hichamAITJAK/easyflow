@@ -57,9 +57,14 @@ export function LanguageDropdown() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-36">
                 {OPTIONS.map(({ value, label }) => (
-                    <DropdownMenuItem key={value} onSelect={() => choose(value)}>
+                    <DropdownMenuItem
+                        key={value}
+                        onSelect={() => choose(value)}
+                    >
                         {label}
-                        {locale === value && <Check className="ml-auto size-4" />}
+                        {locale === value && (
+                            <Check className="ml-auto size-4" />
+                        )}
                     </DropdownMenuItem>
                 ))}
             </DropdownMenuContent>

@@ -30,6 +30,7 @@ import { Label } from '@/components/ui/label';
 import { MultiCombobox } from '@/components/ui/multi-combobox';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useTableFilters } from '@/hooks/use-table-filters';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import {
     create as productsCreate,
@@ -71,15 +72,14 @@ export default function ProductsIndex({
     filters: ProductFilters;
     stores: SimpleOption[];
 }) {
+    const { t } = useTranslation();
+
     const { auth } = usePage<PageProps>().props;
     const canManage = ADMIN_ROLES.includes(auth.user.role);
-
     const [loading, setLoading] = useState(false);
     const [syncOpen, setSyncOpen] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
-    const [previewProduct, setPreviewProduct] = useState<Product | null>(
-        null,
-    );
+    const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deletingProduct, setDeletingProduct] = useState<Product | null>(
         null,
@@ -156,6 +156,7 @@ export default function ProductsIndex({
     const columns = useMemo(
         () =>
             createColumns({
+                t,
                 filters,
                 routeUrl: productsIndex().url,
                 onEdit: openEdit,
@@ -174,13 +175,15 @@ export default function ProductsIndex({
 
     return (
         <>
-            <Head title="Products" />
+            <Head title={t('Products')} />
 
             <div className="space-y-6 p-4">
                 <div className="flex items-center justify-between">
                     <Heading
-                        title="Products"
-                        description="Products synced from your connected stores."
+                        title={t('Products')}
+                        description={t(
+                            'Products synced from your connected stores.',
+                        )}
                     />
                     {canManage && (
                         <div className="flex items-center gap-2">
@@ -191,7 +194,7 @@ export default function ProductsIndex({
                             >
                                 <Plus />
                                 <span className="hidden sm:inline">
-                                    Add product
+                                    {t('Add product')}
                                 </span>
                             </Button>
                             <Button
@@ -200,7 +203,7 @@ export default function ProductsIndex({
                                 disabled={loading}
                                 // The label is hidden below `sm`, leaving an
                                 // icon-only control with no accessible name.
-                                aria-label="Load products"
+                                aria-label={t('Load products')}
                             >
                                 <CloudDownload
                                     className={loading ? 'animate-spin' : ''}
@@ -218,7 +221,7 @@ export default function ProductsIndex({
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                     <Card className="py-4">
                         <CardHeader className="gap-1 px-4">
-                            <CardDescription>Total</CardDescription>
+                            <CardDescription>{t('Total')}</CardDescription>
                             <CardTitle className="text-2xl">
                                 {metrics.total}
                             </CardTitle>
@@ -226,7 +229,7 @@ export default function ProductsIndex({
                     </Card>
                     <Card className="py-4">
                         <CardHeader className="gap-1 px-4">
-                            <CardDescription>Active</CardDescription>
+                            <CardDescription>{t('Active')}</CardDescription>
                             <CardTitle className="text-2xl text-emerald-600 dark:text-emerald-500">
                                 {metrics.active}
                             </CardTitle>
@@ -234,7 +237,7 @@ export default function ProductsIndex({
                     </Card>
                     <Card className="py-4">
                         <CardHeader className="gap-1 px-4">
-                            <CardDescription>Inactive</CardDescription>
+                            <CardDescription>{t('Inactive')}</CardDescription>
                             <CardTitle className="text-2xl text-destructive">
                                 {metrics.inactive}
                             </CardTitle>
@@ -242,7 +245,7 @@ export default function ProductsIndex({
                     </Card>
                     <Card className="py-4">
                         <CardHeader className="gap-1 px-4">
-                            <CardDescription>Test</CardDescription>
+                            <CardDescription>{t('Test')}</CardDescription>
                             <CardTitle className="text-2xl text-amber-600 dark:text-amber-500">
                                 {metrics.test}
                             </CardTitle>
@@ -253,7 +256,9 @@ export default function ProductsIndex({
                 <DataTableCard>
                     <DataTableCardFilters>
                         <div className="grid gap-1.5">
-                            <Label htmlFor="products-store-filter">Store</Label>
+                            <Label htmlFor="products-store-filter">
+                                {t('Store')}
+                            </Label>
                             <MultiCombobox
                                 id="products-store-filter"
                                 className="w-52"
@@ -270,14 +275,14 @@ export default function ProductsIndex({
                                                 : undefined,
                                     })
                                 }
-                                placeholder="All stores"
+                                placeholder={t('All stores')}
                                 searchPlaceholder="Search stores…"
                                 emptyMessage="No stores found."
                             />
                         </div>
 
                         <div className="grid gap-1.5">
-                            <Label htmlFor="price_min">Min price</Label>
+                            <Label htmlFor="price_min">{t('Min price')}</Label>
                             <Input
                                 id="price_min"
                                 type="number"
@@ -293,7 +298,7 @@ export default function ProductsIndex({
                         </div>
 
                         <div className="grid gap-1.5">
-                            <Label htmlFor="price_max">Max price</Label>
+                            <Label htmlFor="price_max">{t('Max price')}</Label>
                             <Input
                                 id="price_max"
                                 type="number"
@@ -318,7 +323,7 @@ export default function ProductsIndex({
                     <DataTableCardToolbar>
                         <Input
                             className="max-w-sm"
-                            placeholder="Search products…"
+                            placeholder={t('Search products…')}
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
                         />

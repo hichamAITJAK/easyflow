@@ -23,8 +23,7 @@ export function DataTableViewOptions<TData>({
         .getAllColumns()
         .filter(
             (column) =>
-                typeof column.accessorFn !== 'undefined' &&
-                column.getCanHide(),
+                typeof column.accessorFn !== 'undefined' && column.getCanHide(),
         );
 
     if (columns.length === 0) {

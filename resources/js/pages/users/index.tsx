@@ -30,8 +30,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useInitials } from '@/hooks/use-initials';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
-import { create as usersCreate, edit as usersEdit, index as usersIndexRoute } from '@/routes/users';
+import {
+    create as usersCreate,
+    edit as usersEdit,
+    index as usersIndexRoute,
+} from '@/routes/users';
 import type { User } from '@/types';
 import { createColumns } from './columns';
 
@@ -56,6 +61,8 @@ const tabConfig: Record<
 };
 
 export default function UsersIndex({ users }: { users: User[] }) {
+    const { t } = useTranslation();
+
     const getInitials = useInitials();
     const [tab, setTab] = useState<AgentTab>('confirmation_agent');
     const [deletingUser, setDeletingUser] = useState<User | null>(null);
@@ -100,6 +107,7 @@ export default function UsersIndex({ users }: { users: User[] }) {
     const columns = useMemo(
         () =>
             createColumns({
+                t,
                 getInitials,
                 onEdit: handleEdit,
                 onDelete: setDeletingUser,
@@ -125,17 +133,21 @@ export default function UsersIndex({ users }: { users: User[] }) {
 
     return (
         <>
-            <Head title="Team" />
+            <Head title={t('Team')} />
 
             <div className="space-y-6 p-4">
                 <div className="flex items-center justify-between">
                     <Heading
-                        title="Team"
-                        description="Manage your confirmation and fulfilment agents."
+                        title={t('Team')}
+                        description={t(
+                            'Manage your confirmation and fulfilment agents.',
+                        )}
                     />
                     <Button onClick={handleCreate}>
                         <Plus />
-                        Add {tab === 'confirmation_agent' ? 'confirmation' : 'fulfilment'} agent
+                        {tab === 'confirmation_agent'
+                            ? t('Add confirmation agent')
+                            : t('Add fulfilment agent')}
                     </Button>
                 </div>
 
@@ -147,14 +159,17 @@ export default function UsersIndex({ users }: { users: User[] }) {
                     }}
                 >
                     <TabsList>
-                        <TabsTrigger value="confirmation_agent" className="gap-2">
-                            <span>Confirmation agents</span>
+                        <TabsTrigger
+                            value="confirmation_agent"
+                            className="gap-2"
+                        >
+                            <span>{t('Confirmation agents')}</span>
                             <span className="rounded-full bg-muted-foreground/15 px-2 py-0.5 text-xs font-semibold">
                                 {usersByTab.confirmation_agent.length}
                             </span>
                         </TabsTrigger>
                         <TabsTrigger value="fulfilment_agent" className="gap-2">
-                            <span>Fulfilment agents</span>
+                            <span>{t('Fulfilment agents')}</span>
                             <span className="rounded-full bg-muted-foreground/15 px-2 py-0.5 text-xs font-semibold">
                                 {usersByTab.fulfilment_agent.length}
                             </span>
@@ -175,16 +190,20 @@ export default function UsersIndex({ users }: { users: User[] }) {
                                                 <UsersIcon />
                                             </EmptyMedia>
                                             <EmptyTitle>
-                                                {config.emptyTitle}
+                                                {t(config.emptyTitle)}
                                             </EmptyTitle>
                                             <EmptyDescription>
-                                                {config.emptyDescription}
+                                                {t(config.emptyDescription)}
                                             </EmptyDescription>
                                         </EmptyHeader>
                                         <EmptyContent>
                                             <Button onClick={handleCreate}>
                                                 <Plus />
-                                                Add {config.label.slice(0, -1)}
+                                                {tab === 'confirmation_agent'
+                                                    ? t(
+                                                          'Add confirmation agent',
+                                                      )
+                                                    : t('Add fulfilment agent')}
                                             </Button>
                                         </EmptyContent>
                                     </Empty>
@@ -193,13 +212,19 @@ export default function UsersIndex({ users }: { users: User[] }) {
                                         <DataTableCardToolbar>
                                             <Input
                                                 className="max-w-sm"
-                                                placeholder="Search by name, email, or phone…"
+                                                placeholder={t(
+                                                    'Search by name, email, or phone…',
+                                                )}
                                                 value={search}
                                                 onChange={(event) =>
-                                                    setSearch(event.target.value)
+                                                    setSearch(
+                                                        event.target.value,
+                                                    )
                                                 }
                                             />
-                                            <DataTableViewOptions table={table} />
+                                            <DataTableViewOptions
+                                                table={table}
+                                            />
                                         </DataTableCardToolbar>
 
                                         <DataTableCardTable>
@@ -211,7 +236,9 @@ export default function UsersIndex({ users }: { users: User[] }) {
                                         </DataTableCardTable>
 
                                         <DataTableCardFooter>
-                                            <DataTablePagination table={table} />
+                                            <DataTablePagination
+                                                table={table}
+                                            />
                                         </DataTableCardFooter>
                                     </DataTableCard>
                                 )}

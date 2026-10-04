@@ -14,6 +14,7 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 
+import { useTranslation } from '@/hooks/use-translation';
 export function ConnectTutorialDialog({
     open,
     onOpenChange,
@@ -23,13 +24,18 @@ export function ConnectTutorialDialog({
     onOpenChange: (open: boolean) => void;
     name: string;
 }) {
+    const { t } = useTranslation();
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
-                    <DialogTitle>Connect {name}</DialogTitle>
+                    <DialogTitle>{t('Connect :name', { name })}</DialogTitle>
                     <DialogDescription>
-                        Step-by-step guide to connect your {name} account.
+                        {t(
+                            'Step-by-step guide to connect your :name account.',
+                            { name },
+                        )}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -38,9 +44,11 @@ export function ConnectTutorialDialog({
                         <EmptyMedia variant="icon">
                             <BookOpen />
                         </EmptyMedia>
-                        <EmptyTitle>Tutorial coming soon</EmptyTitle>
+                        <EmptyTitle>{t('Tutorial coming soon')}</EmptyTitle>
                         <EmptyDescription>
-                            Steps to connect {name} will show up here.
+                            {t('Steps to connect :name will show up here.', {
+                                name,
+                            })}
                         </EmptyDescription>
                     </EmptyHeader>
                 </Empty>

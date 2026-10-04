@@ -44,7 +44,7 @@ export function ProviderConnectCard({
                 'group relative h-full gap-0 overflow-hidden py-0 transition-shadow',
                 disabled
                     ? 'bg-muted/30'
-                    : 'hover:shadow-sm hover:ring-primary/30 focus-within:ring-2 focus-within:ring-primary/40',
+                    : 'focus-within:ring-2 focus-within:ring-primary/40 hover:shadow-sm hover:ring-primary/30',
                 className,
             )}
         >

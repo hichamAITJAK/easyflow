@@ -18,7 +18,10 @@ export function DataTableCard({
 }) {
     return (
         <Card
-            className={cn('gap-0 divide-y divide-border py-0 shadow-sm', className)}
+            className={cn(
+                'gap-0 divide-y divide-border py-0 shadow-sm',
+                className,
+            )}
         >
             {children}
         </Card>

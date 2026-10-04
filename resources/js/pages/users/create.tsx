@@ -5,13 +5,11 @@ import { ConfirmationAgentForm } from '@/components/confirmation-agent-form';
 import { FulfilmentAgentForm } from '@/components/fulfilment-agent-form';
 import Heading from '@/components/heading';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import { index as usersIndex } from '@/routes/users';
 import type { Product, Store } from '@/types';
-import type {
-    PerformanceMetric,
-    PerformanceTargetPeriod,
-} from '@/types/agent';
+import type { PerformanceMetric, PerformanceTargetPeriod } from '@/types/agent';
 
 export default function UsersCreate({
     role: initialRole,
@@ -28,13 +26,15 @@ export default function UsersCreate({
         period: PerformanceTargetPeriod;
     };
 }) {
+    const { t } = useTranslation();
+
     const [role, setRole] = useState<'confirmation_agent' | 'fulfilment_agent'>(
         initialRole,
     );
 
     return (
         <>
-            <Head title="Add Team Member" />
+            <Head title={t('Add Team Member')} />
 
             <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-6">
                 <div>
@@ -43,30 +43,41 @@ export default function UsersCreate({
                         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
                         <ArrowLeft className="size-4" />
-                        Go back to team
+                        {t('Go back to team')}
                     </Link>
                 </div>
 
                 <div className="flex flex-col justify-between gap-4 border-b pb-6 sm:flex-row sm:items-center">
                     <Heading
-                        title="Add Team Member"
-                        description="Create a new agent account and configure their access permissions and pay structure."
+                        title={t('Add Team Member')}
+                        description={t(
+                            'Create a new agent account and configure their access permissions and pay structure.',
+                        )}
                     />
 
                     <Tabs
                         value={role}
                         onValueChange={(val) =>
-                            setRole(val as 'confirmation_agent' | 'fulfilment_agent')
+                            setRole(
+                                val as
+                                    'confirmation_agent' | 'fulfilment_agent',
+                            )
                         }
                     >
                         <TabsList className="grid w-full grid-cols-2 sm:w-auto">
-                            <TabsTrigger value="confirmation_agent" className="flex items-center gap-2 px-4">
+                            <TabsTrigger
+                                value="confirmation_agent"
+                                className="flex items-center gap-2 px-4"
+                            >
                                 <IdCard className="size-4" />
-                                <span>Confirmation Agent</span>
+                                <span>{t('Confirmation Agent')}</span>
                             </TabsTrigger>
-                            <TabsTrigger value="fulfilment_agent" className="flex items-center gap-2 px-4">
+                            <TabsTrigger
+                                value="fulfilment_agent"
+                                className="flex items-center gap-2 px-4"
+                            >
                                 <Package className="size-4" />
-                                <span>Fulfilment Agent</span>
+                                <span>{t('Fulfilment Agent')}</span>
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>

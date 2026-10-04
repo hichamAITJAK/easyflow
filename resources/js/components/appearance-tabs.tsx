@@ -117,9 +117,7 @@ export default function AppearanceToggleTab({
         <div className={cn(className)} {...props}>
             <RadioGroupPrimitive.Root
                 value={appearance}
-                onValueChange={(value) =>
-                    updateAppearance(value as Appearance)
-                }
+                onValueChange={(value) => updateAppearance(value as Appearance)}
                 aria-labelledby={labelId}
                 className="grid grid-cols-1 gap-3 sm:grid-cols-2"
             >
@@ -135,7 +133,7 @@ export default function AppearanceToggleTab({
                             key={value}
                             value={value}
                             className={cn(
-                                'group flex flex-col overflow-hidden rounded-lg border text-left outline-none transition-colors',
+                                'group flex flex-col overflow-hidden rounded-lg border text-left transition-colors outline-none',
                                 'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
                                 selected
                                     ? 'border-primary ring-[3px] ring-primary/20'

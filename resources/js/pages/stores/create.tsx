@@ -26,6 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import { index as storesIndex } from '@/routes/stores';
 import type { EcommercePlatform } from '@/types';
@@ -58,6 +59,8 @@ export default function StoresCreate({
         platform_slug: string | null;
     } | null;
 }) {
+    const { t } = useTranslation();
+
     // Opening straight onto the right platform's credential form: the
     // merchant already said which store they are fixing, so making them pick
     // its platform out of the grid again would be asking twice.
@@ -67,7 +70,6 @@ export default function StoresCreate({
             : (platforms.find(
                   (platform) => platform.slug === reconnecting.platform_slug,
               ) ?? null);
-
     const [selected, setSelected] = useState<EcommercePlatform | null>(
         reconnectPlatform,
     );
@@ -123,7 +125,7 @@ export default function StoresCreate({
 
     return (
         <>
-            <Head title="Add store" />
+            <Head title={t('Add store')} />
 
             <div className="space-y-8 p-4">
                 <Link
@@ -131,12 +133,14 @@ export default function StoresCreate({
                     className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
                 >
                     <ArrowLeft className="size-4" />
-                    Go back
+                    {t('Go back')}
                 </Link>
 
                 <Heading
-                    title="Add a store"
-                    description="Choose the e-commerce platform your store runs on to connect it."
+                    title={t('Add a store')}
+                    description={t(
+                        'Choose the e-commerce platform your store runs on to connect it.',
+                    )}
                 />
 
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -160,7 +164,7 @@ export default function StoresCreate({
                     <section className="space-y-4">
                         <div className="flex items-center gap-3">
                             <h2 className="text-sm font-medium text-muted-foreground">
-                                Not available yet
+                                {t('Not available yet')}
                             </h2>
                             <Separator className="flex-1" />
                         </div>
@@ -227,31 +231,36 @@ export default function StoresCreate({
                                 <>
                                     <DialogHeader>
                                         <DialogTitle>
-                                            Connect {selected.name}
+                                            {t('Connect :name', {
+                                                name: selected.name,
+                                            })}
                                         </DialogTitle>
                                         <DialogDescription>
-                                            Paste an access token from your
-                                            Storeep dashboard to connect this
-                                            store.
+                                            {t(
+                                                'Paste an access token from your Storeep dashboard to connect this store.',
+                                            )}
                                         </DialogDescription>
                                     </DialogHeader>
 
                                     <FieldGroup>
                                         <Field>
                                             <FieldLabel htmlFor="storeep-name">
-                                                Store name
+                                                {t('Store name')}
                                             </FieldLabel>
                                             <Input
                                                 id="storeep-name"
                                                 name="name"
                                                 required
                                                 autoFocus
-                                                placeholder="My Storeep shop"
+                                                placeholder={t(
+                                                    'My Storeep shop',
+                                                )}
                                                 aria-invalid={!!errors.name}
                                             />
                                             <FieldDescription>
-                                                How this store will appear in
-                                                EasyFlow.
+                                                {t(
+                                                    'How this store will appear in EasyFlow.',
+                                                )}
                                             </FieldDescription>
                                             {errors.name && (
                                                 <FieldError>
@@ -262,7 +271,7 @@ export default function StoresCreate({
 
                                         <Field>
                                             <FieldLabel htmlFor="storeep-token">
-                                                Access token
+                                                {t('Access token')}
                                             </FieldLabel>
                                             <Input
                                                 id="storeep-token"
@@ -279,8 +288,11 @@ export default function StoresCreate({
                                                 In Storeep, go to Settings →
                                                 Access tokens → Create new
                                                 token, and enable at least the{' '}
-                                                <code>products:read</code> and{' '}
-                                                <code>orders:read</code>{' '}
+                                                <code>
+                                                    {t('products:read')}
+                                                </code>{' '}
+                                                and{' '}
+                                                <code>{t('orders:read')}</code>{' '}
                                                 permissions. The token is only
                                                 shown once.
                                             </FieldDescription>
@@ -295,7 +307,7 @@ export default function StoresCreate({
                                             <FieldLabel htmlFor="storeep-market">
                                                 Market{' '}
                                                 <span className="text-muted-foreground">
-                                                    (optional)
+                                                    {t('(optional)')}
                                                 </span>
                                             </FieldLabel>
                                             <Input
@@ -307,10 +319,9 @@ export default function StoresCreate({
                                                 aria-invalid={!!errors.market}
                                             />
                                             <FieldDescription>
-                                                Two-letter country code. If your
-                                                catalog is priced in several
-                                                markets, this picks which prices
-                                                to import.
+                                                {t(
+                                                    'Two-letter country code. If your catalog is priced in several markets, this picks which prices to import.',
+                                                )}
                                             </FieldDescription>
                                             {errors.market && (
                                                 <FieldError>
@@ -328,12 +339,14 @@ export default function StoresCreate({
                                             {processing && <Spinner />}
                                             {processing
                                                 ? 'Connecting…'
-                                                : 'Connect store'}
+                                                : t('Connect store')}
                                         </Button>
                                         {processing && (
                                             <p className="text-center text-xs text-muted-foreground">
-                                                Checking your token with{' '}
-                                                {selected.name}…
+                                                {t(
+                                                    'Checking your token with :name…',
+                                                    { name: selected.name },
+                                                )}
                                             </p>
                                         )}
                                     </DialogFooter>
@@ -354,31 +367,36 @@ export default function StoresCreate({
                                 <>
                                     <DialogHeader>
                                         <DialogTitle>
-                                            Connect {selected.name}
+                                            {t('Connect :name', {
+                                                name: selected.name,
+                                            })}
                                         </DialogTitle>
                                         <DialogDescription>
-                                            Enter your store address and a
-                                            WooCommerce API key pair to connect
-                                            this store.
+                                            {t(
+                                                'Enter your store address and a WooCommerce API key pair to connect this store.',
+                                            )}
                                         </DialogDescription>
                                     </DialogHeader>
 
                                     <FieldGroup>
                                         <Field>
                                             <FieldLabel htmlFor="woo-name">
-                                                Store name
+                                                {t('Store name')}
                                             </FieldLabel>
                                             <Input
                                                 id="woo-name"
                                                 name="name"
                                                 required
                                                 autoFocus
-                                                placeholder="My WooCommerce shop"
+                                                placeholder={t(
+                                                    'My WooCommerce shop',
+                                                )}
                                                 aria-invalid={!!errors.name}
                                             />
                                             <FieldDescription>
-                                                How this store will appear in
-                                                EasyFlow.
+                                                {t(
+                                                    'How this store will appear in EasyFlow.',
+                                                )}
                                             </FieldDescription>
                                             {errors.name && (
                                                 <FieldError>
@@ -389,7 +407,7 @@ export default function StoresCreate({
 
                                         <Field>
                                             <FieldLabel htmlFor="woo-url">
-                                                Store URL
+                                                {t('Store URL')}
                                             </FieldLabel>
                                             <Input
                                                 id="woo-url"
@@ -397,16 +415,17 @@ export default function StoresCreate({
                                                 required
                                                 autoComplete="off"
                                                 spellCheck={false}
-                                                placeholder="https://shop.example.com"
+                                                placeholder={t(
+                                                    'https://shop.example.com',
+                                                )}
                                                 aria-invalid={
                                                     !!errors.store_url
                                                 }
                                             />
                                             <FieldDescription>
-                                                Your store's address, over
-                                                https. WooCommerce needs pretty
-                                                permalinks enabled for its API
-                                                to respond.
+                                                {t(
+                                                    "Your store's address, over https. WooCommerce needs pretty permalinks enabled for its API to respond.",
+                                                )}
                                             </FieldDescription>
                                             {errors.store_url && (
                                                 <FieldError>
@@ -417,7 +436,7 @@ export default function StoresCreate({
 
                                         <Field>
                                             <FieldLabel htmlFor="woo-key">
-                                                Consumer key
+                                                {t('Consumer key')}
                                             </FieldLabel>
                                             <Input
                                                 id="woo-key"
@@ -431,10 +450,13 @@ export default function StoresCreate({
                                                 }
                                             />
                                             <FieldDescription>
-                                                In WordPress, go to WooCommerce
-                                                → Settings → Advanced → REST API
-                                                → Add key, and set permissions
-                                                to <strong>Read/Write</strong>.
+                                                {t(
+                                                    'In WordPress, go to WooCommerce → Settings → Advanced → REST API → Add key, and set permissions to',
+                                                )}{' '}
+                                                <strong>
+                                                    {t('Read/Write')}
+                                                </strong>
+                                                .
                                             </FieldDescription>
                                             {errors.consumer_key && (
                                                 <FieldError>
@@ -445,7 +467,7 @@ export default function StoresCreate({
 
                                         <Field>
                                             <FieldLabel htmlFor="woo-secret">
-                                                Consumer secret
+                                                {t('Consumer secret')}
                                             </FieldLabel>
                                             <Input
                                                 id="woo-secret"
@@ -460,8 +482,9 @@ export default function StoresCreate({
                                                 }
                                             />
                                             <FieldDescription>
-                                                Shown only once, when the key is
-                                                created.
+                                                {t(
+                                                    'Shown only once, when the key is created.',
+                                                )}
                                             </FieldDescription>
                                             {errors.consumer_secret && (
                                                 <FieldError>
@@ -479,12 +502,14 @@ export default function StoresCreate({
                                             {processing && <Spinner />}
                                             {processing
                                                 ? 'Connecting…'
-                                                : 'Connect store'}
+                                                : t('Connect store')}
                                         </Button>
                                         {processing && (
                                             <p className="text-center text-xs text-muted-foreground">
-                                                Checking your keys with{' '}
-                                                {selected.name}…
+                                                {t(
+                                                    'Checking your keys with :name…',
+                                                    { name: selected.name },
+                                                )}
                                             </p>
                                         )}
                                     </DialogFooter>
@@ -497,11 +522,14 @@ export default function StoresCreate({
                         <div className="space-y-6">
                             <DialogHeader>
                                 <DialogTitle>
-                                    Connect {selected.name}
+                                    {t('Connect :name', {
+                                        name: selected.name,
+                                    })}
                                 </DialogTitle>
                                 <DialogDescription>
-                                    We need your store domain to start the
-                                    connection.
+                                    {t(
+                                        'We need your store domain to start the connection.',
+                                    )}
                                 </DialogDescription>
                             </DialogHeader>
 
@@ -509,7 +537,7 @@ export default function StoresCreate({
                                 <FieldGroup>
                                     <Field>
                                         <FieldLabel htmlFor="shop">
-                                            Shopify store domain
+                                            {t('Shopify store domain')}
                                         </FieldLabel>
                                         <Input
                                             id="shop"
@@ -520,7 +548,9 @@ export default function StoresCreate({
                                             onChange={(event) =>
                                                 setShop(event.target.value)
                                             }
-                                            placeholder="my-store or my-store.myshopify.com"
+                                            placeholder={t(
+                                                'my-store or my-store.myshopify.com',
+                                            )}
                                         />
                                     </Field>
                                 </FieldGroup>
@@ -535,12 +565,14 @@ export default function StoresCreate({
                                     {connecting && <Spinner />}
                                     {connecting
                                         ? 'Connecting…'
-                                        : 'Connect store'}
+                                        : t('Connect store')}
                                 </Button>
                                 {connecting && (
                                     <p className="text-center text-xs text-muted-foreground">
-                                        Redirecting you to {selected.name} to
-                                        finish connecting…
+                                        {t(
+                                            'Redirecting you to :name to finish connecting…',
+                                            { name: selected.name },
+                                        )}
                                     </p>
                                 )}
                             </DialogFooter>

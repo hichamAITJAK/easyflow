@@ -3,6 +3,7 @@ import { Check } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import { index as deliveryCouriersIndex } from '@/routes/delivery-couriers';
 import type { DeliveryAccount } from '@/types';
@@ -14,9 +15,11 @@ export default function DeliveryCouriersConnected({
 }: {
     account: DeliveryAccount;
 }) {
+    const { t } = useTranslation();
+
     return (
         <>
-            <Head title="Courier connected" />
+            <Head title={t('Courier connected')} />
 
             <div className="mx-auto flex max-w-4xl flex-col items-center justify-center space-y-10 p-4 py-16 text-center">
                 <div className="flex items-center gap-4" aria-hidden="true">
@@ -55,16 +58,19 @@ export default function DeliveryCouriersConnected({
 
                 <div className="space-y-2">
                     <h1 className="text-2xl font-semibold tracking-tight">
-                        {account.courier?.name ?? 'Courier'} is connected
+                        {t(':name is connected', {
+                            name: account.courier?.name ?? t('Courier'),
+                        })}
                     </h1>
                     <p className="mx-auto max-w-md text-muted-foreground">
-                        You can now ship orders with{' '}
-                        {account.courier?.name ?? 'this courier'}.
+                        {t('You can now ship orders with :name.', {
+                            name: account.courier?.name ?? t('this courier'),
+                        })}
                     </p>
                 </div>
 
                 <Button size="lg" className="min-w-48" asChild>
-                    <Link href={deliveryCouriersIndex()}>Done</Link>
+                    <Link href={deliveryCouriersIndex()}>{t('Done')}</Link>
                 </Button>
             </div>
         </>

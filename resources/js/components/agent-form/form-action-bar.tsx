@@ -1,6 +1,7 @@
 import { LoaderCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+import { useTranslation } from '@/hooks/use-translation';
 export function FormActionBar({
     processing,
     isEditing,
@@ -12,6 +13,8 @@ export function FormActionBar({
     createLabel: string;
     onCancel?: () => void;
 }) {
+    const { t } = useTranslation();
+
     return (
         <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t px-6 py-4 shadow-sm backdrop-blur md:px-8">
             <Button
@@ -20,11 +23,11 @@ export function FormActionBar({
                 disabled={processing}
                 onClick={onCancel}
             >
-                Cancel
+                {t('Cancel')}
             </Button>
             <Button disabled={processing} className="min-w-[8.5rem]">
                 {processing && <LoaderCircle className="size-4 animate-spin" />}
-                {isEditing ? 'Save Changes' : createLabel}
+                {isEditing ? t('Save Changes') : createLabel}
             </Button>
         </div>
     );

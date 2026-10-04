@@ -17,6 +17,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useTranslation } from '@/hooks/use-translation';
 import { formatDateTime, formatRelativeTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { StoreSummary } from '@/types';
@@ -44,6 +45,8 @@ export function StoreCard({
     onDelete: (store: StoreSummary) => void;
     onReconnect: (store: StoreSummary) => void;
 }) {
+    const { t } = useTranslation();
+
     const failed = store.connection_status === 'failed';
     const redirectsToPlatform = OAUTH_PLATFORMS.includes(
         store.platform?.slug ?? '',
@@ -75,7 +78,7 @@ export function StoreCard({
                     </div>
 
                     <div className="min-w-0 flex-1">
-                        <h3 className="truncate font-medium leading-none">
+                        <h3 className="truncate leading-none font-medium">
                             {store.name}
                         </h3>
 
@@ -93,7 +96,7 @@ export function StoreCard({
                             </a>
                         ) : (
                             <p className="mt-1.5 text-sm text-muted-foreground">
-                                {store.platform?.name ?? 'No domain set'}
+                                {store.platform?.name ?? t('No domain set')}
                             </p>
                         )}
                     </div>
@@ -107,7 +110,9 @@ export function StoreCard({
                             >
                                 <MoreHorizontal />
                                 <span className="sr-only">
-                                    Actions for {store.name}
+                                    {t('Actions for :name', {
+                                        name: store.name,
+                                    })}
                                 </span>
                             </Button>
                         </DropdownMenuTrigger>
@@ -121,7 +126,7 @@ export function StoreCard({
                                             rel="noopener noreferrer"
                                         >
                                             <ArrowUpRight />
-                                            Visit storefront
+                                            {t('Visit storefront')}
                                         </a>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
@@ -135,7 +140,7 @@ export function StoreCard({
                                         follow. */}
                                     <a href={reconnect(store.id).url}>
                                         <Plug />
-                                        Reconnect
+                                        {t('Reconnect')}
                                     </a>
                                 </DropdownMenuItem>
                             ) : (
@@ -143,7 +148,7 @@ export function StoreCard({
                                     onSelect={() => onReconnect(store)}
                                 >
                                     <Plug />
-                                    Reconnect
+                                    {t('Reconnect')}
                                 </DropdownMenuItem>
                             )}
 
@@ -153,7 +158,7 @@ export function StoreCard({
                                 variant="destructive"
                                 onSelect={() => onDelete(store)}
                             >
-                                Delete
+                                {t('Delete')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -180,7 +185,7 @@ export function StoreCard({
                             <Button asChild size="sm" variant="outline">
                                 <a href={reconnect(store.id).url}>
                                     <Plug />
-                                    Reconnect
+                                    {t('Reconnect')}
                                 </a>
                             </Button>
                         ) : (
@@ -190,32 +195,36 @@ export function StoreCard({
                                 onClick={() => onReconnect(store)}
                             >
                                 <Plug />
-                                Reconnect
+                                {t('Reconnect')}
                             </Button>
                         )
                     ) : (
-                    <span
-                        className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground"
-                        title={
-                            store.last_synced_at
-                                ? formatDateTime(store.last_synced_at)
-                                : undefined
-                        }
-                    >
-                        {store.last_synced_at ? (
-                            <>
-                                <RefreshCw className="size-3 shrink-0" />
-                                <span className="truncate">
-                                    {formatRelativeTime(store.last_synced_at)}
-                                </span>
-                            </>
-                        ) : (
-                            <>
-                                <Clock className="size-3 shrink-0" />
-                                <span className="truncate">Never synced</span>
-                            </>
-                        )}
-                    </span>
+                        <span
+                            className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground"
+                            title={
+                                store.last_synced_at
+                                    ? formatDateTime(store.last_synced_at)
+                                    : undefined
+                            }
+                        >
+                            {store.last_synced_at ? (
+                                <>
+                                    <RefreshCw className="size-3 shrink-0" />
+                                    <span className="truncate">
+                                        {formatRelativeTime(
+                                            store.last_synced_at,
+                                        )}
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    <Clock className="size-3 shrink-0" />
+                                    <span className="truncate">
+                                        {t('Never synced')}
+                                    </span>
+                                </>
+                            )}
+                        </span>
                     )}
                 </div>
             </div>

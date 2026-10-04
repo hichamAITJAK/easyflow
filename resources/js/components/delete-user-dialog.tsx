@@ -8,6 +8,7 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { useTranslation } from '@/hooks/use-translation';
 import type { User } from '@/types';
 
 export function DeleteUserDialog({
@@ -19,6 +20,8 @@ export function DeleteUserDialog({
     onOpenChange: (open: boolean) => void;
     user: User | null;
 }) {
+    const { t } = useTranslation();
+
     if (!user) {
         return null;
     }
@@ -26,10 +29,13 @@ export function DeleteUserDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
-                <DialogTitle>Remove {user.name}?</DialogTitle>
+                <DialogTitle>
+                    {t('Remove :name?', { name: user.name })}
+                </DialogTitle>
                 <DialogDescription>
-                    This will permanently remove this team member and their
-                    access. This action cannot be undone.
+                    {t(
+                        'This will permanently remove this team member and their access. This action cannot be undone.',
+                    )}
                 </DialogDescription>
 
                 <Form
@@ -44,14 +50,14 @@ export function DeleteUserDialog({
                                 variant="secondary"
                                 onClick={() => onOpenChange(false)}
                             >
-                                Cancel
+                                {t('Cancel')}
                             </Button>
                             <Button
                                 type="submit"
                                 variant="destructive"
                                 disabled={processing}
                             >
-                                Remove member
+                                {t('Remove member')}
                             </Button>
                         </DialogFooter>
                     )}

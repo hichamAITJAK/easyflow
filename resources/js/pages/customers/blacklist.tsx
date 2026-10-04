@@ -15,6 +15,7 @@ import Heading from '@/components/heading';
 import { Input } from '@/components/ui/input';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useTableFilters } from '@/hooks/use-table-filters';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import { blacklist as customersBlacklist } from '@/routes/customers';
 import type {
@@ -33,6 +34,8 @@ export default function CustomersBlacklist({
     entries: Paginated<CustomerBlacklistEntry>;
     filters: CustomerBlacklistFilters;
 }) {
+    const { t } = useTranslation();
+
     const { updateFilters } = useTableFilters(
         customersBlacklist().url,
         filters,
@@ -57,6 +60,7 @@ export default function CustomersBlacklist({
     const columns = useMemo(
         () =>
             createBlacklistColumns({
+                t,
                 filters,
                 routeUrl: customersBlacklist().url,
             }),
@@ -71,19 +75,21 @@ export default function CustomersBlacklist({
 
     return (
         <>
-            <Head title="Blacklist" />
+            <Head title={t('Blacklist')} />
 
             <div className="space-y-6 p-4">
                 <Heading
-                    title="Blacklist"
-                    description="Phone numbers blocked from placing new orders."
+                    title={t('Blacklist')}
+                    description={t(
+                        'Phone numbers blocked from placing new orders.',
+                    )}
                 />
 
                 <DataTableCard>
                     <DataTableCardToolbar>
                         <Input
                             className="max-w-sm"
-                            placeholder="Search by phone…"
+                            placeholder={t('Search by phone…')}
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
                         />

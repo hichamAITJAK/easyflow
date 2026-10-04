@@ -15,6 +15,7 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import { create as createDeliveryCourrier } from '@/routes/delivery-couriers';
 import type { DeliveryAccount } from '@/types';
@@ -24,6 +25,8 @@ export default function DeliveryCouriersIndex({
 }: {
     accounts: DeliveryAccount[];
 }) {
+    const { t } = useTranslation();
+
     const [search, setSearch] = useState('');
     const [deletingAccount, setDeletingAccount] =
         useState<DeliveryAccount | null>(null);
@@ -50,25 +53,27 @@ export default function DeliveryCouriersIndex({
 
     return (
         <>
-            <Head title="Delivery couriers" />
+            <Head title={t('Delivery couriers')} />
 
             <div className="space-y-6 p-4">
                 <div className="flex items-center justify-between">
                     <Heading
-                        title="Delivery couriers"
-                        description="Connect the delivery couriers you use to ship orders."
+                        title={t('Delivery couriers')}
+                        description={t(
+                            'Connect the delivery couriers you use to ship orders.',
+                        )}
                     />
                     <Button asChild>
                         <Link href={createDeliveryCourrier()}>
                             <Plus />
-                            Add courier
+                            {t('Add courier')}
                         </Link>
                     </Button>
                 </div>
 
                 {accounts.length > 0 && (
                     <Input
-                        placeholder="Filter couriers…"
+                        placeholder={t('Filter couriers…')}
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
                         className="max-w-sm"
@@ -78,10 +83,7 @@ export default function DeliveryCouriersIndex({
                 {accounts.length === 0 ? (
                     <Empty className="border">
                         <EmptyHeader>
-                            <EmptyMedia
-                                variant="default"
-                                aria-hidden="true"
-                            >
+                            <EmptyMedia variant="default" aria-hidden="true">
                                 <div className="flex items-center gap-3">
                                     <div className="flex size-12 items-center justify-center rounded-full bg-sidebar-primary text-sidebar-primary-foreground">
                                         <AppLogoIcon className="size-6 fill-current text-white dark:text-black" />
@@ -101,18 +103,20 @@ export default function DeliveryCouriersIndex({
                                     </div>
                                 </div>
                             </EmptyMedia>
-                            <EmptyTitle>Connect your first courier</EmptyTitle>
+                            <EmptyTitle>
+                                {t('Connect your first courier')}
+                            </EmptyTitle>
                             <EmptyDescription>
-                                The moment it&apos;s connected, confirmed
-                                orders get a parcel created and a tracking
-                                number automatically — no manual shipping.
+                                {t(
+                                    "The moment it's connected, confirmed orders get a parcel created and a tracking number automatically — no manual shipping.",
+                                )}
                             </EmptyDescription>
                         </EmptyHeader>
                         <EmptyContent>
                             <Button asChild>
                                 <Link href={createDeliveryCourrier()}>
                                     <Plus />
-                                    Add courier
+                                    {t('Add courier')}
                                 </Link>
                             </Button>
                         </EmptyContent>
@@ -123,9 +127,9 @@ export default function DeliveryCouriersIndex({
                             <EmptyMedia variant="icon">
                                 <Truck />
                             </EmptyMedia>
-                            <EmptyTitle>No matches found</EmptyTitle>
+                            <EmptyTitle>{t('No matches found')}</EmptyTitle>
                             <EmptyDescription>
-                                Try a different name or city.
+                                {t('Try a different name or city.')}
                             </EmptyDescription>
                         </EmptyHeader>
                     </Empty>
@@ -145,7 +149,7 @@ export default function DeliveryCouriersIndex({
                         >
                             <Plus className="size-6" />
                             <span className="text-sm font-medium">
-                                Add courier
+                                {t('Add courier')}
                             </span>
                         </Link>
                     </div>

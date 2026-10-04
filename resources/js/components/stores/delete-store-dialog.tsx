@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/hooks/use-translation';
 import type { StoreSummary } from '@/types';
 
 export function DeleteStoreDialog({
@@ -22,6 +23,8 @@ export function DeleteStoreDialog({
     onOpenChange: (open: boolean) => void;
     store: StoreSummary | null;
 }) {
+    const { t } = useTranslation();
+
     /**
      * Keyed by store id rather than cleared in an effect: without the key,
      * reopening the dialog for a *different* store would arrive with the
@@ -43,12 +46,13 @@ export function DeleteStoreDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
-                <DialogTitle>Delete {store.name}?</DialogTitle>
+                <DialogTitle>
+                    {t('Delete :name?', { name: store.name })}
+                </DialogTitle>
                 <DialogDescription>
-                    This removes the store&apos;s synced products and any
-                    commission rules or agent scopes limited to it. Past orders
-                    are kept, but they will no longer be linked to this store.
-                    This cannot be undone.
+                    {t(
+                        "This removes the store's synced products and any commission rules or agent scopes limited to it. Past orders are kept, but they will no longer be linked to this store. This cannot be undone.",
+                    )}
                 </DialogDescription>
 
                 <Form
@@ -95,7 +99,7 @@ export function DeleteStoreDialog({
                                     variant="secondary"
                                     onClick={() => onOpenChange(false)}
                                 >
-                                    Cancel
+                                    {t('Cancel')}
                                 </Button>
                                 <Button
                                     type="submit"
@@ -104,7 +108,7 @@ export function DeleteStoreDialog({
                                 >
                                     {processing
                                         ? 'Deleting…'
-                                        : 'Delete store'}
+                                        : t('Delete store')}
                                 </Button>
                             </DialogFooter>
                         </>

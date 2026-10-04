@@ -14,6 +14,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import { index as storesIndex } from '@/routes/stores';
 import type { CitiesByCourier, DeliveryCourrier, Store } from '@/types';
@@ -27,21 +28,24 @@ export default function StoresCourier({
     couriers: DeliveryCourrier[];
     citiesByCourier: CitiesByCourier;
 }) {
+    const { t } = useTranslation();
+
     const [selectedCourier, setSelectedCourier] =
         useState<DeliveryCourrier | null>(null);
-
     const cities = selectedCourier
         ? (citiesByCourier[selectedCourier.id] ?? [])
         : [];
 
     return (
         <>
-            <Head title="Connect a delivery courier" />
+            <Head title={t('Connect a delivery courier')} />
 
             <div className="mx-auto max-w-4xl space-y-10 p-4">
                 <Heading
-                    title="Connect a delivery courier"
-                    description="Optional — pick a courier and the city you'll collect parcels from."
+                    title={t('Connect a delivery courier')}
+                    description={t(
+                        "Optional — pick a courier and the city you'll collect parcels from.",
+                    )}
                 />
 
                 <Form
@@ -82,14 +86,16 @@ export default function StoresCourier({
                                 <div className="mx-auto grid w-full max-w-md gap-6">
                                     <div className="grid gap-2">
                                         <Label htmlFor="label">
-                                            Account label
+                                            {t('Account label')}
                                         </Label>
                                         <Input
                                             id="label"
                                             name="label"
                                             required
                                             autoComplete="off"
-                                            placeholder="e.g. Casablanca warehouse"
+                                            placeholder={t(
+                                                'e.g. Casablanca warehouse',
+                                            )}
                                             className="h-11"
                                         />
                                         <InputError message={errors.label} />
@@ -97,7 +103,7 @@ export default function StoresCourier({
 
                                     <div className="grid gap-2">
                                         <Label htmlFor="collect_city_id">
-                                            Collect city
+                                            {t('Collect city')}
                                         </Label>
                                         <Select
                                             key={selectedCourier.id}
@@ -107,7 +113,11 @@ export default function StoresCourier({
                                                 id="collect_city_id"
                                                 className="h-11 w-full"
                                             >
-                                                <SelectValue placeholder="Select the city you ship from" />
+                                                <SelectValue
+                                                    placeholder={t(
+                                                        'Select the city you ship from',
+                                                    )}
+                                                />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {cities.map((city) => (
@@ -129,14 +139,16 @@ export default function StoresCourier({
                                         <>
                                             <div className="grid gap-2">
                                                 <Label htmlFor="public_key">
-                                                    Sendit public key
+                                                    {t('Sendit public key')}
                                                 </Label>
                                                 <Input
                                                     id="public_key"
                                                     name="public_key"
                                                     required
                                                     autoComplete="off"
-                                                    placeholder="Paste your Sendit public key"
+                                                    placeholder={t(
+                                                        'Paste your Sendit public key',
+                                                    )}
                                                     className="h-11"
                                                 />
                                                 <InputError
@@ -145,7 +157,7 @@ export default function StoresCourier({
                                             </div>
                                             <div className="grid gap-2">
                                                 <Label htmlFor="secret_key">
-                                                    Sendit secret key
+                                                    {t('Sendit secret key')}
                                                 </Label>
                                                 <Input
                                                     id="secret_key"
@@ -153,7 +165,9 @@ export default function StoresCourier({
                                                     type="password"
                                                     required
                                                     autoComplete="off"
-                                                    placeholder="Paste your Sendit secret key"
+                                                    placeholder={t(
+                                                        'Paste your Sendit secret key',
+                                                    )}
                                                     className="h-11"
                                                 />
                                                 <InputError
@@ -167,7 +181,9 @@ export default function StoresCourier({
                                         <>
                                             <div className="grid gap-2">
                                                 <Label htmlFor="ozon_id">
-                                                    OzonExpress customer ID
+                                                    {t(
+                                                        'OzonExpress customer ID',
+                                                    )}
                                                 </Label>
                                                 <Input
                                                     id="ozon_id"
@@ -182,7 +198,7 @@ export default function StoresCourier({
                                             </div>
                                             <div className="grid gap-2">
                                                 <Label htmlFor="api_key">
-                                                    OzonExpress API key
+                                                    {t('OzonExpress API key')}
                                                 </Label>
                                                 <Input
                                                     id="api_key"
@@ -210,11 +226,11 @@ export default function StoresCourier({
                                     }
                                     className="min-w-48"
                                 >
-                                    Connect courier
+                                    {t('Connect courier')}
                                 </Button>
                                 <Button variant="ghost" size="lg" asChild>
                                     <Link href={storesIndex()}>
-                                        Skip for now
+                                        {t('Skip for now')}
                                     </Link>
                                 </Button>
                             </div>

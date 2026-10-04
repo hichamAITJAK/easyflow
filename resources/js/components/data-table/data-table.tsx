@@ -7,8 +7,8 @@
 import { flexRender } from '@tanstack/react-table';
 import type { Row, Table as TanstackTable } from '@tanstack/react-table';
 import { Inbox } from 'lucide-react';
-import { Fragment  } from 'react';
-import type {ReactElement, ReactNode} from 'react';
+import { Fragment } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import {
     Empty,
     EmptyDescription,

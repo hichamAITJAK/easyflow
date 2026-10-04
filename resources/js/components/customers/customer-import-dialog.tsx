@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/hooks/use-translation';
 import { importMethod as importCustomers } from '@/routes/customers';
 import { template as importTemplate } from '@/routes/customers/import';
 
@@ -39,6 +40,8 @@ export function CustomerImportDialog({
     /** Outcome of the last import, echoed back after the redirect. */
     result?: ImportResult | null;
 }) {
+    const { t } = useTranslation();
+
     const [file, setFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -73,7 +76,9 @@ export function CustomerImportDialog({
                 preserveScroll: true,
                 onSuccess: () => handleOpenChange(false),
                 onError: (errors) =>
-                    setError(errors.file ?? 'The file could not be imported.'),
+                    setError(
+                        errors.file ?? t('The file could not be imported.'),
+                    ),
                 onFinish: () => setUploading(false),
             },
         );
@@ -83,11 +88,11 @@ export function CustomerImportDialog({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Import customers</DialogTitle>
+                    <DialogTitle>{t('Import customers')}</DialogTitle>
                     <DialogDescription>
-                        Upload a CSV to add your existing customers. Rows are
-                        matched by phone number, so anyone already in your list
-                        is updated instead of duplicated.
+                        {t(
+                            'Upload a CSV to add your existing customers. Rows are matched by phone number, so anyone already in your list is updated instead of duplicated.',
+                        )}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -95,14 +100,14 @@ export function CustomerImportDialog({
                     <div className="rounded-md border bg-muted/40 p-3 text-sm">
                         <div className="mb-1.5 flex items-center gap-2 font-medium">
                             <FileSpreadsheet className="size-4 text-muted-foreground" />
-                            Expected columns
+                            {t('Expected columns')}
                         </div>
                         <p className="text-muted-foreground">
                             <span className="font-mono text-xs">
-                                name, phone, address, city
+                                {t('name, phone, address, city')}
                             </span>{' '}
-                            — only <span className="font-medium">phone</span> is
-                            required. Any other columns are ignored.
+                            — only <span className="font-medium">phone</span>{' '}
+                            {t('is required. Any other columns are ignored.')}
                         </p>
                         {/* A plain anchor, not an Inertia Link: this is a
                             file download, and Inertia would try to render
@@ -113,12 +118,14 @@ export function CustomerImportDialog({
                             className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline"
                         >
                             <Download className="size-3.5" />
-                            Download example file
+                            {t('Download example file')}
                         </a>
                     </div>
 
                     <div className="grid gap-1.5">
-                        <Label htmlFor="customer-import-file">CSV file</Label>
+                        <Label htmlFor="customer-import-file">
+                            {t('CSV file')}
+                        </Label>
                         <Input
                             id="customer-import-file"
                             type="file"
@@ -139,15 +146,22 @@ export function CustomerImportDialog({
                     {result && result.errors.length > 0 && (
                         <Alert>
                             <AlertTitle>
-                                {result.skipped} row
-                                {result.skipped === 1 ? '' : 's'} skipped
+                                {result.skipped === 1
+                                    ? t(':count row skipped', {
+                                          count: result.skipped,
+                                      })
+                                    : t(':count rows skipped', {
+                                          count: result.skipped,
+                                      })}
                             </AlertTitle>
                             <AlertDescription>
                                 <ul className="mt-1 max-h-40 space-y-1 overflow-y-auto text-sm">
                                     {result.errors.map((rowError) => (
                                         <li key={rowError.row}>
-                                            Row {rowError.row}:{' '}
-                                            {rowError.reason}
+                                            {t('Row :row: :reason', {
+                                                row: rowError.row,
+                                                reason: rowError.reason,
+                                            })}
                                         </li>
                                     ))}
                                 </ul>
@@ -163,7 +177,7 @@ export function CustomerImportDialog({
                         onClick={() => handleOpenChange(false)}
                         disabled={uploading}
                     >
-                        Cancel
+                        {t('Cancel')}
                     </Button>
                     <Button
                         type="button"
@@ -173,12 +187,12 @@ export function CustomerImportDialog({
                         {uploading ? (
                             <>
                                 <Loader2 className="animate-spin" />
-                                Importing …
+                                {t('Importing …')}
                             </>
                         ) : (
                             <>
                                 <Upload />
-                                Import
+                                {t('Import')}
                             </>
                         )}
                     </Button>

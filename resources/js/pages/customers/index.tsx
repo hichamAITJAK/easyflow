@@ -16,11 +16,17 @@ import { DataTablePerPageSelect } from '@/components/data-table/data-table-per-p
 import { DataTableViewOptions } from '@/components/data-table/data-table-view-options';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useTableFilters } from '@/hooks/use-table-filters';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import { index as customersIndex } from '@/routes/customers';
 import type {
@@ -53,11 +59,14 @@ export default function CustomersIndex({
     filters: CustomerFilters;
     importResult?: ImportResult | null;
 }) {
-    const tab: CustomerTab = filters.blacklisted === '1'
-        ? 'blacklisted'
-        : filters.best === '1'
-          ? 'best'
-          : 'all';
+    const { t } = useTranslation();
+
+    const tab: CustomerTab =
+        filters.blacklisted === '1'
+            ? 'blacklisted'
+            : filters.best === '1'
+              ? 'best'
+              : 'all';
 
     const { auth } = usePage<PageProps>().props;
     // Mirrors the route's `manage-users` gate — bulk-writing client PII is
@@ -111,8 +120,8 @@ export default function CustomersIndex({
     };
 
     const columns = useMemo(
-        () => createColumns({ filters, routeUrl: customersIndex().url }),
-        [filters],
+        () => createColumns({ t, filters, routeUrl: customersIndex().url }),
+        [t, filters],
     );
 
     const table = useReactTable({
@@ -123,13 +132,15 @@ export default function CustomersIndex({
 
     return (
         <>
-            <Head title="Customers" />
+            <Head title={t('Customers')} />
 
             <div className="space-y-6 p-4">
                 <div className="flex items-start justify-between gap-4">
                     <Heading
-                        title="Customers"
-                        description="Everyone who has ever placed an order with your business."
+                        title={t('Customers')}
+                        description={t(
+                            'Everyone who has ever placed an order with your business.',
+                        )}
                     />
                     {canImport && (
                         <Button
@@ -138,7 +149,9 @@ export default function CustomersIndex({
                             onClick={() => setImportOpen(true)}
                         >
                             <Upload />
-                            <span className="hidden sm:inline">Import CSV</span>
+                            <span className="hidden sm:inline">
+                                {t('Import CSV')}
+                            </span>
                         </Button>
                     )}
                 </div>
@@ -146,7 +159,9 @@ export default function CustomersIndex({
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
                     <Card className="py-4">
                         <CardHeader className="gap-1 px-4">
-                            <CardDescription>Total customers</CardDescription>
+                            <CardDescription>
+                                {t('Total customers')}
+                            </CardDescription>
                             <CardTitle className="text-2xl">
                                 {metrics.total}
                             </CardTitle>
@@ -154,7 +169,9 @@ export default function CustomersIndex({
                     </Card>
                     <Card className="py-4">
                         <CardHeader className="gap-1 px-4">
-                            <CardDescription>Best clients</CardDescription>
+                            <CardDescription>
+                                {t('Best clients')}
+                            </CardDescription>
                             <CardTitle className="text-2xl text-amber-600 dark:text-amber-400">
                                 {metrics.best}
                             </CardTitle>
@@ -162,7 +179,9 @@ export default function CustomersIndex({
                     </Card>
                     <Card className="py-4">
                         <CardHeader className="gap-1 px-4">
-                            <CardDescription>Blacklisted</CardDescription>
+                            <CardDescription>
+                                {t('Blacklisted')}
+                            </CardDescription>
                             <CardTitle className="text-2xl text-destructive">
                                 {metrics.blacklisted}
                             </CardTitle>
@@ -172,10 +191,14 @@ export default function CustomersIndex({
 
                 <Tabs value={tab} onValueChange={handleTabChange}>
                     <TabsList>
-                        <TabsTrigger value="all">All customers</TabsTrigger>
-                        <TabsTrigger value="best">Best clients</TabsTrigger>
+                        <TabsTrigger value="all">
+                            {t('All customers')}
+                        </TabsTrigger>
+                        <TabsTrigger value="best">
+                            {t('Best clients')}
+                        </TabsTrigger>
                         <TabsTrigger value="blacklisted">
-                            Blacklisted
+                            {t('Blacklisted')}
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>
@@ -184,7 +207,7 @@ export default function CustomersIndex({
                     <DataTableCardToolbar>
                         <Input
                             className="max-w-sm"
-                            placeholder="Search by city…"
+                            placeholder={t('Search by city…')}
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
                         />
@@ -205,10 +228,10 @@ export default function CustomersIndex({
                             columnCount={columns.length}
                             emptyMessage={
                                 tab === 'best'
-                                    ? 'No best clients yet.'
+                                    ? t('No best clients yet.')
                                     : tab === 'blacklisted'
-                                      ? 'No blacklisted customers.'
-                                      : 'No customers yet.'
+                                      ? t('No blacklisted customers.')
+                                      : t('No customers yet.')
                             }
                         />
                     </DataTableCardTable>

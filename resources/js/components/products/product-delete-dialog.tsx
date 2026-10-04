@@ -8,6 +8,7 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { useTranslation } from '@/hooks/use-translation';
 import type { Product } from '@/types';
 
 export function ProductDeleteDialog({
@@ -19,6 +20,8 @@ export function ProductDeleteDialog({
     onOpenChange: (open: boolean) => void;
     product: Product | null;
 }) {
+    const { t } = useTranslation();
+
     if (!product) {
         return null;
     }
@@ -26,10 +29,12 @@ export function ProductDeleteDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
-                <DialogTitle>Delete this product?</DialogTitle>
+                <DialogTitle>{t('Delete this product?')}</DialogTitle>
                 <DialogDescription>
-                    This will remove "{product.name}" from your product list.
-                    This action cannot be undone.
+                    {t(
+                        'This will remove ":name" from your product list. This action cannot be undone.',
+                        { name: product.name },
+                    )}
                 </DialogDescription>
 
                 <Form
@@ -44,14 +49,14 @@ export function ProductDeleteDialog({
                                 variant="secondary"
                                 onClick={() => onOpenChange(false)}
                             >
-                                Cancel
+                                {t('Cancel')}
                             </Button>
                             <Button
                                 type="submit"
                                 variant="destructive"
                                 disabled={processing}
                             >
-                                Delete product
+                                {t('Delete product')}
                             </Button>
                         </DialogFooter>
                     )}

@@ -8,6 +8,7 @@ import {
     CommandItem,
     CommandList,
 } from '@/components/ui/command';
+import { useTranslation } from '@/hooks/use-translation';
 import type { StoreConnectionStatus } from '@/types/store';
 
 export type StoreOption = {
@@ -43,6 +44,8 @@ export function StoreSyncCommand({
     onSelect: (storeId: number | null) => void;
     noun: string;
 }) {
+    const { t } = useTranslation();
+
     const choose = (storeId: number | null) => {
         onOpenChange(false);
         onSelect(storeId);
@@ -78,21 +81,25 @@ export function StoreSyncCommand({
                     otherwise see a bare search box with no statement of what
                     picking a row does. This is that statement. */}
                 <div className="border-b px-3 py-2.5">
-                    <p className="text-sm font-medium">Load {noun} from</p>
+                    <p className="text-sm font-medium">
+                        {t('Load :noun from', { noun })}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                        Starts as soon as you pick. Existing {noun} are
-                        updated, not duplicated.
+                        {t(
+                            'Starts as soon as you pick. Existing :noun are updated, not duplicated.',
+                            { noun },
+                        )}
                     </p>
                 </div>
 
-                <CommandInput placeholder="Search stores by name…" />
+                <CommandInput placeholder={t('Search stores by name…')} />
                 <CommandList>
                     <CommandEmpty>
-                        No store matches that name.
+                        {t('No store matches that name.')}
                     </CommandEmpty>
 
                     {connected.length > 0 && (
-                        <CommandGroup heading="Every connected store">
+                        <CommandGroup heading={t('Every connected store')}>
                             {/* `value` carries the label, not the id — cmdk
                                 filters on it, so an id here would make the
                                 row unsearchable by the words shown. */}
@@ -101,7 +108,7 @@ export function StoreSyncCommand({
                                 onSelect={() => choose(null)}
                             >
                                 <StoreIcon className="size-4" />
-                                All stores
+                                {t('All stores')}
                                 <span className="ml-auto text-xs text-muted-foreground">
                                     {connected.length}{' '}
                                     {connected.length === 1
@@ -113,7 +120,7 @@ export function StoreSyncCommand({
                     )}
 
                     {connected.length > 0 && (
-                        <CommandGroup heading="Just one store">
+                        <CommandGroup heading={t('Just one store')}>
                             {connected.map((store) => (
                                 <CommandItem
                                     key={store.id}
@@ -133,7 +140,9 @@ export function StoreSyncCommand({
                         that isn't here needs to know it exists and why it
                         can't be used, not to wonder whether they mis-typed. */}
                     {unavailable.length > 0 && (
-                        <CommandGroup heading="Not connected — reconnect in Stores">
+                        <CommandGroup
+                            heading={t('Not connected — reconnect in Stores')}
+                        >
                             {unavailable.map((store) => (
                                 <CommandItem
                                     key={store.id}
@@ -146,8 +155,8 @@ export function StoreSyncCommand({
                                     </span>
                                     <span className="ml-auto text-xs">
                                         {store.connection_status === 'failed'
-                                            ? 'Connection failed'
-                                            : 'Setup unfinished'}
+                                            ? t('Connection failed')
+                                            : t('Setup unfinished')}
                                     </span>
                                 </CommandItem>
                             ))}
@@ -160,10 +169,12 @@ export function StoreSyncCommand({
                     {connected.length === 0 && (
                         <div className="px-3 py-6 text-center">
                             <p className="text-sm font-medium">
-                                No connected stores
+                                {t('No connected stores')}
                             </p>
                             <p className="mt-1 text-xs text-muted-foreground">
-                                Connect a store before loading {noun}.
+                                {t('Connect a store before loading :noun.', {
+                                    noun,
+                                })}
                             </p>
                         </div>
                     )}

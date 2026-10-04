@@ -3,13 +3,16 @@ import { MessageCircle, Phone, Star } from 'lucide-react';
 import { DataTableColumnHeaderServer } from '@/components/data-table/data-table-column-header-server';
 import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/format';
+import type { Translator } from '@/lib/i18n';
 import { formatMoroccoPhoneForWhatsApp } from '@/lib/phone';
 import type { Customer, CustomerFilters } from '@/types';
 
 export function createColumns({
+    t,
     filters,
     routeUrl,
 }: {
+    t: Translator;
     filters: CustomerFilters;
     routeUrl: string;
 }): ColumnDef<Customer>[] {
@@ -27,7 +30,7 @@ export function createColumns({
     return [
         {
             accessorKey: 'name',
-            header: () => sortHeader('Name', 'name'),
+            header: () => sortHeader(t('Name'), 'name'),
             cell: ({ row }) => (
                 <div className="flex items-center gap-2">
                     <span className="font-medium">{row.original.name}</span>
@@ -39,7 +42,7 @@ export function createColumns({
         },
         {
             accessorKey: 'phone',
-            header: 'Phone',
+            header: t('Phone'),
             cell: ({ row }) => {
                 const phone = row.original.phone;
                 const whatsapp = formatMoroccoPhoneForWhatsApp(phone);
@@ -71,17 +74,17 @@ export function createColumns({
         },
         {
             accessorKey: 'city',
-            header: () => sortHeader('City', 'city'),
+            header: () => sortHeader(t('City'), 'city'),
             cell: ({ row }) => row.original.city ?? '—',
         },
         {
             accessorKey: 'orders_count',
-            header: () => sortHeader('Orders', 'orders_count'),
+            header: () => sortHeader(t('Orders'), 'orders_count'),
             cell: ({ row }) => row.original.orders_count,
         },
         {
             accessorKey: 'delivered_orders_count',
-            header: () => sortHeader('Delivered', 'delivered_orders_count'),
+            header: () => sortHeader(t('Delivered'), 'delivered_orders_count'),
             cell: ({ row }) => (
                 <span className="text-emerald-600 dark:text-emerald-500">
                     {row.original.delivered_orders_count}
@@ -90,7 +93,7 @@ export function createColumns({
         },
         {
             accessorKey: 'returned_orders_count',
-            header: () => sortHeader('Returned', 'returned_orders_count'),
+            header: () => sortHeader(t('Returned'), 'returned_orders_count'),
             cell: ({ row }) => (
                 <span className="text-destructive">
                     {row.original.returned_orders_count}
@@ -99,10 +102,10 @@ export function createColumns({
         },
         {
             id: 'status',
-            header: 'Status',
+            header: t('Status'),
             cell: ({ row }) =>
                 row.original.is_blacklisted ? (
-                    <Badge variant="destructive">Blacklisted</Badge>
+                    <Badge variant="destructive">{t('Blacklisted')}</Badge>
                 ) : row.original.is_best_customer ? (
                     <Badge
                         variant="outline"
@@ -111,12 +114,12 @@ export function createColumns({
                         Best client
                     </Badge>
                 ) : (
-                    <Badge variant="outline">Regular</Badge>
+                    <Badge variant="outline">{t('Regular')}</Badge>
                 ),
         },
         {
             accessorKey: 'last_order_at',
-            header: () => sortHeader('Last order', 'last_order_at'),
+            header: () => sortHeader(t('Last order'), 'last_order_at'),
             cell: ({ row }) =>
                 row.original.last_order_at
                     ? formatDate(row.original.last_order_at)

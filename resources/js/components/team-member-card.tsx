@@ -11,6 +11,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { GetInitialsFn } from '@/hooks/use-initials';
+import { useTranslation } from '@/hooks/use-translation';
 import type { User } from '@/types';
 
 const roleLabels: Record<User['role'], string> = {
@@ -21,15 +22,19 @@ const roleLabels: Record<User['role'], string> = {
 };
 
 const roleBadgeClasses: Record<User['role'], string> = {
-    super_admin: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300',
+    super_admin:
+        'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300',
     admin: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300',
-    confirmation_agent: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
-    fulfilment_agent: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+    confirmation_agent:
+        'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
+    fulfilment_agent:
+        'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
 };
 
 const statusBadgeClasses: Record<User['status'], string> = {
     active: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300',
-    invited: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+    invited:
+        'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
     disabled: 'bg-muted text-muted-foreground',
 };
 
@@ -61,6 +66,8 @@ export function TeamMemberCard({
     onEdit: (user: User) => void;
     onDelete: (user: User) => void;
 }) {
+    const { t } = useTranslation();
+
     const metrics = useMockMetrics(user.id);
 
     return (
@@ -77,14 +84,14 @@ export function TeamMemberCard({
                         </AvatarFallback>
                     </Avatar>
                     <div className="grid gap-1.5">
-                        <span className="font-medium leading-none">
+                        <span className="leading-none font-medium">
                             {user.name}
                         </span>
                         <Badge
                             variant="outline"
                             className={`w-fit border-transparent ${roleBadgeClasses[user.role]}`}
                         >
-                            {roleLabels[user.role]}
+                            {t(roleLabels[user.role])}
                         </Badge>
                     </div>
                 </div>
@@ -101,13 +108,13 @@ export function TeamMemberCard({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem onSelect={() => onEdit(user)}>
-                            Edit
+                            {t('Edit')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                             variant="destructive"
                             onSelect={() => onDelete(user)}
                         >
-                            Remove
+                            {t('Remove')}
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -136,7 +143,7 @@ export function TeamMemberCard({
                             {metrics.handled}
                         </span>
                         <span className="text-[11px] text-muted-foreground">
-                            Orders handled
+                            {t('Orders handled')}
                         </span>
                     </div>
                     <div className="grid gap-0.5">
@@ -144,7 +151,7 @@ export function TeamMemberCard({
                             {metrics.successRate}%
                         </span>
                         <span className="text-[11px] text-muted-foreground">
-                            Success rate
+                            {t('Success rate')}
                         </span>
                     </div>
                     <div className="grid gap-0.5">
@@ -152,7 +159,7 @@ export function TeamMemberCard({
                             {metrics.avgResponseMinutes}m
                         </span>
                         <span className="text-[11px] text-muted-foreground">
-                            Avg. response
+                            {t('Avg. response')}
                         </span>
                     </div>
                 </div>

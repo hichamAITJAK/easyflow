@@ -12,6 +12,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 import type { SalaryPeriod } from '@/types';
 
 const periodOptions: { value: SalaryPeriod; label: string }[] = [
@@ -32,6 +33,8 @@ export function SalaryFields({
     onPeriodChange: (value: SalaryPeriod) => void;
     errors: { salary_amount?: string; salary_period?: string };
 }) {
+    const { t } = useTranslation();
+
     return (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
@@ -39,7 +42,7 @@ export function SalaryFields({
                     htmlFor="salary_amount"
                     className="text-sm font-semibold"
                 >
-                    Salary Amount
+                    {t('Salary Amount')}
                 </Label>
                 <InputGroup>
                     <InputGroupInput
@@ -62,7 +65,7 @@ export function SalaryFields({
                     htmlFor="salary_period"
                     className="text-sm font-semibold"
                 >
-                    Pay Frequency
+                    {t('Pay Frequency')}
                 </Label>
                 <Select
                     value={period}

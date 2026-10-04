@@ -5,12 +5,16 @@ import UserController from '@/actions/App/Http/Controllers/Users/UserController'
 import { AvatarPanel } from '@/components/agent-form/avatar-panel';
 import { ChoiceCard } from '@/components/agent-form/choice-card';
 import { FormActionBar } from '@/components/agent-form/form-action-bar';
-import { FormSection, SectionBadge } from '@/components/agent-form/form-section';
+import {
+    FormSection,
+    SectionBadge,
+} from '@/components/agent-form/form-section';
 import { IdentityFields } from '@/components/agent-form/identity-fields';
 import { SalaryFields } from '@/components/agent-form/salary-fields';
 import InputError from '@/components/input-error';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import type { CommissionPaymentMode, SalaryPeriod, User } from '@/types';
 
@@ -27,6 +31,8 @@ export function FulfilmentAgentForm({
     onCancel?: () => void;
     className?: string;
 }) {
+    const { t } = useTranslation();
+
     const isEditing = Boolean(user);
     const formProps = isEditing
         ? UserController.update.form(user!.id)
@@ -56,32 +62,53 @@ export function FulfilmentAgentForm({
                 <>
                     {/* Hidden fields guaranteed to always submit */}
                     <input type="hidden" name="role" value="fulfilment_agent" />
-                    <input type="hidden" name="payment_mode" value={paymentMode} />
+                    <input
+                        type="hidden"
+                        name="payment_mode"
+                        value={paymentMode}
+                    />
                     {paymentMode === 'salary' && (
-                        <input type="hidden" name="salary_period" value={salaryPeriod} />
+                        <input
+                            type="hidden"
+                            name="salary_period"
+                            value={salaryPeriod}
+                        />
                     )}
 
                     <div className="flex-1 divide-y px-6 md:px-8">
                         <FormSection
                             icon={IdCard}
-                            title="General & Profile"
-                            description="Identity, contact information, and account credentials."
+                            title={t('General & Profile')}
+                            description={t(
+                                'Identity, contact information, and account credentials.',
+                            )}
                         >
                             <div className="grid gap-6 rounded-md border p-5 md:grid-cols-[16rem_1fr]">
-                                <AvatarPanel avatarUrl={user?.avatar} avatarOptions={avatarOptions} />
+                                <AvatarPanel
+                                    avatarUrl={user?.avatar}
+                                    avatarOptions={avatarOptions}
+                                />
                                 <div className="md:border-l md:pl-6">
-                                    <IdentityFields user={user} isEditing={isEditing} errors={errors} />
+                                    <IdentityFields
+                                        user={user}
+                                        isEditing={isEditing}
+                                        errors={errors}
+                                    />
                                 </div>
                             </div>
                         </FormSection>
 
                         <FormSection
                             icon={Wallet}
-                            title="Compensation Structure"
-                            description="Choose fixed periodic salary or per-parcel scanning pay in the warehouse."
+                            title={t('Compensation Structure')}
+                            description={t(
+                                'Choose fixed periodic salary or per-parcel scanning pay in the warehouse.',
+                            )}
                             badge={
                                 <SectionBadge>
-                                    {paymentMode === 'salary' ? 'Salary Mode' : 'Per Parcel Pay'}
+                                    {paymentMode === 'salary'
+                                        ? 'Salary Mode'
+                                        : 'Per Parcel Pay'}
                                 </SectionBadge>
                             }
                         >
@@ -90,15 +117,21 @@ export function FulfilmentAgentForm({
                                     accent="amber"
                                     selected={paymentMode === 'salary'}
                                     onSelect={() => setPaymentMode('salary')}
-                                    title="Fixed Salary"
-                                    description="Fixed periodic compensation (e.g. 3,000 MAD / month) regardless of parcel scanning volume."
+                                    title={t('Fixed Salary')}
+                                    description={t(
+                                        'Fixed periodic compensation (e.g. 3,000 MAD / month) regardless of parcel scanning volume.',
+                                    )}
                                 />
                                 <ChoiceCard
                                     accent="amber"
                                     selected={paymentMode === 'commission'}
-                                    onSelect={() => setPaymentMode('commission')}
-                                    title="Per Parcel Pay"
-                                    description="Earn a fixed rate for every parcel prepared and staged for courier dispatch (e.g. 5 MAD / parcel)."
+                                    onSelect={() =>
+                                        setPaymentMode('commission')
+                                    }
+                                    title={t('Per Parcel Pay')}
+                                    description={t(
+                                        'Earn a fixed rate for every parcel prepared and staged for courier dispatch (e.g. 5 MAD / parcel).',
+                                    )}
                                 />
                             </div>
                             <InputError message={errors.payment_mode} />
@@ -114,8 +147,11 @@ export function FulfilmentAgentForm({
                                     />
                                 ) : (
                                     <div className="grid max-w-sm gap-1.5">
-                                        <Label htmlFor="amount" className="text-sm font-semibold">
-                                            Amount Per Parcel
+                                        <Label
+                                            htmlFor="amount"
+                                            className="text-sm font-semibold"
+                                        >
+                                            {t('Amount Per Parcel')}
                                         </Label>
                                         <div className="relative">
                                             <Input
@@ -125,11 +161,15 @@ export function FulfilmentAgentForm({
                                                 step="0.01"
                                                 min="0"
                                                 value={amount}
-                                                onChange={(event) => setAmount(event.target.value)}
+                                                onChange={(event) =>
+                                                    setAmount(
+                                                        event.target.value,
+                                                    )
+                                                }
                                                 placeholder="5.00"
                                                 className="h-10 pr-12"
                                             />
-                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                                            <span className="absolute top-1/2 right-3 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
                                                 MAD
                                             </span>
                                         </div>

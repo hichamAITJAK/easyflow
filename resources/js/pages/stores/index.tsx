@@ -15,11 +15,14 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import { create as createStore } from '@/routes/stores';
 import type { StoreSummary } from '@/types';
 
 export default function StoresIndex({ stores }: { stores: StoreSummary[] }) {
+    const { t } = useTranslation();
+
     const [search, setSearch] = useState('');
     const [deletingStore, setDeletingStore] = useState<StoreSummary | null>(
         null,
@@ -58,25 +61,27 @@ export default function StoresIndex({ stores }: { stores: StoreSummary[] }) {
 
     return (
         <>
-            <Head title="Stores" />
+            <Head title={t('Stores')} />
 
             <div className="space-y-6 p-4">
                 <div className="flex items-center justify-between">
                     <Heading
-                        title="Stores"
-                        description="Connect your e-commerce stores and delivery couriers."
+                        title={t('Stores')}
+                        description={t(
+                            'Connect your e-commerce stores and delivery couriers.',
+                        )}
                     />
                     <Button asChild>
                         <Link href={createStore()}>
                             <Plus />
-                            Add store
+                            {t('Add store')}
                         </Link>
                     </Button>
                 </div>
 
                 {stores.length > 0 && (
                     <Input
-                        placeholder="Filter stores…"
+                        placeholder={t('Filter stores…')}
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
                         className="max-w-sm"
@@ -106,18 +111,20 @@ export default function StoresIndex({ stores }: { stores: StoreSummary[] }) {
                                     </div>
                                 </div>
                             </EmptyMedia>
-                            <EmptyTitle>Connect your first store</EmptyTitle>
+                            <EmptyTitle>
+                                {t('Connect your first store')}
+                            </EmptyTitle>
                             <EmptyDescription>
-                                Shopify and YouCan orders start flowing in the
-                                moment you connect — no manual entry, no
-                                spreadsheets.
+                                {t(
+                                    'Shopify and YouCan orders start flowing in the moment you connect — no manual entry, no spreadsheets.',
+                                )}
                             </EmptyDescription>
                         </EmptyHeader>
                         <EmptyContent>
                             <Button asChild>
                                 <Link href={createStore()}>
                                     <Plus />
-                                    Add store
+                                    {t('Add store')}
                                 </Link>
                             </Button>
                         </EmptyContent>
@@ -128,9 +135,11 @@ export default function StoresIndex({ stores }: { stores: StoreSummary[] }) {
                             <EmptyMedia variant="icon">
                                 <StoreIcon />
                             </EmptyMedia>
-                            <EmptyTitle>No matches found</EmptyTitle>
+                            <EmptyTitle>{t('No matches found')}</EmptyTitle>
                             <EmptyDescription>
-                                Try a different name, platform, or status.
+                                {t(
+                                    'Try a different name, platform, or status.',
+                                )}
                             </EmptyDescription>
                         </EmptyHeader>
                     </Empty>
@@ -155,7 +164,7 @@ export default function StoresIndex({ stores }: { stores: StoreSummary[] }) {
                                         <Plus />
                                     </EmptyMedia>
                                     <EmptyTitle className="text-sm transition-colors group-hover:text-foreground">
-                                        Add store
+                                        {t('Add store')}
                                     </EmptyTitle>
                                 </EmptyHeader>
                             </Empty>

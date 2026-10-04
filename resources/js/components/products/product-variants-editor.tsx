@@ -21,6 +21,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTranslation } from '@/hooks/use-translation';
 import {
     blankVariantDraft,
     variantCombinations,
@@ -43,6 +44,8 @@ function OptionRow({
     onChange: (option: OptionDraft) => void;
     onRemove: () => void;
 }) {
+    const { t } = useTranslation();
+
     const [newValue, setNewValue] = useState('');
 
     const addValue = () => {
@@ -74,7 +77,9 @@ function OptionRow({
                         onChange={(event) =>
                             onChange({ ...option, name: event.target.value })
                         }
-                        placeholder="Option name (e.g. Size, Color, Material)"
+                        placeholder={t(
+                            'Option name (e.g. Size, Color, Material)',
+                        )}
                         className="font-medium"
                     />
                 </InputGroup>
@@ -83,7 +88,7 @@ function OptionRow({
                     variant="ghost"
                     size="icon"
                     onClick={onRemove}
-                    title="Delete option"
+                    title={t('Delete option')}
                     className="-m-1.5 size-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 >
                     <Trash2 className="size-4" />
@@ -119,7 +124,7 @@ function OptionRow({
                             }
                         }}
                         onBlur={addValue}
-                        placeholder="Type value & press Enter…"
+                        placeholder={t('Type value & press Enter…')}
                         className="text-xs"
                     />
                 </InputGroup>
@@ -146,6 +151,8 @@ export function ProductVariantsEditor({
     onOptionsChange: (options: OptionDraft[]) => void;
     onVariantDraftsChange: (drafts: Record<string, VariantDraft>) => void;
 }) {
+    const { t } = useTranslation();
+
     const combinations = variantCombinations(options);
 
     const updateOption = (index: number, option: OptionDraft) => {
@@ -178,18 +185,18 @@ export function ProductVariantsEditor({
                         1
                     </span>
                     <Label className="text-sm font-semibold">
-                        Define options
+                        {t('Define options')}
                     </Label>
                 </div>
 
                 {options.length === 0 && (
                     <Empty className="border border-dashed py-8">
                         <EmptyHeader>
-                            <EmptyTitle>No options added yet</EmptyTitle>
+                            <EmptyTitle>{t('No options added yet')}</EmptyTitle>
                             <EmptyDescription>
-                                An option is an attribute like Size or Color.
-                                Every combination of the values you add becomes
-                                its own row in the table below.
+                                {t(
+                                    'An option is an attribute like Size or Color. Every combination of the values you add becomes its own row in the table below.',
+                                )}
                             </EmptyDescription>
                         </EmptyHeader>
                     </Empty>
@@ -212,7 +219,7 @@ export function ProductVariantsEditor({
                         className="h-9 w-full gap-1.5 border-dashed text-xs text-muted-foreground hover:text-foreground"
                     >
                         <Plus className="size-3.5" />
-                        Add option
+                        {t('Add option')}
                     </Button>
                 </div>
             </div>
@@ -225,7 +232,7 @@ export function ProductVariantsEditor({
                                 2
                             </span>
                             <Label className="text-sm font-semibold">
-                                Review combinations
+                                {t('Review combinations')}
                             </Label>
                             <Badge
                                 variant="secondary"
@@ -235,8 +242,9 @@ export function ProductVariantsEditor({
                             </Badge>
                         </div>
                         <span className="text-xs text-muted-foreground">
-                            Blank SKU, price, or stock inherits the base
-                            product's value.
+                            {t(
+                                "Blank SKU, price, or stock inherits the base product's value.",
+                            )}
                         </span>
                     </div>
 
@@ -248,22 +256,22 @@ export function ProductVariantsEditor({
                             <TableHeader className="sticky top-0 z-10 bg-muted/60 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase backdrop-blur-md [&_th]:h-auto">
                                 <TableRow className="hover:bg-transparent">
                                     <TableHead className="p-3 pl-4 font-semibold">
-                                        Combination
+                                        {t('Combination')}
                                     </TableHead>
                                     <TableHead className="p-3 font-semibold">
                                         SKU
                                     </TableHead>
                                     <TableHead className="p-3 text-center font-semibold">
-                                        Image
+                                        {t('Image')}
                                     </TableHead>
                                     <TableHead className="p-3 text-right font-semibold">
-                                        Price
+                                        {t('Price')}
                                     </TableHead>
                                     <TableHead className="p-3 text-right font-semibold">
-                                        Stock
+                                        {t('Stock')}
                                     </TableHead>
                                     <TableHead className="p-3 pr-4 text-center font-semibold">
-                                        Status
+                                        {t('Status')}
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -348,7 +356,9 @@ export function ProductVariantsEditor({
                                                                 },
                                                             )
                                                         }
-                                                        placeholder="Default"
+                                                        placeholder={t(
+                                                            'Default',
+                                                        )}
                                                         className="text-right font-mono text-xs placeholder:font-sans placeholder:italic"
                                                     />
                                                 </InputGroup>
@@ -372,7 +382,9 @@ export function ProductVariantsEditor({
                                                                 },
                                                             )
                                                         }
-                                                        placeholder="Default"
+                                                        placeholder={t(
+                                                            'Default',
+                                                        )}
                                                         className="text-right font-mono text-xs placeholder:font-sans placeholder:italic"
                                                     />
                                                 </InputGroup>

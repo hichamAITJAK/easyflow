@@ -2,6 +2,7 @@ import { ImageUp, Loader2, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import { ImagePreviewDialog } from '@/components/products/image-preview-dialog';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 
 /**
@@ -29,6 +30,8 @@ export function ImageDropzone({
     size?: 'sm' | 'lg';
     label?: string;
 }) {
+    const { t } = useTranslation();
+
     const inputRef = useRef<HTMLInputElement>(null);
     const [dragging, setDragging] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -145,7 +148,7 @@ export function ImageDropzone({
                         />
                         {isLg && (
                             <span className="text-[11px] font-medium text-muted-foreground">
-                                Uploading…
+                                {t('Uploading…')}
                             </span>
                         )}
                     </div>
@@ -153,7 +156,7 @@ export function ImageDropzone({
                     <>
                         <img
                             src={displaySrc}
-                            alt="Upload preview"
+                            alt={t('Upload preview')}
                             className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
@@ -164,7 +167,7 @@ export function ImageDropzone({
                                     setPreviewUrl(null);
                                     onChange('');
                                 }}
-                                title="Remove image"
+                                title={t('Remove image')}
                                 className="flex size-7 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm transition-transform duration-150 hover:scale-110 hover:bg-destructive hover:text-destructive-foreground"
                             >
                                 <Trash2 className="size-3.5" />
@@ -181,7 +184,7 @@ export function ImageDropzone({
                         />
                         {isLg && (
                             <span className="text-[11px] font-medium text-muted-foreground group-hover:text-foreground">
-                                Add image
+                                {t('Add image')}
                             </span>
                         )}
                     </div>
@@ -199,7 +202,7 @@ export function ImageDropzone({
             {label && (
                 <div className="flex-1 space-y-0.5">
                     <p className="text-sm font-medium text-foreground sm:text-balance">
-                        {isLg ? 'Product Image' : 'Variant Image'}
+                        {isLg ? t('Product Image') : t('Variant Image')}
                     </p>
                     <p className="text-xs text-muted-foreground sm:text-balance">
                         {label}
@@ -209,7 +212,7 @@ export function ImageDropzone({
 
             <ImagePreviewDialog
                 src={displaySrc}
-                alt="Upload preview"
+                alt={t('Upload preview')}
                 open={lightboxOpen}
                 onOpenChange={setLightboxOpen}
             />

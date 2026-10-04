@@ -8,6 +8,7 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { useTranslation } from '@/hooks/use-translation';
 import type { DeliveryAccount } from '@/types';
 
 export function DeleteDeliveryAccountDialog({
@@ -19,6 +20,8 @@ export function DeleteDeliveryAccountDialog({
     onOpenChange: (open: boolean) => void;
     account: DeliveryAccount | null;
 }) {
+    const { t } = useTranslation();
+
     if (!account) {
         return null;
     }
@@ -27,11 +30,14 @@ export function DeleteDeliveryAccountDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogTitle>
-                    Disconnect {account.courier?.name ?? 'this courier'}?
+                    {t('Disconnect :name?', {
+                        name: account.courier?.name ?? t('this courier'),
+                    })}
                 </DialogTitle>
                 <DialogDescription>
-                    This will remove the stored credentials for this courier.
-                    This action cannot be undone.
+                    {t(
+                        'This will remove the stored credentials for this courier. This action cannot be undone.',
+                    )}
                 </DialogDescription>
 
                 <Form
@@ -48,14 +54,14 @@ export function DeleteDeliveryAccountDialog({
                                 variant="secondary"
                                 onClick={() => onOpenChange(false)}
                             >
-                                Cancel
+                                {t('Cancel')}
                             </Button>
                             <Button
                                 type="submit"
                                 variant="destructive"
                                 disabled={processing}
                             >
-                                Disconnect
+                                {t('Disconnect')}
                             </Button>
                         </DialogFooter>
                     )}

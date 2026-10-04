@@ -19,13 +19,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslation } from '@/hooks/use-translation';
 import {
     blankVariantDraft,
     variantCombinations,
     variantSignature,
-    type OptionDraft,
-    type VariantDraft,
 } from '@/lib/product-variants';
+import type { OptionDraft, VariantDraft } from '@/lib/product-variants';
 import type { Product, ProductVariant } from '@/types';
 
 type FormState = {
@@ -79,9 +79,11 @@ function editorStateFromVariants(variants: ProductVariant[]): {
     for (const variant of variants) {
         for (const option of variant.options) {
             const values = optionMap.get(option.name) ?? [];
+
             if (!values.includes(option.value)) {
                 values.push(option.value);
             }
+
             optionMap.set(option.name, values);
         }
 
@@ -127,6 +129,8 @@ export function ProductFormDialog({
     onOpenChange: (open: boolean) => void;
     product: Product | null;
 }) {
+    const { t } = useTranslation();
+
     const isEdit = product !== null;
     const isSynced = isEdit && product.store_id !== null;
     const isManual = !isSynced;
@@ -252,11 +256,7 @@ export function ProductFormDialog({
                 requestOptions,
             );
         } else {
-            router.post(
-                ProductController.store.url(),
-                payload,
-                requestOptions,
-            );
+            router.post(ProductController.store.url(), payload, requestOptions);
         }
     };
 
@@ -269,7 +269,7 @@ export function ProductFormDialog({
                     </DialogTitle>
                     <DialogDescription>
                         {isSynced
-                            ? `Synced from ${product.store?.name ?? 'a connected store'} — only the SKU can be edited here, everything else is overwritten on the next sync.`
+                            ? `Synced from ${product.store?.name ?? t('a connected store')} — only the SKU can be edited here, everything else is overwritten on the next sync.`
                             : isEdit
                               ? 'Manually-added product — every field is editable.'
                               : 'Manually add a product that is not synced from any store.'}
@@ -304,18 +304,18 @@ export function ProductFormDialog({
                                 {product.store?.name ?? 'Synced'}
                             </Badge>
                         ) : (
-                            <Badge variant="outline">Manual</Badge>
+                            <Badge variant="outline">{t('Manual')}</Badge>
                         )}
                     </div>
                 )}
 
                 {isSynced && (loadingVariants || variants.length > 0) && (
                     <div className="grid gap-2">
-                        <Label>Variants</Label>
+                        <Label>{t('Variants')}</Label>
                         <div className="max-h-48 overflow-y-auto rounded-lg border">
                             {loadingVariants ? (
                                 <p className="p-3 text-sm text-muted-foreground">
-                                    Loading variants…
+                                    {t('Loading variants…')}
                                 </p>
                             ) : (
                                 <table className="w-full text-sm">
@@ -333,7 +333,7 @@ export function ProductFormDialog({
                                                             .join(' / ')
                                                     ) : (
                                                         <span className="text-muted-foreground">
-                                                            Default
+                                                            {t('Default')}
                                                         </span>
                                                     )}
                                                 </td>
@@ -350,7 +350,7 @@ export function ProductFormDialog({
                                                 <td className="p-2 text-right">
                                                     {!variant.is_available && (
                                                         <Badge variant="outline">
-                                                            Unavailable
+                                                            {t('Unavailable')}
                                                         </Badge>
                                                     )}
                                                 </td>
@@ -365,7 +365,7 @@ export function ProductFormDialog({
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid gap-2">
-                        <Label htmlFor="name">Name</Label>
+                        <Label htmlFor="name">{t('Name')}</Label>
                         <Input
                             id="name"
                             value={form.name}
@@ -374,7 +374,7 @@ export function ProductFormDialog({
                             }
                             disabled={isSynced}
                             required={!isSynced}
-                            placeholder="Product name"
+                            placeholder={t('Product name')}
                         />
                         <InputError message={errors.name} />
                     </div>
@@ -387,7 +387,7 @@ export function ProductFormDialog({
                             onChange={(event) =>
                                 update({ sku: event.target.value })
                             }
-                            placeholder="e.g. TSHIRT-RED-M"
+                            placeholder={t('e.g. TSHIRT-RED-M')}
                         />
                         <InputError message={errors.sku} />
                     </div>
@@ -398,7 +398,7 @@ export function ProductFormDialog({
                                 Price
                                 {isManual && hasVariants && (
                                     <span className="ml-1 text-xs text-muted-foreground">
-                                        (default)
+                                        {t('(default)')}
                                     </span>
                                 )}
                             </Label>
@@ -423,7 +423,7 @@ export function ProductFormDialog({
                                 Inventory quantity
                                 {isManual && hasVariants && (
                                     <span className="ml-1 text-xs text-muted-foreground">
-                                        (default)
+                                        {t('(default)')}
                                     </span>
                                 )}
                             </Label>
@@ -434,25 +434,20 @@ export function ProductFormDialog({
                                 value={form.inventory_quantity}
                                 onChange={(event) =>
                                     update({
-                                        inventory_quantity:
-                                            event.target.value,
+                                        inventory_quantity: event.target.value,
                                     })
                                 }
                                 disabled={isSynced}
                                 placeholder={
-                                    isSynced
-                                        ? 'Tracked per variant'
-                                        : undefined
+                                    isSynced ? 'Tracked per variant' : undefined
                                 }
                             />
-                            <InputError
-                                message={errors.inventory_quantity}
-                            />
+                            <InputError message={errors.inventory_quantity} />
                         </div>
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="description">Description</Label>
+                        <Label htmlFor="description">{t('Description')}</Label>
                         <Textarea
                             id="description"
                             value={form.description}
@@ -468,7 +463,7 @@ export function ProductFormDialog({
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="public_url">Public URL</Label>
+                        <Label htmlFor="public_url">{t('Public URL')}</Label>
                         <Input
                             id="public_url"
                             value={form.public_url}
@@ -478,7 +473,7 @@ export function ProductFormDialog({
                                 })
                             }
                             disabled={isSynced}
-                            placeholder="https://…"
+                            placeholder={t('https://…')}
                         />
                         <InputError message={errors.public_url} />
                     </div>
@@ -493,7 +488,7 @@ export function ProductFormDialog({
                             disabled={isSynced}
                         />
                         <Label htmlFor="is_active" className="font-normal">
-                            Active
+                            {t('Active')}
                         </Label>
                     </div>
 
@@ -511,7 +506,9 @@ export function ProductFormDialog({
                                     htmlFor="has_variants"
                                     className="font-normal"
                                 >
-                                    This product has variants (size, color, …)
+                                    {t(
+                                        'This product has variants (size, color, …)',
+                                    )}
                                 </Label>
                             </div>
 
@@ -532,7 +529,7 @@ export function ProductFormDialog({
                             variant="outline"
                             onClick={() => onOpenChange(false)}
                         >
-                            Cancel
+                            {t('Cancel')}
                         </Button>
                         <Button type="submit" disabled={processing}>
                             {isEdit ? 'Save changes' : 'Create product'}

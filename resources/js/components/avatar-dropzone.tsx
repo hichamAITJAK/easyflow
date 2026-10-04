@@ -1,6 +1,7 @@
 import { ImageUp } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 
 const PRESET_BASE = '/assets/images/avatars/';
@@ -18,6 +19,8 @@ export function AvatarDropzone({
     presets = [],
     className,
 }: AvatarDropzoneProps) {
+    const { t } = useTranslation();
+
     const inputRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<string | null>(initialPreviewUrl);
     const [dragging, setDragging] = useState(false);
@@ -81,7 +84,9 @@ export function AvatarDropzone({
     };
 
     return (
-        <div className={cn('flex w-full flex-col items-center gap-3', className)}>
+        <div
+            className={cn('flex w-full flex-col items-center gap-3', className)}
+        >
             <div
                 role="button"
                 tabIndex={0}
@@ -107,7 +112,7 @@ export function AvatarDropzone({
                 {preview ? (
                     <img
                         src={preview}
-                        alt="Avatar preview"
+                        alt={t('Avatar preview')}
                         className="size-full object-cover"
                     />
                 ) : (
@@ -133,7 +138,7 @@ export function AvatarDropzone({
                         onClick={handleRemove}
                         className="text-xs text-muted-foreground underline underline-offset-2 hover:text-destructive"
                     >
-                        Remove photo
+                        {t('Remove photo')}
                     </button>
                 )}
             </div>
@@ -141,7 +146,7 @@ export function AvatarDropzone({
             {presets.length > 0 && (
                 <div className="flex w-full flex-col items-center gap-2">
                     <p className="text-xs text-muted-foreground">
-                        Or pick an avatar
+                        {t('Or pick an avatar')}
                     </p>
                     <div className="grid max-h-56 w-full grid-cols-[repeat(auto-fill,3rem)] justify-between gap-3 overflow-y-auto rounded-lg border p-3">
                         {presets.map((filename) => (

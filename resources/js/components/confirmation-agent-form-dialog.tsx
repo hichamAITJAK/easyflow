@@ -6,6 +6,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { useTranslation } from '@/hooks/use-translation';
 import type { Product, Store, User } from '@/types';
 import { ConfirmationAgentForm } from './confirmation-agent-form';
 
@@ -24,6 +25,8 @@ export function ConfirmationAgentFormDialog({
     products: Product[];
     avatarOptions?: string[];
 }) {
+    const { t } = useTranslation();
+
     const isEditing = Boolean(user);
 
     return (
@@ -38,14 +41,16 @@ export function ConfirmationAgentFormDialog({
                             <div className="flex items-center gap-2">
                                 <DialogTitle className="text-xl">
                                     {isEditing
-                                        ? 'Edit Confirmation Agent'
-                                        : 'Add Confirmation Agent'}
+                                        ? t('Edit Confirmation Agent')
+                                        : t('Add Confirmation Agent')}
                                 </DialogTitle>
-                                <Badge variant="outline">Confirmation Agent</Badge>
+                                <Badge variant="outline">
+                                    {t('Confirmation Agent')}
+                                </Badge>
                             </div>
                             <DialogDescription>
                                 {isEditing
-                                    ? "Update agent details, compensation, store/product scope, and performance targets."
+                                    ? 'Update agent details, compensation, store/product scope, and performance targets.'
                                     : 'Set up credentials, pay structure, assigned stores/products, and daily targets.'}
                             </DialogDescription>
                         </div>

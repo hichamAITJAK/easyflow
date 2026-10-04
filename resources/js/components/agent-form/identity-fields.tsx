@@ -8,6 +8,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import type { User } from '@/types';
 
@@ -42,18 +43,20 @@ export function IdentityFields({
         >
     >;
 }) {
+    const { t } = useTranslation();
+
     return (
         <div className="grid gap-6 sm:grid-cols-2">
             <div className="grid gap-1.5 sm:col-span-2">
                 <Label htmlFor="name" className="text-sm font-semibold">
-                    Full Name <span className="text-destructive">*</span>
+                    {t('Full Name')} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                     id="name"
                     name="name"
                     defaultValue={user?.name}
                     required
-                    placeholder="Jane Doe"
+                    placeholder={t('Jane Doe')}
                     className="h-10"
                 />
                 <InputError message={errors.name} />
@@ -61,7 +64,8 @@ export function IdentityFields({
 
             <div className="grid gap-1.5">
                 <Label htmlFor="email" className="text-sm font-semibold">
-                    Email Address <span className="text-destructive">*</span>
+                    {t('Email Address')}{' '}
+                    <span className="text-destructive">*</span>
                 </Label>
                 <Input
                     id="email"
@@ -69,7 +73,7 @@ export function IdentityFields({
                     name="email"
                     defaultValue={user?.email}
                     required
-                    placeholder="jane@example.com"
+                    placeholder={t('jane@example.com')}
                     className="h-10"
                 />
                 <InputError message={errors.email} />
@@ -77,7 +81,7 @@ export function IdentityFields({
 
             <div className="grid gap-1.5">
                 <Label htmlFor="phone" className="text-sm font-semibold">
-                    Phone Number
+                    {t('Phone Number')}
                 </Label>
                 <Input
                     id="phone"
@@ -91,11 +95,11 @@ export function IdentityFields({
 
             <div className="grid gap-1.5 sm:col-span-2">
                 <Label htmlFor="status" className="text-sm font-semibold">
-                    Account Status
+                    {t('Account Status')}
                 </Label>
                 <Select name="status" defaultValue={user?.status ?? 'active'}>
                     <SelectTrigger id="status" className="h-10 w-full">
-                        <SelectValue placeholder="Select a status" />
+                        <SelectValue placeholder={t('Select a status')} />
                     </SelectTrigger>
                     <SelectContent>
                         {statusOptions.map((option) => (
@@ -118,13 +122,13 @@ export function IdentityFields({
 
             <div className="sm:col-span-2">
                 <h3 className="border-b pb-2 text-sm font-semibold tracking-tight">
-                    Password
+                    {t('Password')}
                 </h3>
             </div>
 
             <div className="grid gap-1.5">
                 <Label htmlFor="password" className="text-sm font-semibold">
-                    {isEditing ? 'New Password' : 'Password'}
+                    {isEditing ? t('New Password') : 'Password'}
                     {!isEditing && <span className="text-destructive"> *</span>}
                 </Label>
                 <Input
@@ -133,7 +137,9 @@ export function IdentityFields({
                     name="password"
                     required={!isEditing}
                     placeholder={
-                        isEditing ? 'Leave blank to keep current' : '••••••••'
+                        isEditing
+                            ? t('Leave blank to keep current')
+                            : '••••••••'
                     }
                     autoComplete="new-password"
                     className="h-10"

@@ -71,6 +71,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTranslation } from '@/hooks/use-translation';
 import {
     blankVariantDraft,
     variantCombinations,
@@ -149,13 +150,15 @@ function galleryImagesFromProduct(images: ProductImage[]): GalleryImage[] {
  * banner.
  */
 function SyncedFieldNote() {
+    const { t } = useTranslation();
+
     return (
         <span
-            title="Synced from your store — overwritten on the next sync"
+            title={t('Synced from your store — overwritten on the next sync')}
             className="inline-flex items-center gap-1 text-xs font-normal text-muted-foreground"
         >
             <Lock className="size-3" />
-            Synced
+            {t('Synced')}
         </span>
     );
 }
@@ -229,6 +232,8 @@ export function ProductForm({
     initialVariants?: ProductVariant[];
     initialImages?: ProductImage[];
 }) {
+    const { t } = useTranslation();
+
     const isEdit = product !== null;
     const isSynced = isEdit && product.store_id !== null;
     const isManual = !isSynced;
@@ -378,10 +383,12 @@ export function ProductForm({
         <div className="space-y-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <Heading
-                    title={isEdit ? form.name || product.name : 'New product'}
+                    title={
+                        isEdit ? form.name || product.name : t('New product')
+                    }
                     description={
                         isSynced
-                            ? `Synced from ${product.store?.name ?? 'a connected store'} — SKU, inventory, and status can still be edited locally.`
+                            ? `Synced from ${product.store?.name ?? t('a connected store')} — SKU, inventory, and status can still be edited locally.`
                             : isEdit
                               ? 'Manage basic info, pricing, inventory, and product variants.'
                               : 'Add a new catalog item with pricing, inventory, and optional variants.'
@@ -424,11 +431,12 @@ export function ProductForm({
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <FileText className="size-5 text-muted-foreground" />
-                            General information
+                            {t('General information')}
                         </CardTitle>
                         <CardDescription>
-                            Name, images, and description shown to confirmation
-                            agents.
+                            {t(
+                                'Name, images, and description shown to confirmation agents.',
+                            )}
                         </CardDescription>
                     </CardHeader>
 
@@ -440,15 +448,16 @@ export function ProductForm({
                                 </ItemMedia>
                                 <ItemContent>
                                     <ItemTitle>
-                                        Managed by{' '}
-                                        {product.store?.name ??
-                                            'Connected Store'}
+                                        {t('Managed by :name', {
+                                            name:
+                                                product.store?.name ??
+                                                'Connected Store',
+                                        })}
                                     </ItemTitle>
                                     <p className="text-xs leading-relaxed text-muted-foreground">
-                                        Core details are read-only and
-                                        overwritten by the next sync. SKU,
-                                        inventory, and status stay editable
-                                        here.
+                                        {t(
+                                            'Core details are read-only and overwritten by the next sync. SKU, inventory, and status stay editable here.',
+                                        )}
                                     </p>
                                 </ItemContent>
                             </Item>
@@ -457,7 +466,7 @@ export function ProductForm({
                         <div className="grid gap-2">
                             <div className="flex items-center gap-2">
                                 <Label className="text-sm font-semibold">
-                                    Images
+                                    {t('Images')}
                                 </Label>
                                 {isSynced && <SyncedFieldNote />}
                             </div>
@@ -468,8 +477,9 @@ export function ProductForm({
                                 disabled={isSynced}
                             />
                             <FieldDescription>
-                                The first image is used as the cover shown in
-                                your product list.
+                                {t(
+                                    'The first image is used as the cover shown in your product list.',
+                                )}
                             </FieldDescription>
                             <FieldError errors={[{ message: errors.images }]} />
                         </div>
@@ -501,7 +511,9 @@ export function ProductForm({
                                     required={isManual}
                                     disabled={isSynced}
                                     autoFocus={isManual}
-                                    placeholder="e.g. Wireless Noise-Cancelling Headphones"
+                                    placeholder={t(
+                                        'e.g. Wireless Noise-Cancelling Headphones',
+                                    )}
                                 />
                             </InputGroup>
                             <FieldError errors={[{ message: errors.name }]} />
@@ -513,7 +525,7 @@ export function ProductForm({
                                     htmlFor="description"
                                     className="text-sm font-semibold"
                                 >
-                                    Description
+                                    {t('Description')}
                                 </Label>
                                 {isSynced && <SyncedFieldNote />}
                             </div>
@@ -527,7 +539,9 @@ export function ProductForm({
                                         })
                                     }
                                     disabled={isSynced}
-                                    placeholder="Write a clear description for this product to assist confirmation agents during customer calls…"
+                                    placeholder={t(
+                                        'Write a clear description for this product to assist confirmation agents during customer calls…',
+                                    )}
                                     rows={4}
                                     className="text-sm leading-relaxed"
                                 />
@@ -554,13 +568,14 @@ export function ProductForm({
                                                 sku: event.target.value,
                                             })
                                         }
-                                        placeholder="e.g. WNH-BLK-001"
+                                        placeholder={t('e.g. WNH-BLK-001')}
                                         className="font-mono text-sm"
                                     />
                                 </InputGroup>
                                 <FieldDescription>
-                                    Used to match this item with your delivery
-                                    courier when dispatching parcels.
+                                    {t(
+                                        'Used to match this item with your delivery courier when dispatching parcels.',
+                                    )}
                                 </FieldDescription>
                                 <FieldError
                                     errors={[{ message: errors.sku }]}
@@ -573,7 +588,7 @@ export function ProductForm({
                                         htmlFor="public_url"
                                         className="text-sm font-semibold"
                                     >
-                                        Store public URL
+                                        {t('Store public URL')}
                                     </Label>
                                     {isSynced && <SyncedFieldNote />}
                                 </div>
@@ -590,13 +605,16 @@ export function ProductForm({
                                             })
                                         }
                                         disabled={isSynced}
-                                        placeholder="https://yourstore.com/products/..."
+                                        placeholder={t(
+                                            'https://yourstore.com/products/...',
+                                        )}
                                         className="text-sm"
                                     />
                                 </InputGroup>
                                 <FieldDescription>
-                                    Reference link accessible by confirmation
-                                    agents during orders.
+                                    {t(
+                                        'Reference link accessible by confirmation agents during orders.',
+                                    )}
                                 </FieldDescription>
                                 <FieldError
                                     errors={[{ message: errors.public_url }]}
@@ -611,11 +629,12 @@ export function ProductForm({
                             >
                                 <div className="space-y-0.5">
                                     <p className="text-sm font-semibold">
-                                        Active
+                                        {t('Active')}
                                     </p>
                                     <p className="text-xs font-normal text-muted-foreground">
-                                        Shown in the product picker when
-                                        creating a manual order
+                                        {t(
+                                            'Shown in the product picker when creating a manual order',
+                                        )}
                                     </p>
                                 </div>
                                 <Switch
@@ -637,7 +656,7 @@ export function ProductForm({
                             >
                                 <div className="space-y-0.5">
                                     <p className="text-sm font-semibold">
-                                        Test product
+                                        {t('Test product')}
                                     </p>
                                     <p className="text-xs font-normal text-muted-foreground">
                                         Badged as Test everywhere it appears;
@@ -660,12 +679,14 @@ export function ProductForm({
                             <Alert variant="info">
                                 <FlaskConical />
                                 <AlertTitle>
-                                    Orders with this product are test orders
+                                    {t(
+                                        'Orders with this product are test orders',
+                                    )}
                                 </AlertTitle>
                                 <AlertDescription>
-                                    Any order containing it won&apos;t count
-                                    toward team performance, and can&apos;t be
-                                    shipped to a delivery courier.
+                                    {t(
+                                        "Any order containing it won't count toward team performance, and can't be shipped to a delivery courier.",
+                                    )}
                                 </AlertDescription>
                             </Alert>
                         )}
@@ -677,11 +698,12 @@ export function ProductForm({
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Tag className="size-5 text-muted-foreground" />
-                            Pricing & inventory
+                            {t('Pricing & inventory')}
                         </CardTitle>
                         <CardDescription>
-                            Standard price and stock, or the fallback used when
-                            a variant leaves its own blank.
+                            {t(
+                                'Standard price and stock, or the fallback used when a variant leaves its own blank.',
+                            )}
                         </CardDescription>
                     </CardHeader>
 
@@ -708,7 +730,7 @@ export function ProductForm({
                                             variant="outline"
                                             className="text-[10px] font-normal"
                                         >
-                                            Default for variants
+                                            {t('Default for variants')}
                                         </Badge>
                                     )}
                                 </div>
@@ -734,8 +756,12 @@ export function ProductForm({
                                 </InputGroup>
                                 <FieldDescription>
                                     {hasVariants
-                                        ? 'Applies to any variant whose own price is left blank.'
-                                        : 'Standard unit price charged to COD customers.'}
+                                        ? t(
+                                              'Applies to any variant whose own price is left blank.',
+                                          )
+                                        : t(
+                                              'Standard unit price charged to COD customers.',
+                                          )}
                                 </FieldDescription>
                                 <FieldError
                                     errors={[{ message: errors.price }]}
@@ -748,14 +774,14 @@ export function ProductForm({
                                         htmlFor="inventory_quantity"
                                         className="text-sm font-semibold"
                                     >
-                                        Base inventory
+                                        {t('Base inventory')}
                                     </Label>
                                     {hasVariants && (
                                         <Badge
                                             variant="outline"
                                             className="text-[10px] font-normal"
                                         >
-                                            Default for variants
+                                            {t('Default for variants')}
                                         </Badge>
                                     )}
                                 </div>
@@ -780,8 +806,12 @@ export function ProductForm({
                                 </InputGroup>
                                 <FieldDescription>
                                     {hasVariants
-                                        ? 'Applies to any variant whose own stock is left blank.'
-                                        : 'Total quantity available across your warehouse.'}
+                                        ? t(
+                                              'Applies to any variant whose own stock is left blank.',
+                                          )
+                                        : t(
+                                              'Total quantity available across your warehouse.',
+                                          )}
                                 </FieldDescription>
                                 <FieldError
                                     errors={[
@@ -801,7 +831,7 @@ export function ProductForm({
                         <div className="flex items-center justify-between gap-2">
                             <CardTitle className="flex items-center gap-2">
                                 <Layers className="size-5 text-muted-foreground" />
-                                Product variants
+                                {t('Product variants')}
                             </CardTitle>
                             {isManual && hasVariants && (
                                 <Button
@@ -821,7 +851,7 @@ export function ProductForm({
                                     }}
                                     className="h-8 gap-1.5 px-2.5 text-xs text-muted-foreground hover:text-destructive"
                                 >
-                                    Remove variants
+                                    {t('Remove variants')}
                                 </Button>
                             )}
                         </div>
@@ -841,7 +871,9 @@ export function ProductForm({
                                             <Layers />
                                         </EmptyMedia>
                                         <EmptyTitle>
-                                            No variants exist for this product
+                                            {t(
+                                                'No variants exist for this product',
+                                            )}
                                         </EmptyTitle>
                                     </EmptyHeader>
                                 </Empty>
@@ -856,19 +888,19 @@ export function ProductForm({
                                         <TableHeader className="sticky top-0 z-10 bg-muted/60 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase backdrop-blur-md [&_th]:h-auto">
                                             <TableRow className="hover:bg-transparent">
                                                 <TableHead className="p-3 pl-4 font-semibold">
-                                                    Variant
+                                                    {t('Variant')}
                                                 </TableHead>
                                                 <TableHead className="p-3 font-semibold">
                                                     SKU
                                                 </TableHead>
                                                 <TableHead className="p-3 text-right font-semibold">
-                                                    Price
+                                                    {t('Price')}
                                                 </TableHead>
                                                 <TableHead className="p-3 text-right font-semibold">
-                                                    Stock
+                                                    {t('Stock')}
                                                 </TableHead>
                                                 <TableHead className="p-3 pr-4 text-center font-semibold">
-                                                    Status
+                                                    {t('Status')}
                                                 </TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -906,7 +938,9 @@ export function ProductForm({
                                                                 )
                                                             ) : (
                                                                 <span className="text-muted-foreground">
-                                                                    Default
+                                                                    {t(
+                                                                        'Default',
+                                                                    )}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -975,7 +1009,9 @@ export function ProductForm({
                                     <EmptyMedia variant="icon">
                                         <Layers />
                                     </EmptyMedia>
-                                    <EmptyTitle>No variants yet</EmptyTitle>
+                                    <EmptyTitle>
+                                        {t('No variants yet')}
+                                    </EmptyTitle>
                                     <EmptyDescription>
                                         Add options like Size or Color and every
                                         combination (e.g. Small / Black) becomes
@@ -995,7 +1031,7 @@ export function ProductForm({
                                         className="gap-2"
                                     >
                                         <Plus className="size-4" />
-                                        Add options
+                                        {t('Add options')}
                                     </Button>
                                 </EmptyContent>
                             </Empty>
@@ -1014,7 +1050,7 @@ export function ProductForm({
                     <div>
                         {isEdit && product && (
                             <span className="text-xs text-muted-foreground">
-                                Product ID: #{product.id}
+                                {t('Product ID: #:id', { id: product.id })}
                             </span>
                         )}
                     </div>
@@ -1024,7 +1060,7 @@ export function ProductForm({
                             variant="outline"
                             onClick={() => router.get(productsIndex())}
                         >
-                            Cancel
+                            {t('Cancel')}
                         </Button>
                         <Button
                             type="submit"
@@ -1034,7 +1070,7 @@ export function ProductForm({
                             {processing && (
                                 <Loader2 className="size-4 animate-spin" />
                             )}
-                            {isEdit ? 'Save changes' : 'Create product'}
+                            {isEdit ? t('Save changes') : t('Create product')}
                         </Button>
                     </div>
                 </div>
@@ -1062,7 +1098,7 @@ export function ProductForm({
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t('Cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             variant="destructive"
                             onClick={() => {
@@ -1071,7 +1107,7 @@ export function ProductForm({
                                 setVariantDrafts({});
                             }}
                         >
-                            Remove variants
+                            {t('Remove variants')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

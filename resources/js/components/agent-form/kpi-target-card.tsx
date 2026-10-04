@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { useTranslation } from '@/hooks/use-translation';
 
 /**
  * One card for a single performance target (confirmation rate, daily order
@@ -51,6 +52,8 @@ export function KpiTargetCard({
     /** Hidden inputs carrying this target's `targets[n][...]` fields when customized. */
     hiddenFields?: React.ReactNode;
 }) {
+    const { t } = useTranslation();
+
     return (
         <Card className="shadow-none">
             <CardContent>
@@ -72,7 +75,7 @@ export function KpiTargetCard({
                         size="sm"
                         onClick={onToggleCustom}
                     >
-                        {isCustom ? 'Custom Target' : defaultLabel}
+                        {isCustom ? t('Custom Target') : defaultLabel}
                     </Button>
                 </div>
 

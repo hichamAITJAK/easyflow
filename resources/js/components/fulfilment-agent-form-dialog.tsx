@@ -6,6 +6,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { useTranslation } from '@/hooks/use-translation';
 import type { User } from '@/types';
 import { FulfilmentAgentForm } from './fulfilment-agent-form';
 
@@ -20,6 +21,8 @@ export function FulfilmentAgentFormDialog({
     user?: User | null;
     avatarOptions?: string[];
 }) {
+    const { t } = useTranslation();
+
     const isEditing = Boolean(user);
 
     return (
@@ -34,14 +37,16 @@ export function FulfilmentAgentFormDialog({
                             <div className="flex items-center gap-2">
                                 <DialogTitle className="text-xl">
                                     {isEditing
-                                        ? 'Edit Fulfilment Agent'
-                                        : 'Add Fulfilment Agent'}
+                                        ? t('Edit Fulfilment Agent')
+                                        : t('Add Fulfilment Agent')}
                                 </DialogTitle>
-                                <Badge variant="outline">Fulfilment Agent</Badge>
+                                <Badge variant="outline">
+                                    {t('Fulfilment Agent')}
+                                </Badge>
                             </div>
                             <DialogDescription>
                                 {isEditing
-                                    ? "Update agent account details and warehouse scanning compensation."
+                                    ? 'Update agent account details and warehouse scanning compensation.'
                                     : 'Set up credentials and parcel preparation pay for warehouse scanning.'}
                             </DialogDescription>
                         </div>

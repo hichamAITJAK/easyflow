@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { ProductForm } from '@/components/products/product-form';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import { index as productsIndex } from '@/routes/products';
 import type { Product, ProductImage, ProductVariant } from '@/types';
@@ -14,6 +15,8 @@ export default function ProductEdit({
     images: ProductImage[];
     variants: ProductVariant[];
 }) {
+    const { t } = useTranslation();
+
     return (
         <>
             <Head title={`Edit ${product.name}`} />
@@ -25,7 +28,7 @@ export default function ProductEdit({
                         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
                         <ArrowLeft className="size-4" />
-                        Go back to products
+                        {t('Go back to products')}
                     </Link>
                 </div>
 

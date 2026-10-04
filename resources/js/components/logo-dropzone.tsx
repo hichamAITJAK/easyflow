@@ -1,6 +1,7 @@
 import { ImageUp, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 
 /**
@@ -26,6 +27,8 @@ export function LogoDropzone({
     accept?: string;
     className?: string;
 }) {
+    const { t } = useTranslation();
+
     const inputRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<string | null>(initialPreviewUrl);
     const [dragging, setDragging] = useState(false);
@@ -92,7 +95,7 @@ export function LogoDropzone({
             <div
                 role="button"
                 tabIndex={0}
-                aria-label="Upload a logo"
+                aria-label={t('Upload a logo')}
                 onClick={() => inputRef.current?.click()}
                 onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
@@ -117,7 +120,7 @@ export function LogoDropzone({
                     <>
                         <img
                             src={preview}
-                            alt="Logo preview"
+                            alt={t('Logo preview')}
                             className="max-h-24 max-w-[80%] object-contain"
                         />
                         <button
@@ -126,7 +129,7 @@ export function LogoDropzone({
                                 event.stopPropagation();
                                 handleRemove();
                             }}
-                            aria-label="Remove logo"
+                            aria-label={t('Remove logo')}
                             className="absolute top-2 right-2 rounded-md border bg-background p-1 text-muted-foreground transition-colors hover:text-destructive"
                         >
                             <X className="size-3.5" />
@@ -142,7 +145,7 @@ export function LogoDropzone({
                             </span>
                         </p>
                         <p className="text-xs text-muted-foreground">
-                            SVG, PNG, JPG or WebP · up to 2 MB
+                            {t('SVG, PNG, JPG or WebP · up to 2 MB')}
                         </p>
                     </div>
                 )}

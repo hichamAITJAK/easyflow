@@ -9,6 +9,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import type { DeliveryAccount } from '@/types';
 
@@ -25,6 +26,8 @@ export function CourierCard({
     account: DeliveryAccount;
     onDelete: (account: DeliveryAccount) => void;
 }) {
+    const { t } = useTranslation();
+
     const courier = account.courier;
     const unverified = account.status !== 'active';
 
@@ -61,15 +64,15 @@ export function CourierCard({
                             user's own name for this particular account, so it
                             qualifies the courier rather than standing alone. */}
                         <div className="flex min-w-0 items-center gap-2">
-                            <h3 className="truncate font-medium leading-none">
-                                {courier?.name ?? 'Unknown courier'}
+                            <h3 className="truncate leading-none font-medium">
+                                {courier?.name ?? t('Unknown courier')}
                             </h3>
                             {account.is_default && (
                                 <Badge
                                     variant="secondary"
                                     className="shrink-0 px-1.5 py-0 text-[10px] font-medium tracking-wide uppercase"
                                 >
-                                    Default
+                                    {t('Default')}
                                 </Badge>
                             )}
                         </div>
@@ -88,7 +91,9 @@ export function CourierCard({
                             >
                                 <MoreHorizontal />
                                 <span className="sr-only">
-                                    Actions for {account.label}
+                                    {t('Actions for :label', {
+                                        label: account.label,
+                                    })}
                                 </span>
                             </Button>
                         </DropdownMenuTrigger>
@@ -97,21 +102,23 @@ export function CourierCard({
                                 variant="destructive"
                                 onSelect={() => onDelete(account)}
                             >
-                                Disconnect
+                                {t('Disconnect')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
 
                 <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-                    <ConnectionStatusBadge tone={unverified ? 'warning' : 'live'}>
+                    <ConnectionStatusBadge
+                        tone={unverified ? 'warning' : 'live'}
+                    >
                         {unverified ? 'Unverified' : 'Connected'}
                     </ConnectionStatusBadge>
 
                     <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                         <MapPin className="size-3 shrink-0" />
                         <span className="truncate">
-                            {account.collect_city?.name ?? 'No pickup city'}
+                            {account.collect_city?.name ?? t('No pickup city')}
                         </span>
                     </span>
                 </div>

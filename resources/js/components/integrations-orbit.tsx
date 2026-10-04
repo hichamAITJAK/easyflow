@@ -38,7 +38,10 @@ export function IntegrationsOrbit({ className }: { className?: string }) {
     return (
         <div
             aria-hidden
-            className={cn('relative aspect-square w-full select-none', className)}
+            className={cn(
+                'relative aspect-square w-full select-none',
+                className,
+            )}
         >
             {/* Soft field behind the hub so the ring reads as one object
                 rather than nine loose chips on a flat background. */}

@@ -13,6 +13,7 @@ import {
     EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import { index as deliveryCouriersIndex } from '@/routes/delivery-couriers';
 import type { CitiesByCourier, DeliveryCourrier } from '@/types';
@@ -26,6 +27,8 @@ export default function DeliveryCouriersCreate({
     citiesByCourier: CitiesByCourier;
     businessSlug: string;
 }) {
+    const { t } = useTranslation();
+
     const [search, setSearch] = useState('');
     const [connectingCourier, setConnectingCourier] =
         useState<DeliveryCourrier | null>(null);
@@ -49,7 +52,7 @@ export default function DeliveryCouriersCreate({
 
     return (
         <>
-            <Head title="Add delivery courier" />
+            <Head title={t('Add delivery courier')} />
 
             <div className="space-y-8 p-4">
                 <Link
@@ -57,16 +60,18 @@ export default function DeliveryCouriersCreate({
                     className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
                 >
                     <ArrowLeft className="size-4" />
-                    Go back
+                    {t('Go back')}
                 </Link>
 
                 <Heading
-                    title="Add a delivery courier"
-                    description="Choose the delivery courier you want to connect."
+                    title={t('Add a delivery courier')}
+                    description={t(
+                        'Choose the delivery courier you want to connect.',
+                    )}
                 />
 
                 <Input
-                    placeholder="Search couriers…"
+                    placeholder={t('Search couriers…')}
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     className="max-w-sm"
@@ -78,9 +83,9 @@ export default function DeliveryCouriersCreate({
                             <EmptyMedia variant="icon">
                                 <Truck />
                             </EmptyMedia>
-                            <EmptyTitle>No matches found</EmptyTitle>
+                            <EmptyTitle>{t('No matches found')}</EmptyTitle>
                             <EmptyDescription>
-                                Try a different search term.
+                                {t('Try a different search term.')}
                             </EmptyDescription>
                         </EmptyHeader>
                     </Empty>
@@ -95,9 +100,7 @@ export default function DeliveryCouriersCreate({
                                 fallbackIcon={
                                     <Truck className="size-5 text-muted-foreground" />
                                 }
-                                onConnect={() =>
-                                    setConnectingCourier(courier)
-                                }
+                                onConnect={() => setConnectingCourier(courier)}
                                 onViewTutorial={() =>
                                     setTutorialCourier(courier)
                                 }

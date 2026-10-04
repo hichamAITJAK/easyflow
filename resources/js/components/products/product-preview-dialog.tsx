@@ -12,6 +12,7 @@ import ProductController from '@/actions/App/Http/Controllers/Products/ProductCo
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import type { Product, ProductVariant } from '@/types';
 
@@ -47,6 +48,8 @@ export function ProductPreviewDialog({
     onOpenChange: (open: boolean) => void;
     product: Product | null;
 }) {
+    const { t } = useTranslation();
+
     const [variants, setVariants] = useState<ProductVariant[]>([]);
     const [loading, setLoading] = useState(false);
     const [selected, setSelected] = useState<Record<string, string>>({});
@@ -127,7 +130,7 @@ export function ProductPreviewDialog({
     if (product.thumbnail) {
         galleryItems.push({
             url: product.thumbnail,
-            label: 'Main Thumbnail',
+            label: t('Main Thumbnail'),
         });
         seenUrls.add(product.thumbnail);
     }
@@ -152,7 +155,7 @@ export function ProductPreviewDialog({
                 <div className="grid shrink-0 grid-cols-3 items-center gap-3 border-b bg-muted/30 px-6 py-4 pr-14">
                     <div className="flex items-center gap-2.5 justify-self-start">
                         <DialogTitle className="text-base font-semibold tracking-tight text-foreground">
-                            Quick Preview
+                            {t('Quick Preview')}
                         </DialogTitle>
                         <span className="font-mono text-xs text-muted-foreground">
                             #{product.id}
@@ -174,7 +177,7 @@ export function ProductPreviewDialog({
                                 className="gap-1.5 px-2.5 py-0.5 text-xs font-medium"
                             >
                                 <Package className="size-3.5" />
-                                Manual
+                                {t('Manual')}
                             </Badge>
                         )}
 
@@ -195,7 +198,7 @@ export function ProductPreviewDialog({
                                 variant="outline"
                                 className="border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400"
                             >
-                                Test Item
+                                {t('Test Item')}
                             </Badge>
                         )}
                     </div>
@@ -221,7 +224,7 @@ export function ProductPreviewDialog({
                                             <Package className="size-8" />
                                         </div>
                                         <span className="text-xs font-medium">
-                                            No thumbnail uploaded
+                                            {t('No thumbnail uploaded')}
                                         </span>
                                     </div>
                                 )}
@@ -234,10 +237,10 @@ export function ProductPreviewDialog({
                                             className="bg-background/90 px-2.5 py-1 text-[11px] font-medium shadow-2xs backdrop-blur-md"
                                         >
                                             {manualImageOverride
-                                                ? 'Selected Preview'
+                                                ? t('Selected Preview')
                                                 : activeVariant?.image
                                                   ? `Variant: ${activeVariant.options.map((o) => o.value).join(' / ')}`
-                                                  : 'Main Product Thumbnail'}
+                                                  : t('Main Product Thumbnail')}
                                         </Badge>
                                     </div>
                                 )}
@@ -247,7 +250,13 @@ export function ProductPreviewDialog({
                             {galleryItems.length > 1 && (
                                 <div className="space-y-1.5">
                                     <span className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
-                                        Media Gallery ({galleryItems.length})
+                                        {t(
+                                            'Media Gallery (:galleryItemsCount)',
+                                            {
+                                                galleryItemsCount:
+                                                    galleryItems.length,
+                                            },
+                                        )}
                                     </span>
                                     <div className="flex gap-2.5 overflow-x-auto pb-1">
                                         {galleryItems.map((item, idx) => {
@@ -318,21 +327,28 @@ export function ProductPreviewDialog({
                                             variant="outline"
                                             className="bg-muted/50 px-2.5 py-1 font-mono text-xs text-muted-foreground"
                                         >
-                                            SKU: {displaySku}
+                                            {t('SKU: :displaySku', {
+                                                displaySku,
+                                            })}
                                         </Badge>
                                     ) : (
                                         <Badge
                                             variant="outline"
                                             className="bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground"
                                         >
-                                            No SKU assigned
+                                            {t('No SKU assigned')}
                                         </Badge>
                                     )}
 
                                     {product.external_product_id && (
                                         <span className="font-mono text-xs text-muted-foreground">
-                                            Ext ID: #
-                                            {product.external_product_id}
+                                            {t(
+                                                'Ext ID: # :external_product_id',
+                                                {
+                                                    external_product_id:
+                                                        product.external_product_id,
+                                                },
+                                            )}
                                         </span>
                                     )}
                                 </div>
@@ -362,12 +378,12 @@ export function ProductPreviewDialog({
                                             <Box className="size-3.5" />
                                             {Number(displayStock) > 0
                                                 ? `${displayStock} units available`
-                                                : 'Out of stock'}
+                                                : t('Out of stock')}
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
                                             <Box className="size-3.5" />
-                                            Stock not tracked
+                                            {t('Stock not tracked')}
                                         </div>
                                     )}
                                 </div>
@@ -376,7 +392,7 @@ export function ProductPreviewDialog({
                                     <div className="flex items-center justify-between border-t pt-3 text-xs text-muted-foreground">
                                         <span className="flex items-center gap-1.5">
                                             <Layers className="size-3.5 text-primary" />
-                                            Selected variant combination
+                                            {t('Selected variant combination')}
                                         </span>
                                         <span className="font-medium text-foreground">
                                             {activeVariant.options
@@ -391,7 +407,7 @@ export function ProductPreviewDialog({
                             {loading && (
                                 <div className="flex items-center gap-2 rounded-xl border bg-muted/30 p-4 text-xs text-muted-foreground">
                                     <Loader2 className="size-4 animate-spin text-primary" />
-                                    Loading product options and variants…
+                                    {t('Loading product options and variants…')}
                                 </div>
                             )}
 
@@ -400,7 +416,7 @@ export function ProductPreviewDialog({
                                 <div className="space-y-4 rounded-2xl border bg-muted/10 p-5 shadow-2xs">
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs font-bold tracking-wider text-foreground uppercase">
-                                            Select Options
+                                            {t('Select Options')}
                                         </span>
                                         <span className="text-xs text-muted-foreground">
                                             {groups.size}{' '}
@@ -481,7 +497,7 @@ export function ProductPreviewDialog({
                             {product.description && (
                                 <div className="space-y-2">
                                     <h4 className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                                        Description
+                                        {t('Description')}
                                     </h4>
                                     <div className="rounded-xl border bg-muted/20 p-4 text-sm leading-relaxed whitespace-pre-line text-foreground/90 shadow-2xs">
                                         {product.description}
@@ -503,7 +519,7 @@ export function ProductPreviewDialog({
                                             rel="noreferrer"
                                         >
                                             <ExternalLink className="size-4 text-muted-foreground" />
-                                            View Product on Store
+                                            {t('View Product on Store')}
                                         </a>
                                     </Button>
                                 </div>

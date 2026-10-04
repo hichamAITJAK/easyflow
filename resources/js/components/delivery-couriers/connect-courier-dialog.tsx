@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/popover';
 import { Spinner } from '@/components/ui/spinner';
 import { useClipboard } from '@/hooks/use-clipboard';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import type { CitiesByCourier, DeliveryCourrier } from '@/types';
 
@@ -51,6 +52,8 @@ export function ConnectCourierDialog({
     citiesByCourier: CitiesByCourier;
     businessSlug: string;
 }) {
+    const { t } = useTranslation();
+
     const [collectCityId, setCollectCityId] = useState<string | null>(null);
     const [cityPopoverOpen, setCityPopoverOpen] = useState(false);
     const [copiedText, copy] = useClipboard();
@@ -87,13 +90,16 @@ export function ConnectCourierDialog({
                         <div className="space-y-6">
                             <DialogHeader>
                                 <DialogTitle>
-                                    Connect {courier.name}
+                                    {t('Connect :name', { name: courier.name })}
                                 </DialogTitle>
                                 <DialogDescription>
-                                    Enter your {courier.name} credentials —
-                                    you'll find them in your {courier.name}{' '}
-                                    dashboard. We'll test the connection before
-                                    saving them.
+                                    {t(
+                                        "Enter your :name credentials — you'll find them in your :name2 dashboard. We'll test the connection before saving them.",
+                                        {
+                                            name: courier.name,
+                                            name2: courier.name,
+                                        },
+                                    )}
                                 </DialogDescription>
                             </DialogHeader>
 
@@ -113,7 +119,7 @@ export function ConnectCourierDialog({
                             <FieldGroup>
                                 <Field>
                                     <FieldLabel htmlFor="label">
-                                        Account label
+                                        {t('Account label')}
                                     </FieldLabel>
                                     <Input
                                         id="label"
@@ -121,19 +127,22 @@ export function ConnectCourierDialog({
                                         required
                                         autoFocus
                                         autoComplete="off"
-                                        placeholder="e.g. Casablanca warehouse"
+                                        placeholder={t(
+                                            'e.g. Casablanca warehouse',
+                                        )}
                                     />
                                     <FieldDescription>
-                                        Helps you tell this account apart if you
-                                        connect more than one {courier.name}{' '}
-                                        account.
+                                        {t(
+                                            'Helps you tell this account apart if you connect more than one :name account.',
+                                            { name: courier.name },
+                                        )}
                                     </FieldDescription>
                                     <FieldError>{errors.label}</FieldError>
                                 </Field>
 
                                 <Field>
                                     <FieldLabel htmlFor="collect_city_id">
-                                        Collect city
+                                        {t('Collect city')}
                                     </FieldLabel>
                                     <Popover
                                         open={cityPopoverOpen}
@@ -154,16 +163,22 @@ export function ConnectCourierDialog({
                                                               option.value ===
                                                               collectCityId,
                                                       )?.label
-                                                    : 'Select the city you ship from'}
+                                                    : t(
+                                                          'Select the city you ship from',
+                                                      )}
                                                 <ChevronsUpDown className="opacity-50" />
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
                                             <Command>
-                                                <CommandInput placeholder="Search cities…" />
+                                                <CommandInput
+                                                    placeholder={t(
+                                                        'Search cities…',
+                                                    )}
+                                                />
                                                 <CommandList>
                                                     <CommandEmpty>
-                                                        No cities found.
+                                                        {t('No cities found.')}
                                                     </CommandEmpty>
                                                     <CommandGroup>
                                                         {cityOptions.map(
@@ -205,8 +220,10 @@ export function ConnectCourierDialog({
                                         </PopoverContent>
                                     </Popover>
                                     <FieldDescription>
-                                        Orders shipped from this city will use
-                                        this {courier.name} account.
+                                        {t(
+                                            'Orders shipped from this city will use this :name account.',
+                                            { name: courier.name },
+                                        )}
                                     </FieldDescription>
                                     <FieldError>
                                         {errors.collect_city_id}
@@ -217,14 +234,16 @@ export function ConnectCourierDialog({
                                     <>
                                         <Field>
                                             <FieldLabel htmlFor="public_key">
-                                                Sendit public key
+                                                {t('Sendit public key')}
                                             </FieldLabel>
                                             <Input
                                                 id="public_key"
                                                 name="public_key"
                                                 required
                                                 autoComplete="off"
-                                                placeholder="Paste your Sendit public key"
+                                                placeholder={t(
+                                                    'Paste your Sendit public key',
+                                                )}
                                             />
                                             <FieldError>
                                                 {errors.public_key}
@@ -232,7 +251,7 @@ export function ConnectCourierDialog({
                                         </Field>
                                         <Field>
                                             <FieldLabel htmlFor="secret_key">
-                                                Sendit secret key
+                                                {t('Sendit secret key')}
                                             </FieldLabel>
                                             <Input
                                                 id="secret_key"
@@ -240,7 +259,9 @@ export function ConnectCourierDialog({
                                                 type="password"
                                                 required
                                                 autoComplete="off"
-                                                placeholder="Paste your Sendit secret key"
+                                                placeholder={t(
+                                                    'Paste your Sendit secret key',
+                                                )}
                                             />
                                             <FieldError>
                                                 {errors.secret_key}
@@ -248,7 +269,7 @@ export function ConnectCourierDialog({
                                         </Field>
                                         <Field>
                                             <FieldLabel htmlFor="sendit_webhook_url">
-                                                Webhook URL
+                                                {t('Webhook URL')}
                                             </FieldLabel>
                                             <div className="flex gap-2">
                                                 <Input
@@ -278,10 +299,9 @@ export function ConnectCourierDialog({
                                                 </Button>
                                             </div>
                                             <FieldDescription>
-                                                Paste this URL into Sendit's
-                                                webhook settings, and use the
-                                                secret key above as the webhook
-                                                key.
+                                                {t(
+                                                    "Paste this URL into Sendit's webhook settings, and use the secret key above as the webhook key.",
+                                                )}
                                             </FieldDescription>
                                         </Field>
                                     </>
@@ -291,7 +311,7 @@ export function ConnectCourierDialog({
                                     <>
                                         <Field>
                                             <FieldLabel htmlFor="ozon_id">
-                                                OzonExpress customer ID
+                                                {t('OzonExpress customer ID')}
                                             </FieldLabel>
                                             <Input
                                                 id="ozon_id"
@@ -305,7 +325,7 @@ export function ConnectCourierDialog({
                                         </Field>
                                         <Field>
                                             <FieldLabel htmlFor="api_key">
-                                                OzonExpress API key
+                                                {t('OzonExpress API key')}
                                             </FieldLabel>
                                             <Input
                                                 id="api_key"
@@ -325,7 +345,7 @@ export function ConnectCourierDialog({
                                     <>
                                         <Field>
                                             <FieldLabel htmlFor="client_id">
-                                                Coliix client ID
+                                                {t('Coliix client ID')}
                                             </FieldLabel>
                                             <Input
                                                 id="client_id"
@@ -339,7 +359,7 @@ export function ConnectCourierDialog({
                                         </Field>
                                         <Field>
                                             <FieldLabel htmlFor="api_key">
-                                                Coliix API key
+                                                {t('Coliix API key')}
                                             </FieldLabel>
                                             <Input
                                                 id="api_key"
@@ -358,7 +378,7 @@ export function ConnectCourierDialog({
                                 {courier.slug === 'FORCELOG' && (
                                     <Field>
                                         <FieldLabel htmlFor="api_key">
-                                            ForceLog API key
+                                            {t('ForceLog API key')}
                                         </FieldLabel>
                                         <Input
                                             id="api_key"
@@ -368,9 +388,9 @@ export function ConnectCourierDialog({
                                             autoComplete="off"
                                         />
                                         <FieldDescription>
-                                            In ForceLog, open Paramètres → Mon
-                                            compte and copy your API key (or
-                                            generate a new one).
+                                            {t(
+                                                'In ForceLog, open Paramètres → Mon compte and copy your API key (or generate a new one).',
+                                            )}
                                         </FieldDescription>
                                         <FieldError>
                                             {errors.api_key}
@@ -382,7 +402,7 @@ export function ConnectCourierDialog({
                                     <>
                                         <Field>
                                             <FieldLabel htmlFor="api_id">
-                                                Ameex API ID
+                                                {t('Ameex API ID')}
                                             </FieldLabel>
                                             <Input
                                                 id="api_id"
@@ -391,9 +411,9 @@ export function ConnectCourierDialog({
                                                 autoComplete="off"
                                             />
                                             <FieldDescription>
-                                                Sent as the C-Api-Id header, and
-                                                used as the sender (expéditeur)
-                                                on each parcel.
+                                                {t(
+                                                    'Sent as the C-Api-Id header, and used as the sender (expéditeur) on each parcel.',
+                                                )}
                                             </FieldDescription>
                                             <FieldError>
                                                 {errors.api_id}
@@ -401,7 +421,7 @@ export function ConnectCourierDialog({
                                         </Field>
                                         <Field>
                                             <FieldLabel htmlFor="api_key">
-                                                Ameex API key
+                                                {t('Ameex API key')}
                                             </FieldLabel>
                                             <Input
                                                 id="api_key"
@@ -417,7 +437,7 @@ export function ConnectCourierDialog({
                                         <Alert variant="warning">
                                             <TriangleAlert />
                                             <AlertTitle>
-                                                No delivery costs
+                                                {t('No delivery costs')}
                                             </AlertTitle>
                                             <AlertDescription>
                                                 Ameex doesn't return shipment
@@ -437,7 +457,7 @@ export function ConnectCourierDialog({
                                     onClick={() => onOpenChange(false)}
                                     disabled={processing}
                                 >
-                                    Cancel
+                                    {t('Cancel')}
                                 </Button>
                                 <Button type="submit" disabled={processing}>
                                     {processing && <Spinner />}
