@@ -80,7 +80,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                 {item.icon && (
                                                     <item.icon className="h-5 w-5" />
                                                 )}
-                                                <span>{item.title}</span>
+                                                <span>{t(item.title)}</span>
                                             </Link>
                                         ))}
                                     </div>
@@ -155,7 +155,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                         {item.icon && (
                                             <item.icon className="mr-2 h-4.5 w-4.5" />
                                         )}
-                                        {item.title}
+                                        {t(item.title)}
                                     </TabsTrigger>
                                 ))}
                             </TabsList>
