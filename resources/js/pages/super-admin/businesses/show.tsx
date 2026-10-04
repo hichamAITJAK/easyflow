@@ -112,7 +112,7 @@ export default function SuperAdminBusinessesShow({
                                     STATUS_STYLES[business.status],
                                 )}
                             >
-                                {STATUS_LABELS[business.status]}
+                                {t(STATUS_LABELS[business.status])}
                             </Badge>
                             <span className="font-mono text-xs text-muted-foreground">
                                 {business.slug}
@@ -233,7 +233,7 @@ export default function SuperAdminBusinessesShow({
                                                 )}
                                             </TableCell>
                                             <TableCell className="capitalize">
-                                                {user.status}
+                                                {t(user.status)}
                                             </TableCell>
                                             <TableCell className="pr-6 text-muted-foreground">
                                                 {user.last_login_at
@@ -302,7 +302,7 @@ export default function SuperAdminBusinessesShow({
                                                 {store.platform?.name ?? '—'}
                                             </TableCell>
                                             <TableCell className="capitalize">
-                                                {store.connection_status}
+                                                {t(store.connection_status)}
                                             </TableCell>
                                             <TableCell className="pr-6 text-muted-foreground">
                                                 {store.last_synced_at

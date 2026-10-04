@@ -429,7 +429,9 @@ export default function SuperAdminQueueIndex({
                                         ? t(
                                               'Clear the search or queue filter to see every failure.',
                                           )
-                                        : 'Every job that has run so far either succeeded or is still being retried.'
+                                        : t(
+                                              'Every job that has run so far either succeeded or is still being retried.',
+                                          )
                                 }
                             />
                         </DataTableCardTable>
@@ -461,7 +463,7 @@ export default function SuperAdminQueueIndex({
                 onOpenChange={(open) => !open && setForgetting(null)}
             >
                 <DialogContent>
-                    <DialogTitle>Delete this failed job?</DialogTitle>
+                    <DialogTitle>{t('Delete this failed job?')}</DialogTitle>
                     <DialogDescription>
                         {t(
                             'The job payload goes with it, so it can no longer be retried. Retry it instead if the failure might have been temporary.',
@@ -493,7 +495,7 @@ export default function SuperAdminQueueIndex({
 
             <Dialog open={flushing} onOpenChange={setFlushing}>
                 <DialogContent>
-                    <DialogTitle>Delete every failed job?</DialogTitle>
+                    <DialogTitle>{t('Delete every failed job?')}</DialogTitle>
                     <DialogDescription>
                         {t(
                             'All :total failed jobs and their payloads are removed permanently. None of them can be retried afterwards.',

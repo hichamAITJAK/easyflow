@@ -228,7 +228,9 @@ export default function SuperAdminBusinessesIndex({
                                     ? t(
                                           'Clear the search or status filter to see every tenant.',
                                       )
-                                    : 'Onboard the first tenant to get them set up with an admin account.'
+                                    : t(
+                                          'Onboard the first tenant to get them set up with an admin account.',
+                                      )
                             }
                         />
                     </DataTableCardTable>

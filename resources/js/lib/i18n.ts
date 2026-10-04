@@ -10,10 +10,14 @@ export function interpolate(
         return text;
     }
 
-    return Object.entries(replace).reduce(
-        (out, [key, value]) => out.replaceAll(`:${key}`, String(value)),
-        text,
-    );
+    // Longest placeholder first, so `:count` never eats into `:countLabel`.
+    return Object.entries(replace)
+        .sort(([a], [b]) => b.length - a.length)
+        .reduce(
+            (out, [key, value]) =>
+                out.replaceAll(`:${key}`, String(value ?? '')),
+            text,
+        );
 }
 
 export type Translator = (
@@ -29,5 +33,13 @@ export type Translator = (
 export function createTranslator(
     translations: Record<string, string> | undefined,
 ): Translator {
-    return (key, replace) => interpolate(translations?.[key] ?? key, replace);
+    return (key, replace) => {
+        // Never throw from a render: an unexpected non-string key (a label
+        // map miss, an undefined status) degrades to empty text.
+        if (typeof key !== 'string') {
+            return key == null ? '' : String(key);
+        }
+
+        return interpolate(translations?.[key] ?? key, replace);
+    };
 }
