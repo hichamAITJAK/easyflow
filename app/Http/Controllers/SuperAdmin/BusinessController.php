@@ -12,7 +12,6 @@ use App\Http\Requests\SuperAdmin\UpdateBusinessRequest;
 use App\Http\Requests\SuperAdmin\UpdateBusinessStatusRequest;
 use App\Models\Business;
 use App\Models\User;
-use App\Services\Operations\Performance\PerformanceTargetSeeder;
 use App\Support\PhoneNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -94,9 +93,6 @@ class BusinessController extends Controller
             $admin->password = Hash::make($data['admin_password']);
             $admin->save();
 
-            // Business-wide performance targets, so an agent created
-            // without explicit targets is still measured against something.
-            app(PerformanceTargetSeeder::class)->seed($business);
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Business onboarded.')]);

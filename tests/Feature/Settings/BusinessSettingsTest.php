@@ -2,185 +2,59 @@
 
 use App\Enums\UserRole;
 use App\Models\PerformanceTarget;
-use App\Services\Operations\Performance\AgentPerformanceEvaluator;
-use App\Services\Operations\Performance\PerformanceTargetSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
-test('an admin sees the business targets currently in effect', function () {
-    $admin = makeBusinessUser();
-    app(PerformanceTargetSeeder::class)->seed($admin->business);
-
-    PerformanceTarget::where('business_id', $admin->business_id)
-        ->whereNull('user_id')
-        ->where('metric', 'confirmation_rate')
-        ->update(['target_percentage' => 72]);
-
-    $this->actingAs($admin)
+test('the business settings page no longer carries performance targets', function () {
+    $this->actingAs(makeBusinessUser())
         ->get(route('business.edit'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('settings/business')
-            ->where('targets.confirmation_rate', 72)
-            ->where('targets.delivery_success_rate', 90)
-            ->has('minOrdersForEvaluation')
+            ->has('business')
+            ->missing('targets')
+            ->missing('minOrdersForEvaluation')
         );
 });
 
-test('saving updates the business-wide rows and takes effect for agents', function () {
-    $admin = makeBusinessUser();
-    app(PerformanceTargetSeeder::class)->seed($admin->business);
-
-    $agent = makeBusinessUser([
-        'role' => UserRole::CONFIRMATION_AGENT,
-        'business_id' => $admin->business_id,
-    ]);
-
-    $this->actingAs($admin)->patch(route('business.update'), [
-        'targets' => [
-            'confirmation_rate' => 65,
-            'delivery_success_rate' => 85,
-            'confirmation_rate_period' => 'monthly',
-            'delivery_success_rate_period' => 'weekly',
-            'confirmation_rate_bonus' => 500,
-            'delivery_success_rate_bonus' => '',
-        ],
-        'min_orders_for_evaluation' => 25,
-    ])->assertRedirect();
-
-    $rows = PerformanceTarget::where('business_id', $admin->business_id)
-        ->whereNull('user_id')
-        ->get()
-        ->keyBy(fn (PerformanceTarget $t) => $t->metric->value);
-
-    expect((float) $rows['confirmation_rate']->target_percentage)->toBe(65.0);
-    expect((float) $rows['delivery_success_rate']->target_percentage)->toBe(85.0);
-    expect($rows['confirmation_rate']->min_orders_for_evaluation)->toBe(25);
-
-    // The agent with no override is now measured against the new values.
-    $targets = collect(app(AgentPerformanceEvaluator::class)->targetsFor($agent))
-        ->keyBy(fn (PerformanceTarget $t) => $t->metric->value);
-
-    expect((float) $targets['confirmation_rate']->target_percentage)->toBe(65.0);
-});
-
-test('saving works for a business that has no target rows yet', function () {
-    $admin = makeBusinessUser();
-
-    expect(PerformanceTarget::where('business_id', $admin->business_id)->count())->toBe(0);
-
-    $this->actingAs($admin)->patch(route('business.update'), [
-        'targets' => [
-            'confirmation_rate' => 70,
-            'delivery_success_rate' => 80,
-            'confirmation_rate_period' => 'weekly',
-            'delivery_success_rate_period' => 'weekly',
-        ],
-        'min_orders_for_evaluation' => 10,
-    ])->assertRedirect();
-
-    expect(PerformanceTarget::where('business_id', $admin->business_id)->whereNull('user_id')->count())->toBe(2);
-});
-
-test('an agent-specific override is not touched by a business-wide save', function () {
-    $admin = makeBusinessUser();
-    app(PerformanceTargetSeeder::class)->seed($admin->business);
-
-    $agent = makeBusinessUser([
-        'role' => UserRole::CONFIRMATION_AGENT,
-        'business_id' => $admin->business_id,
-    ]);
-
-    $override = PerformanceTarget::create([
-        'business_id' => $agent->business_id,
-        'user_id' => $agent->id,
-        'metric' => 'confirmation_rate',
-        'target_percentage' => 55,
-        'period' => 'weekly',
-    ]);
-
-    $this->actingAs($admin)->patch(route('business.update'), [
-        'targets' => [
-            'confirmation_rate' => 65,
-            'delivery_success_rate' => 85,
-            'confirmation_rate_period' => 'monthly',
-            'delivery_success_rate_period' => 'weekly',
-            'confirmation_rate_bonus' => 500,
-            'delivery_success_rate_bonus' => '',
-        ],
-        'min_orders_for_evaluation' => 25,
-    ])->assertRedirect();
-
-    expect((float) $override->refresh()->target_percentage)->toBe(55.0);
-});
-
-test('out of range values are rejected', function () {
-    $admin = makeBusinessUser();
-
-    $this->actingAs($admin)->patch(route('business.update'), [
-        'targets' => [
-            'confirmation_rate' => 150,
-            'delivery_success_rate' => 0,
-            'confirmation_rate_period' => 'weekly',
-            'delivery_success_rate_period' => 'weekly',
-        ],
-        'min_orders_for_evaluation' => 0,
-    ])->assertSessionHasErrors([
-        'targets.confirmation_rate',
-        'targets.delivery_success_rate',
-        'min_orders_for_evaluation',
-    ]);
-
-    expect(PerformanceTarget::where('business_id', $admin->business_id)->count())->toBe(0);
-});
-
-test('a confirmation agent cannot view or change business settings', function () {
-    $agent = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT]);
-
-    $this->actingAs($agent)->get(route('business.edit'))->assertForbidden();
-
-    $this->actingAs($agent)->patch(route('business.update'), [
-        'targets' => [
-            'confirmation_rate' => 10,
-            'delivery_success_rate' => 10,
-            'confirmation_rate_period' => 'weekly',
-            'delivery_success_rate_period' => 'weekly',
-        ],
-        'min_orders_for_evaluation' => 1,
-    ])->assertForbidden();
+test('there is no endpoint left to save business-wide targets', function () {
+    $this->actingAs(makeBusinessUser())
+        ->patch('/settings/business', ['min_orders_for_evaluation' => 5])
+        ->assertStatus(405);
 
     expect(PerformanceTarget::withoutGlobalScopes()->count())->toBe(0);
 });
 
-test('a save cannot reach another business', function () {
+test('a confirmation agent cannot view business settings', function () {
+    $agent = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT]);
+
+    $this->actingAs($agent)->get(route('business.edit'))->assertForbidden();
+});
+
+test('the cleanup migration deletes business-wide targets and keeps agent ones', function () {
     $admin = makeBusinessUser();
-    $otherAdmin = makeBusinessUser();
-    app(PerformanceTargetSeeder::class)->seed($otherAdmin->business);
+    $agent = makeBusinessUser([
+        'role' => UserRole::CONFIRMATION_AGENT,
+        'business_id' => $admin->business_id,
+    ]);
 
-    $this->actingAs($admin)->patch(route('business.update'), [
-        'targets' => [
-            'confirmation_rate' => 65,
-            'delivery_success_rate' => 85,
-            'confirmation_rate_period' => 'monthly',
-            'delivery_success_rate_period' => 'weekly',
-            'confirmation_rate_bonus' => 500,
-            'delivery_success_rate_bonus' => '',
-        ],
-        'min_orders_for_evaluation' => 25,
-    ])->assertRedirect();
+    $row = fn (?int $userId) => PerformanceTarget::create([
+        'business_id' => $admin->business_id,
+        'user_id' => $userId,
+        'metric' => 'confirmation_rate',
+        'target_percentage' => 70,
+        'period' => 'weekly',
+    ]);
 
-    // business_id comes from the authenticated user, never from input.
-    $other = PerformanceTarget::withoutGlobalScopes()
-        ->where('business_id', $otherAdmin->business_id)
-        ->whereNull('user_id')
-        ->where('metric', 'confirmation_rate')
-        ->first();
+    $row(null);
+    $own = $row($agent->id);
 
-    expect((float) $other->target_percentage)
-        ->toBe((float) config('performance.defaults.confirmation_rate'));
+    (require database_path('migrations/2026_10_05_000000_delete_business_wide_performance_targets.php'))->up();
+
+    expect(PerformanceTarget::withoutGlobalScopes()->pluck('id')->all())->toBe([$own->id]);
 });
 
 test('an admin updates their business identity details', function () {

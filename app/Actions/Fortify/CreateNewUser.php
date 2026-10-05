@@ -8,7 +8,6 @@ use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\Business;
 use App\Models\User;
-use App\Services\Operations\Performance\PerformanceTargetSeeder;
 use App\Services\PostHogService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -47,10 +46,6 @@ class CreateNewUser implements CreatesNewUsers
                 'role' => UserRole::ADMIN,
                 'status' => UserStatus::ACTIVE,
             ]);
-
-            // Business-wide performance targets, so an agent created
-            // without explicit targets is still measured against something.
-            app(PerformanceTargetSeeder::class)->seed($business);
 
             return $user;
         });

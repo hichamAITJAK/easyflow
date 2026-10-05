@@ -10,8 +10,8 @@ use App\Services\Operations\Orders\OrderService;
 use App\Support\TrackingNumberExtractor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Log;
 use Illuminate\Validation\ValidationException;
+use Log;
 
 /**
  * The mobile Fulfillment navigator's backend (UC-17).

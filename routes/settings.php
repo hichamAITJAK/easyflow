@@ -44,7 +44,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // that sets the per-agent overrides these are the default for.
     Route::middleware('can:manage-users')->group(function () {
         Route::get('settings/business', [BusinessSettingsController::class, 'edit'])->name('business.edit');
-        Route::patch('settings/business', [BusinessSettingsController::class, 'update'])->name('business.update');
         Route::post('settings/business/profile', [BusinessSettingsController::class, 'updateProfile'])->name('business.profile.update');
     });
 });

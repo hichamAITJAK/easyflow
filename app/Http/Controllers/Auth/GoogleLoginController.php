@@ -8,7 +8,6 @@ use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Business;
 use App\Models\User;
-use App\Services\Operations\Performance\PerformanceTargetSeeder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -127,10 +126,6 @@ class GoogleLoginController extends Controller
 
             // Google already verified this address.
             $user->forceFill(['email_verified_at' => now()])->save();
-
-            // Business-wide performance targets, so an agent created
-            // without explicit targets is still measured against something.
-            app(PerformanceTargetSeeder::class)->seed($business);
 
             return $user;
         });

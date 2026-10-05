@@ -740,16 +740,6 @@ class FakerSeeder extends Seeder
 
     private function seedPerformanceTargets(Business $business): void
     {
-        PerformanceTarget::factory()->confirmationRate(80)->create([
-            'business_id' => $business->id,
-            'user_id' => null,
-        ]);
-
-        PerformanceTarget::factory()->deliverySuccessRate(75)->create([
-            'business_id' => $business->id,
-            'user_id' => null,
-        ]);
-
         foreach ($this->agents as $agent) {
             PerformanceTarget::factory()->confirmationRate(fake()->randomFloat(2, 70, 90))->create([
                 'business_id' => $business->id,
