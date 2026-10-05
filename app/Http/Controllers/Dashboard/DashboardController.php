@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Enums\OrderConfirmationStatus;
+use App\Enums\OrderDeliveryStatus;
 use App\Enums\PerformanceMetric;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
@@ -110,6 +111,7 @@ class DashboardController extends Controller
             'agents' => $agents,
             'money' => $this->moneyTiles($businessId, $rows, $previousRows),
             'ordersPerDay' => $this->ordersPerDay($rows, $since, $windowDays),
+            'parcels' => $this->parcelStages($businessId, $storeIds, $since, $until),
             'team' => $this->teamPerformance($businessId, $since, $until),
             'targets' => $this->rateTargets($businessId),
             'rates' => $this->rateBuckets(
@@ -288,6 +290,62 @@ class DashboardController extends Controller
             'commissionsDelta' => $this->percentDelta($commissions, $previousCommissions),
             'courierExpected' => round($expected, 2),
             'courierVariance' => $variance !== null ? (float) $variance : null,
+        ];
+    }
+
+    /**
+     * Where the period's parcels are right now, folded into the four
+     * stages an owner thinks in. Counts orders placed inside the window
+     * by their current delivery status, so the four numbers describe the
+     * same set of orders as the rest of the page.
+     *
+     * A live grouped count rather than the stats table on purpose: the
+     * daily columns record that a parcel was ever shipped or delivered,
+     * not where it sits today, so "ready" and "still with the courier"
+     * cannot be derived from them.
+     *
+     * Parcels cancelled at the courier belong to no stage and are left
+     * out.
+     *
+     * @param  list<int>  $storeIds
+     * @return array{ready: int, shipped: int, delivered: int, returned: int}
+     */
+    private function parcelStages(?int $businessId, array $storeIds, Carbon $since, Carbon $until): array
+    {
+        $byStatus = Order::where('business_id', $businessId)
+            ->where('is_test', false)
+            ->whereNotNull('delivery_status')
+            ->whereBetween('created_at', [$since->copy()->startOfDay(), $until->copy()->endOfDay()])
+            ->when($storeIds !== [], fn ($query) => $query->whereIn('store_id', $storeIds))
+            ->toBase()
+            ->selectRaw('delivery_status, count(*) as aggregate')
+            ->groupBy('delivery_status')
+            ->pluck('aggregate', 'delivery_status');
+
+        $sum = fn (array $statuses): int => (int) collect($statuses)
+            ->sum(fn (OrderDeliveryStatus $status) => (int) ($byStatus[$status->value] ?? 0));
+
+        return [
+            // Registered or staged, not yet collected by the courier.
+            'ready' => $sum([
+                OrderDeliveryStatus::AWAITING_PICKUP,
+                OrderDeliveryStatus::READY_FOR_PICKUP,
+            ]),
+            // With the courier and still on its way to the customer.
+            'shipped' => $sum([
+                OrderDeliveryStatus::IN_TRANSIT,
+                OrderDeliveryStatus::OUT_FOR_DELIVERY,
+                OrderDeliveryStatus::POSTPONED,
+                OrderDeliveryStatus::CHANGED,
+                OrderDeliveryStatus::DELIVERY_ATTEMPT_FAILED,
+            ]),
+            'delivered' => $sum([OrderDeliveryStatus::DELIVERED]),
+            // Refused at the door, on the way back, or back in the warehouse.
+            'returned' => $sum([
+                OrderDeliveryStatus::REFUSED,
+                OrderDeliveryStatus::RETURNED_IN_TRANSIT,
+                OrderDeliveryStatus::RETURN_RECEIVED,
+            ]),
         ];
     }
 

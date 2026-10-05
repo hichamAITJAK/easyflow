@@ -17,11 +17,11 @@ import type {
 } from '@/components/dashboard/dashboard-filters';
 import { OrdersPerDayCard } from '@/components/dashboard/orders-per-day-card';
 import type { OrdersPerDayPoint } from '@/components/dashboard/orders-per-day-card';
+import { ParcelsCard } from '@/components/dashboard/parcels-card';
+import type { ParcelStages } from '@/components/dashboard/parcels-card';
 import { PerformanceTable } from '@/components/dashboard/performance-table';
 import type { PerformanceRow } from '@/components/dashboard/performance-table';
 import { StatTile } from '@/components/dashboard/stat-tile';
-import { TeamPerformanceRadial } from '@/components/dashboard/team-performance-radial';
-import type { AgentPerformance } from '@/components/dashboard/team-performance-radial';
 import { WeeklyRateLine } from '@/components/dashboard/weekly-rate-line';
 import type { WeeklyRatePoint } from '@/components/dashboard/weekly-rate-line';
 import {
@@ -68,7 +68,7 @@ type Props = {
         courierVariance: number | null;
     };
     ordersPerDay: OrdersPerDayPoint[];
-    team: AgentPerformance[];
+    parcels: ParcelStages;
     targets: { confirmation: number; delivery: number };
     rates: {
         buckets: {
@@ -165,7 +165,7 @@ export default function AdminDashboard({
     agents,
     money: moneyProps,
     ordersPerDay,
-    team,
+    parcels,
     targets,
     rates,
     performanceTable,
@@ -317,13 +317,13 @@ export default function AdminDashboard({
                     />
                 </div>
 
-                {/* Lead chart + who's carrying the team */}
+                {/* Lead chart + where the period's parcels are now */}
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                     <div className="lg:col-span-2">
                         <OrdersPerDayCard orders={ordersPerDay} />
                     </div>
 
-                    <TeamPerformanceRadial agents={team} targets={targets} />
+                    <ParcelsCard stages={parcels} />
                 </div>
 
                 {/* Rate quality */}
@@ -333,8 +333,9 @@ export default function AdminDashboard({
                             <div className="grid gap-1.5">
                                 <CardTitle>{t('Rates')}</CardTitle>
                                 <CardDescription>
-                                    Confirmation, delivery and return over the
-                                    selected period
+                                    {t(
+                                        'Confirmation, delivery and return over the selected period',
+                                    )}
                                 </CardDescription>
                             </div>
                             <AgentFilter

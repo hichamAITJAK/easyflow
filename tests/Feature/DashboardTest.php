@@ -48,6 +48,12 @@ test('the admin dashboard renders every widget prop with the right shape', funct
         )
         ->has('ordersPerDay', 30)
         ->has('team')
+        ->has('parcels', fn ($parcels) => $parcels
+            ->has('ready')
+            ->has('shipped')
+            ->has('delivered')
+            ->has('returned')
+        )
         ->has('targets', fn ($targets) => $targets
             ->has('confirmation')
             ->has('delivery')
@@ -438,4 +444,64 @@ test('an unusable custom range falls back to the default window', function () {
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('ordersPerDay', 30)->etc());
     }
+});
+
+test('the parcels card counts the period orders by their current stage', function () {
+    $admin = makeBusinessUser();
+    $businessId = $admin->business_id;
+
+    $stage = fn (string $status, array $extra = []) => makeOrder($businessId, [
+        'confirmation_status' => 'submitted_to_courier',
+        'delivery_status' => $status,
+        ...$extra,
+    ]);
+
+    $stage('awaiting_pickup');
+    $stage('ready_for_pickup');
+    $stage('in_transit');
+    $stage('out_for_delivery');
+    $stage('delivery_attempt_failed');
+    $stage('delivered');
+    $stage('refused');
+    $stage('return_received');
+
+    // None of these belong to a stage in this business's window.
+    $stage('cancelled_at_courier');
+    $stage('delivered', ['is_test' => true]);
+    makeOrder($businessId);
+    makeOrder(makeBusinessUser()->business_id, [
+        'confirmation_status' => 'submitted_to_courier',
+        'delivery_status' => 'delivered',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('parcels.ready', 2)
+            ->where('parcels.shipped', 3)
+            ->where('parcels.delivered', 1)
+            ->where('parcels.returned', 2)
+            ->etc()
+        );
+});
+
+test('the parcels card follows the store filter', function () {
+    $admin = makeBusinessUser();
+    $store = makeStore($admin->business_id);
+    $other = makeStore($admin->business_id);
+
+    foreach ([$store, $store, $other] as $owner) {
+        makeOrder($admin->business_id, [
+            'store_id' => $owner->id,
+            'confirmation_status' => 'submitted_to_courier',
+            'delivery_status' => 'delivered',
+        ]);
+    }
+
+    $this->actingAs($admin)
+        ->get(route('dashboard', ['store_ids' => (string) $store->id]))
+        ->assertInertia(fn ($page) => $page
+            ->where('parcels.delivered', 2)
+            ->etc()
+        );
 });
