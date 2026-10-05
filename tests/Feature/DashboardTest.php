@@ -7,6 +7,8 @@ use App\Enums\PerformanceTargetPeriod;
 use App\Enums\UserRole;
 use App\Models\DailyStatsSummary;
 use App\Models\PerformanceTarget;
+use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\User;
 use App\Services\Operations\Orders\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -48,6 +50,11 @@ test('the admin dashboard renders every widget prop with the right shape', funct
         )
         ->has('ordersPerDay', 30)
         ->has('team')
+        ->has('inventory', fn ($inventory) => $inventory
+            ->where('threshold', 10)
+            ->has('products')
+            ->has('total')
+        )
         ->has('summary', fn ($summary) => $summary
             ->has('orders')
             ->has('confirmed')
@@ -553,6 +560,51 @@ test('the summary tiles leave a rate empty when nothing happened', function () {
             ->where('summary.confirmedRate', null)
             ->where('summary.deliveredRate', null)
             ->where('summary.returnedRate', null)
+            ->etc()
+        );
+});
+
+test('the inventory section lists products with fewer than 10 in stock, lowest first', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $make = fn (string $name, ?int $stock, array $extra = []) => Product::factory()->create([
+        'business_id' => $admin->business_id,
+        'name' => $name,
+        'inventory_quantity' => $stock,
+        ...$extra,
+    ]);
+
+    $make('Nine left', 9);
+    $make('Sold out', 0);
+    $make('Exactly ten', 10);
+    $make('Plenty', 80);
+    $make('Untracked', null);
+    $make('Inactive', 1, ['is_active' => false]);
+    $make('Test item', 1, ['is_test' => true]);
+    // Another business's product never shows up here.
+    Product::factory()->create(['inventory_quantity' => 1]);
+
+    // Variants decide the stock when a product has them: 2 + 3 = 5,
+    // whatever the product's own figure says.
+    $withVariants = $make('By variant', 500);
+    foreach ([2, 3] as $quantity) {
+        ProductVariant::factory()->create([
+            'business_id' => $admin->business_id,
+            'product_id' => $withVariants->id,
+            'inventory_quantity' => $quantity,
+        ]);
+    }
+
+    $this->actingAs($admin)
+        ->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('inventory.total', 3)
+            ->has('inventory.products', 3)
+            ->where('inventory.products.0.name', 'Sold out')
+            ->where('inventory.products.0.stock', 0)
+            ->where('inventory.products.1.name', 'By variant')
+            ->where('inventory.products.1.stock', 5)
+            ->where('inventory.products.2.name', 'Nine left')
+            ->where('inventory.products.2.stock', 9)
             ->etc()
         );
 });

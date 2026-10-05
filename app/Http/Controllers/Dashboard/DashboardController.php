@@ -26,6 +26,12 @@ class DashboardController extends Controller
 {
     private const PERIOD_DAYS = 30;
 
+    /** A product is listed as running low once its stock drops below this. */
+    private const LOW_STOCK_THRESHOLD = 10;
+
+    /** Most low-stock rows the dashboard lists; the rest are only counted. */
+    private const LOW_STOCK_LIMIT = 20;
+
     /** Stale-transit alert threshold (PRD 7.3's safety-net visibility). */
     private const STALE_TRANSIT_DAYS = 5;
 
@@ -122,6 +128,7 @@ class DashboardController extends Controller
                 $windowDays,
             ),
             'performanceTable' => $this->performanceTable($businessId, $since, $until),
+            'inventory' => $this->lowStock($businessId, $storeIds),
             'alerts' => $this->alerts($businessId),
         ]);
     }
@@ -383,6 +390,56 @@ class DashboardController extends Controller
             'confirmedRate' => $rate($confirmed, $orders),
             'deliveredRate' => $rate($delivered, $submitted),
             'returnedRate' => $rate($returned, $delivered),
+        ];
+    }
+
+    /**
+     * Products running low, lowest stock first. A current-state snapshot,
+     * so it ignores the period filter; it does follow the store filter.
+     *
+     * A product's stock is the total of its variants when it has any,
+     * otherwise its own quantity — the same rule the products page uses.
+     * Products whose stock is not tracked (no quantity anywhere) are left
+     * out: unknown is not low. Inactive and test products are left out
+     * too, since nobody is selling them.
+     *
+     * @param  list<int>  $storeIds
+     * @return array{threshold: int, products: array<int, array{id: int, name: string, sku: string|null, image: string|null, stock: int}>, total: int}
+     */
+    private function lowStock(?int $businessId, array $storeIds): array
+    {
+        $stock = 'COALESCE((select sum(product_variants.inventory_quantity) from product_variants'
+            .' where product_variants.product_id = products.id and product_variants.deleted_at is null),'
+            .' products.inventory_quantity)';
+
+        $query = Product::where('business_id', $businessId)
+            ->where('is_active', true)
+            ->where('is_test', false)
+            ->when($storeIds !== [], fn ($query) => $query->whereIn('store_id', $storeIds))
+            ->whereRaw("{$stock} < ?", [self::LOW_STOCK_THRESHOLD]);
+
+        $total = (clone $query)->count();
+
+        $products = $query
+            ->select(['id', 'name', 'sku', 'thumbnail'])
+            ->selectRaw("{$stock} as stock")
+            ->orderByRaw("{$stock} asc")
+            ->orderBy('name')
+            ->limit(self::LOW_STOCK_LIMIT)
+            ->get()
+            ->map(fn (Product $product) => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'image' => $product->thumbnail,
+                'stock' => (int) $product->getAttribute('stock'),
+            ])
+            ->all();
+
+        return [
+            'threshold' => self::LOW_STOCK_THRESHOLD,
+            'products' => $products,
+            'total' => $total,
         ];
     }
 

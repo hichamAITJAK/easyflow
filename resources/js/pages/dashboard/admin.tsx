@@ -19,6 +19,8 @@ import type {
     DashboardFilterValues,
     SimpleOption,
 } from '@/components/dashboard/dashboard-filters';
+import { InventoryCard } from '@/components/dashboard/inventory-card';
+import type { Inventory } from '@/components/dashboard/inventory-card';
 import { OrdersPerDayCard } from '@/components/dashboard/orders-per-day-card';
 import type { OrdersPerDayPoint } from '@/components/dashboard/orders-per-day-card';
 import { ParcelsCard } from '@/components/dashboard/parcels-card';
@@ -73,6 +75,7 @@ type Props = {
     };
     ordersPerDay: OrdersPerDayPoint[];
     parcels: ParcelStages;
+    inventory: Inventory;
     summary: {
         orders: number;
         confirmed: number;
@@ -180,6 +183,7 @@ export default function AdminDashboard({
     money: moneyProps,
     ordersPerDay,
     parcels,
+    inventory,
     summary,
     targets,
     rates,
@@ -508,6 +512,9 @@ export default function AdminDashboard({
                     couriers={performanceTable.couriers}
                     targets={targets}
                 />
+
+                {/* Stock running low, last: an action list, not a headline */}
+                <InventoryCard inventory={inventory} />
             </div>
         </>
     );
