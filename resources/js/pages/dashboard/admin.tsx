@@ -317,18 +317,11 @@ export default function AdminDashboard({
                     />
                 </div>
 
-                {/* Lead chart + where the period's parcels are now */}
+                {/* Where the period's parcels are now + rate quality */}
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                    <div className="lg:col-span-2">
-                        <OrdersPerDayCard orders={ordersPerDay} />
-                    </div>
-
                     <ParcelsCard stages={parcels} />
-                </div>
 
-                {/* Rate quality */}
-                <div className="grid grid-cols-1 gap-4">
-                    <Card className="shadow-none">
+                    <Card className="shadow-none lg:col-span-2">
                         <CardHeader className="flex flex-wrap items-start justify-between gap-2 space-y-0">
                             <div className="grid gap-1.5">
                                 <CardTitle>{t('Rates')}</CardTitle>
@@ -443,6 +436,9 @@ export default function AdminDashboard({
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* Volume over time, on its own full-width row */}
+                <OrdersPerDayCard orders={ordersPerDay} />
 
                 {/* What sells — own row so image + name + metrics breathe */}
                 <PerformanceTable
