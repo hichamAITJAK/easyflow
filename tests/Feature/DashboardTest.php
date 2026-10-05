@@ -48,6 +48,15 @@ test('the admin dashboard renders every widget prop with the right shape', funct
         )
         ->has('ordersPerDay', 30)
         ->has('team')
+        ->has('summary', fn ($summary) => $summary
+            ->has('orders')
+            ->has('confirmed')
+            ->has('delivered')
+            ->has('returned')
+            ->has('confirmedRate')
+            ->has('deliveredRate')
+            ->has('returnedRate')
+        )
         ->has('parcels', fn ($parcels) => $parcels
             ->has('ready')
             ->has('shipped')
@@ -502,6 +511,48 @@ test('the parcels card follows the store filter', function () {
         ->get(route('dashboard', ['store_ids' => (string) $store->id]))
         ->assertInertia(fn ($page) => $page
             ->where('parcels.delivered', 2)
+            ->etc()
+        );
+});
+
+test('the summary tiles report the period counts and their shares', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+
+    foreach ([[40, 20, 16, 8, 2], [60, 30, 24, 12, 1]] as $index => [$orders, $confirmed, $submitted, $delivered, $returned]) {
+        DailyStatsSummary::factory()->create([
+            'business_id' => $admin->business_id,
+            'stat_date' => today()->subDays($index + 1),
+            'orders_count' => $orders,
+            'confirmed_count' => $confirmed,
+            'submitted_to_courier_count' => $submitted,
+            'delivered_count' => $delivered,
+            'returned_count' => $returned,
+        ]);
+    }
+
+    $this->actingAs($admin)
+        ->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('summary.orders', 100)
+            ->where('summary.confirmed', 50)
+            ->where('summary.delivered', 20)
+            ->where('summary.returned', 3)
+            // confirmed / orders, delivered / shipped, returned / delivered
+            ->where('summary.confirmedRate', 50)
+            ->where('summary.deliveredRate', 50)
+            ->where('summary.returnedRate', 15)
+            ->etc()
+        );
+});
+
+test('the summary tiles leave a rate empty when nothing happened', function () {
+    $this->actingAs(makeBusinessUser(['role' => UserRole::ADMIN]))
+        ->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('summary.orders', 0)
+            ->where('summary.confirmedRate', null)
+            ->where('summary.deliveredRate', null)
+            ->where('summary.returnedRate', null)
             ->etc()
         );
 });

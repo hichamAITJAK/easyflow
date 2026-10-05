@@ -111,6 +111,7 @@ class DashboardController extends Controller
             'agents' => $agents,
             'money' => $this->moneyTiles($businessId, $rows, $previousRows),
             'ordersPerDay' => $this->ordersPerDay($rows, $since, $windowDays),
+            'summary' => $this->orderSummary($rows),
             'parcels' => $this->parcelStages($businessId, $storeIds, $since, $until),
             'team' => $this->teamPerformance($businessId, $since, $until),
             'targets' => $this->rateTargets($businessId),
@@ -346,6 +347,42 @@ class DashboardController extends Controller
                 OrderDeliveryStatus::RETURNED_IN_TRANSIT,
                 OrderDeliveryStatus::RETURN_RECEIVED,
             ]),
+        ];
+    }
+
+    /**
+     * The period at a glance: how many orders came in, and how many of
+     * them were confirmed, delivered and returned.
+     *
+     * Always the page-level rows, never the Rates card's agent scope, so
+     * these tiles keep describing the whole business while that card is
+     * narrowed to one agent. Each rate uses the same base as the Rates
+     * card — confirmed over orders, delivered over shipped, returned over
+     * delivered — and is null when its base is zero.
+     *
+     * @param  Collection<int, DailyStatsSummary>  $rows
+     * @return array{orders: int, confirmed: int, delivered: int, returned: int, confirmedRate: int|null, deliveredRate: int|null, returnedRate: int|null}
+     */
+    private function orderSummary(Collection $rows): array
+    {
+        $orders = (int) $rows->sum('orders_count');
+        $confirmed = (int) $rows->sum('confirmed_count');
+        $submitted = (int) $rows->sum('submitted_to_courier_count');
+        $delivered = (int) $rows->sum('delivered_count');
+        $returned = (int) $rows->sum('returned_count');
+
+        $rate = fn (int $count, int $base): ?int => $base > 0
+            ? (int) round(($count / $base) * 100)
+            : null;
+
+        return [
+            'orders' => $orders,
+            'confirmed' => $confirmed,
+            'delivered' => $delivered,
+            'returned' => $returned,
+            'confirmedRate' => $rate($confirmed, $orders),
+            'deliveredRate' => $rate($delivered, $submitted),
+            'returnedRate' => $rate($returned, $delivered),
         ];
     }
 

@@ -1,8 +1,12 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
     CircleAlert,
+    CircleCheck,
     HandCoins,
     Info,
+    PackageCheck,
+    RotateCcw,
+    ShoppingCart,
     TriangleAlert,
     Truck,
     Wallet,
@@ -69,6 +73,16 @@ type Props = {
     };
     ordersPerDay: OrdersPerDayPoint[];
     parcels: ParcelStages;
+    summary: {
+        orders: number;
+        confirmed: number;
+        delivered: number;
+        returned: number;
+        /** Whole percentages; null when the base is zero. */
+        confirmedRate: number | null;
+        deliveredRate: number | null;
+        returnedRate: number | null;
+    };
     targets: { confirmation: number; delivery: number };
     rates: {
         buckets: {
@@ -166,6 +180,7 @@ export default function AdminDashboard({
     money: moneyProps,
     ordersPerDay,
     parcels,
+    summary,
     targets,
     rates,
     performanceTable,
@@ -439,6 +454,52 @@ export default function AdminDashboard({
 
                 {/* Volume over time, on its own full-width row */}
                 <OrdersPerDayCard orders={ordersPerDay} />
+
+                {/* The period at a glance: count on top, its share under. */}
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    <StatTile
+                        label={t('Orders')}
+                        caption={t('In this period')}
+                        value={formatNumber(summary.orders)}
+                        icon={ShoppingCart}
+                    />
+                    <StatTile
+                        label={t('Confirmed orders')}
+                        caption={
+                            summary.confirmedRate === null
+                                ? '—'
+                                : t(':rate% of orders', {
+                                      rate: summary.confirmedRate,
+                                  })
+                        }
+                        value={formatNumber(summary.confirmed)}
+                        icon={CircleCheck}
+                    />
+                    <StatTile
+                        label={t('Delivered orders')}
+                        caption={
+                            summary.deliveredRate === null
+                                ? '—'
+                                : t(':rate% of shipped', {
+                                      rate: summary.deliveredRate,
+                                  })
+                        }
+                        value={formatNumber(summary.delivered)}
+                        icon={PackageCheck}
+                    />
+                    <StatTile
+                        label={t('Returned orders')}
+                        caption={
+                            summary.returnedRate === null
+                                ? '—'
+                                : t(':rate% of delivered', {
+                                      rate: summary.returnedRate,
+                                  })
+                        }
+                        value={formatNumber(summary.returned)}
+                        icon={RotateCcw}
+                    />
+                </div>
 
                 {/* What sells — own row so image + name + metrics breathe */}
                 <PerformanceTable
