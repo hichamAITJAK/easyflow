@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslation } from '@/hooks/use-translation';
-import { formatCompactNumber, formatNumber } from '@/lib/format';
+import { formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 export type PerformanceRow = {
@@ -36,12 +36,10 @@ export type PerformanceRow = {
     /** Null for couriers — they only handle post-confirmation orders. */
     confirmationRate: number | null;
     deliveryRate: number;
-    /** Counts behind the rates: confirmed / orders and delivered / submitted. */
+    /** Counts behind the rates: confirmed of orders, delivered of submitted. */
     confirmed: number;
     submitted: number;
     delivered: number;
-    /** Collected revenue (MAD) from delivered orders. */
-    earned: number;
     /** Couriers only: mean shipped → delivered duration in days. */
     avgDeliveryDays?: number;
 };
@@ -53,9 +51,10 @@ export type RateTargets = {
 
 type SortKey =
     | 'orders'
+    | 'confirmed'
     | 'confirmationRate'
+    | 'delivered'
     | 'deliveryRate'
-    | 'earned'
     | 'avgDeliveryDays';
 
 /**
@@ -65,19 +64,7 @@ type SortKey =
  * below = destructive with a down glyph; the near-miss band in between
  * stays quiet. Glyph + sr-only text carry the meaning without color.
  */
-function RateCell({
-    value,
-    target,
-    count,
-    total,
-}: {
-    value: number | null;
-    target: number;
-    /** Numerator shown under the rate. */
-    count: number;
-    /** Denominator shown under the rate. */
-    total: number;
-}) {
+function RateCell({ value, target }: { value: number | null; target: number }) {
     const { t } = useTranslation();
 
     if (value === null) {
@@ -111,9 +98,6 @@ function RateCell({
                 {wellBelow && (
                     <span className="sr-only">{t(', well below target')}</span>
                 )}
-            </span>
-            <span className="block text-sm font-medium text-foreground/80">
-                {formatNumber(count)} / {formatNumber(total)}
             </span>
         </TableCell>
     );
@@ -177,6 +161,17 @@ function RowsTable({
 }) {
     const { t } = useTranslation();
 
+    // "Confirmed" and "Delivered" are already translated as one order's
+    // status. As column heads they count many orders, which other
+    // languages word differently, so they get their own entries and fall
+    // back to the plain English word when there is none.
+    const countLabel = (label: string): string => {
+        const key = `${label} (count)`;
+        const translated = t(key);
+
+        return translated === key ? label : translated;
+    };
+
     const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({
         key: 'orders',
         desc: true,
@@ -214,15 +209,29 @@ function RowsTable({
                         onSort={toggleSort}
                     />
                     {!hideConfirmation && (
-                        <SortableHead
-                            label={t('Confirmation')}
-                            column="confirmationRate"
-                            sort={sort}
-                            onSort={toggleSort}
-                        />
+                        <>
+                            <SortableHead
+                                label={countLabel('Confirmed')}
+                                column="confirmed"
+                                sort={sort}
+                                onSort={toggleSort}
+                            />
+                            <SortableHead
+                                label={t('Confirmation %')}
+                                column="confirmationRate"
+                                sort={sort}
+                                onSort={toggleSort}
+                            />
+                        </>
                     )}
                     <SortableHead
-                        label={t('Delivery')}
+                        label={countLabel('Delivered')}
+                        column="delivered"
+                        sort={sort}
+                        onSort={toggleSort}
+                    />
+                    <SortableHead
+                        label={t('Delivery %')}
                         column="deliveryRate"
                         sort={sort}
                         onSort={toggleSort}
@@ -235,12 +244,6 @@ function RowsTable({
                             onSort={toggleSort}
                         />
                     )}
-                    <SortableHead
-                        label={t('Earned')}
-                        column="earned"
-                        sort={sort}
-                        onSort={toggleSort}
-                    />
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -269,18 +272,22 @@ function RowsTable({
                             {formatNumber(row.orders)}
                         </TableCell>
                         {!hideConfirmation && (
-                            <RateCell
-                                value={row.confirmationRate}
-                                target={targets.confirmation}
-                                count={row.confirmed}
-                                total={row.orders}
-                            />
+                            <>
+                                <TableCell className="text-right font-semibold tabular-nums">
+                                    {formatNumber(row.confirmed)}
+                                </TableCell>
+                                <RateCell
+                                    value={row.confirmationRate}
+                                    target={targets.confirmation}
+                                />
+                            </>
                         )}
+                        <TableCell className="text-right font-semibold tabular-nums">
+                            {formatNumber(row.delivered)}
+                        </TableCell>
                         <RateCell
                             value={row.deliveryRate}
                             target={targets.delivery}
-                            count={row.delivered}
-                            total={row.submitted}
                         />
                         {hideConfirmation && (
                             <TableCell className="text-right font-semibold tabular-nums">
@@ -289,14 +296,6 @@ function RowsTable({
                                     : '—'}
                             </TableCell>
                         )}
-                        <TableCell className="text-right font-semibold tabular-nums">
-                            {formatCompactNumber(row.earned)} MAD
-                            <span className="sr-only">
-                                {t(', exactly :amount MAD', {
-                                    amount: formatNumber(row.earned),
-                                })}
-                            </span>
-                        </TableCell>
                     </TableRow>
                 ))}
             </TableBody>

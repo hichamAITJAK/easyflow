@@ -640,7 +640,6 @@ class DashboardController extends Controller
                 'orders' => $orders,
                 'confirmationRate' => $orders > 0 ? round(($confirmed / $orders) * 100, 1) : 0,
                 'deliveryRate' => $submitted > 0 ? round(($delivered / $submitted) * 100, 1) : 0,
-                'earned' => round((float) $rows->sum('revenue_delivered'), 2),
                 // The counts behind each rate, so the table can show
                 // "64% (32 / 50)" rather than a bare percentage.
                 'confirmed' => $confirmed,
