@@ -98,19 +98,19 @@ trait UserValidationRules
     {
         return [
             'payment_mode' => ['required', Rule::enum(CommissionPaymentMode::class)],
-            'salary_amount' => ['required_if:payment_mode,salary', 'nullable', 'numeric', 'min:0'],
-            'salary_period' => ['required_if:payment_mode,salary', 'nullable', Rule::enum(SalaryPeriod::class)],
-            'trigger_status' => ['required_if:payment_mode,commission', 'nullable', 'string'],
-            'amount_type' => ['required_if:payment_mode,commission', 'nullable', Rule::enum(CommissionAmountType::class)],
+            'salary_amount' => ['required_if:payment_mode,salary,salary_and_commission', 'nullable', 'numeric', 'min:0'],
+            'salary_period' => ['required_if:payment_mode,salary,salary_and_commission', 'nullable', Rule::enum(SalaryPeriod::class)],
+            'trigger_status' => ['required_if:payment_mode,commission,salary_and_commission', 'nullable', 'string'],
+            'amount_type' => ['required_if:payment_mode,commission,salary_and_commission', 'nullable', Rule::enum(CommissionAmountType::class)],
             'amount' => [
-                'required_if:payment_mode,commission',
+                'required_if:payment_mode,commission,salary_and_commission',
                 'nullable',
                 'numeric',
                 'min:0',
                 $this->percentageCapRule('amount_type'),
             ],
 
-            // Overrides only apply in commission mode — a specific store or
+            // Overrides only apply when the agent earns commission — a specific store or
             // product earns a different rate than the agent's default above.
             'overrides' => ['nullable', 'array'],
             'overrides.*.store_id' => [
@@ -194,7 +194,7 @@ trait UserValidationRules
 
     /**
      * Get the validation rules for a fulfilment agent's payment mode:
-     * salary, or a fixed amount per prepared parcel.
+     * salary, a fixed amount per prepared parcel, or both.
      *
      * @return array<string, array<int, ValidationRule|Enum|array<mixed>|string>>
      */
@@ -202,9 +202,9 @@ trait UserValidationRules
     {
         return [
             'payment_mode' => ['required', Rule::enum(CommissionPaymentMode::class)],
-            'salary_amount' => ['required_if:payment_mode,salary', 'nullable', 'numeric', 'min:0'],
-            'salary_period' => ['required_if:payment_mode,salary', 'nullable', Rule::enum(SalaryPeriod::class)],
-            'amount' => ['required_if:payment_mode,commission', 'nullable', 'numeric', 'min:0'],
+            'salary_amount' => ['required_if:payment_mode,salary,salary_and_commission', 'nullable', 'numeric', 'min:0'],
+            'salary_period' => ['required_if:payment_mode,salary,salary_and_commission', 'nullable', Rule::enum(SalaryPeriod::class)],
+            'amount' => ['required_if:payment_mode,commission,salary_and_commission', 'nullable', 'numeric', 'min:0'],
         ];
     }
 }

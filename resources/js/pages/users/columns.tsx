@@ -158,18 +158,18 @@ export function createColumns({
                     );
                 }
 
+                const salaryLine = (
+                    <div className="flex items-center gap-1.5 text-sm font-medium">
+                        <Banknote className="size-3.5 shrink-0 text-primary" />
+                        <span>
+                            {Number(rule.salary_amount ?? 0).toLocaleString()}{' '}
+                            MAD / {t(rule.salary_period ?? 'monthly')}
+                        </span>
+                    </div>
+                );
+
                 if (rule.payment_mode === 'salary') {
-                    return (
-                        <div className="flex items-center gap-1.5 text-sm font-medium">
-                            <Banknote className="size-3.5 shrink-0 text-primary" />
-                            <span>
-                                {Number(
-                                    rule.salary_amount ?? 0,
-                                ).toLocaleString()}{' '}
-                                MAD / {rule.salary_period ?? 'monthly'}
-                            </span>
-                        </div>
-                    );
+                    return salaryLine;
                 }
 
                 const overridesCount = Math.max(
@@ -177,7 +177,7 @@ export function createColumns({
                     (user.commission_rules?.length ?? 1) - 1,
                 );
 
-                return (
+                const commissionLine = (
                     <div className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
                         <div className="flex items-center gap-1.5">
                             <Wallet className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
@@ -203,6 +203,16 @@ export function createColumns({
                             </Badge>
                         )}
                     </div>
+                );
+
+                // Salary + commission: both halves, salary first.
+                return rule.payment_mode === 'salary_and_commission' ? (
+                    <div className="grid gap-1">
+                        {salaryLine}
+                        {commissionLine}
+                    </div>
+                ) : (
+                    commissionLine
                 );
             },
         },

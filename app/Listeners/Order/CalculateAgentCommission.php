@@ -3,7 +3,6 @@
 namespace App\Listeners\Order;
 
 use App\Enums\CommissionAmountType;
-use App\Enums\CommissionPaymentMode;
 use App\Enums\OrderConfirmationStatus;
 use App\Events\Commission\CommissionEarned;
 use App\Events\Order\OrderConfirmed;
@@ -30,7 +29,7 @@ use App\Models\Scopes\BusinessScope;
  * paid here; a future listener on the matching event handles that case.
  *
  * No-ops entirely for: is_test orders (UC-25), an unassigned order, an
- * agent in salary mode (no per-order commission), an order with no line
+ * agent on salary only (no per-order commission), an order with no line
  * items (a manually created order not yet itemized), and an order that
  * already has earned entries. That last guard matters because an order
  * can be confirmed more than once — updateStatus() only short-circuits
@@ -76,7 +75,7 @@ class CalculateAgentCommission
 
         $defaultRule = $rules->first(fn (CommissionRule $rule) => $rule->store_id === null && $rule->product_id === null);
 
-        if ($defaultRule === null || $defaultRule->payment_mode !== CommissionPaymentMode::COMMISSION) {
+        if ($defaultRule === null || ! $defaultRule->payment_mode->paysCommission()) {
             return;
         }
 

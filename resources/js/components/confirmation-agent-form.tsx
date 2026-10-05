@@ -145,6 +145,11 @@ export function ConfirmationAgentForm({
     const [paymentMode, setPaymentMode] = useState<CommissionPaymentMode>(
         existingRule?.payment_mode ?? 'commission',
     );
+
+    // "Salary + commission" pays both halves, so each half shows whenever
+    // the chosen mode includes it.
+    const paysSalary = paymentMode !== 'commission';
+    const paysCommission = paymentMode !== 'salary';
     const [salaryAmount, setSalaryAmount] = useState(
         existingRule?.salary_amount ?? '',
     );
@@ -365,14 +370,14 @@ export function ConfirmationAgentForm({
                         name="payment_mode"
                         value={paymentMode}
                     />
-                    {paymentMode === 'salary' && (
+                    {paysSalary && (
                         <input
                             type="hidden"
                             name="salary_period"
                             value={salaryPeriod}
                         />
                     )}
-                    {paymentMode === 'commission' && (
+                    {paysCommission && (
                         <>
                             <input
                                 type="hidden"
@@ -538,22 +543,26 @@ export function ConfirmationAgentForm({
                             icon={Wallet}
                             title={t('Compensation Structure')}
                             description={t(
-                                'Choose whether this agent receives a fixed periodic salary or commission per confirmed/delivered order.',
+                                'Choose whether this agent receives a fixed periodic salary, a commission per confirmed/delivered order, or both.',
                             )}
                             badge={
                                 <SectionBadge>
                                     {paymentMode === 'salary'
                                         ? t('Salary Mode')
-                                        : t('Commission Mode')}
+                                        : paymentMode === 'commission'
+                                          ? t('Commission Mode')
+                                          : t('Salary + Commission')}
                                 </SectionBadge>
                             }
                         >
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                 <ChoiceCard
                                     selected={paymentMode === 'salary'}
                                     onSelect={() => setPaymentMode('salary')}
                                     title={t('Fixed Salary')}
-                                    description="Fixed periodic compensation (e.g. 3,000 MAD / month) regardless of order volume."
+                                    description={t(
+                                        'Fixed periodic compensation (e.g. 3,000 MAD / month) regardless of order volume.',
+                                    )}
                                 />
                                 <ChoiceCard
                                     selected={paymentMode === 'commission'}
@@ -565,11 +574,23 @@ export function ConfirmationAgentForm({
                                         'Earn a fixed fee or percentage for every order successfully confirmed or delivered.',
                                     )}
                                 />
+                                <ChoiceCard
+                                    selected={
+                                        paymentMode === 'salary_and_commission'
+                                    }
+                                    onSelect={() =>
+                                        setPaymentMode('salary_and_commission')
+                                    }
+                                    title={t('Salary + Commission')}
+                                    description={t(
+                                        'A fixed salary, plus a commission for every order on top of it.',
+                                    )}
+                                />
                             </div>
                             <InputError message={errors.payment_mode} />
 
-                            <div className="border-t pt-4">
-                                {paymentMode === 'salary' ? (
+                            <div className="space-y-6 border-t pt-4">
+                                {paysSalary && (
                                     <SalaryFields
                                         amount={salaryAmount}
                                         onAmountChange={setSalaryAmount}
@@ -577,7 +598,8 @@ export function ConfirmationAgentForm({
                                         onPeriodChange={setSalaryPeriod}
                                         errors={errors}
                                     />
-                                ) : (
+                                )}
+                                {paysCommission && (
                                     <div className="space-y-6">
                                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                             <div className="grid gap-1.5">

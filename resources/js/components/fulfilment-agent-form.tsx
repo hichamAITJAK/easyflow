@@ -51,6 +51,11 @@ export function FulfilmentAgentForm({
     );
     const [amount, setAmount] = useState(existingRule?.amount ?? '');
 
+    // "Salary + per parcel" pays both halves, so each half shows whenever
+    // the chosen mode includes it.
+    const paysSalary = paymentMode !== 'commission';
+    const paysCommission = paymentMode !== 'salary';
+
     return (
         <Form
             {...formProps}
@@ -67,7 +72,7 @@ export function FulfilmentAgentForm({
                         name="payment_mode"
                         value={paymentMode}
                     />
-                    {paymentMode === 'salary' && (
+                    {paysSalary && (
                         <input
                             type="hidden"
                             name="salary_period"
@@ -102,17 +107,19 @@ export function FulfilmentAgentForm({
                             icon={Wallet}
                             title={t('Compensation Structure')}
                             description={t(
-                                'Choose fixed periodic salary or per-parcel scanning pay in the warehouse.',
+                                'Choose a fixed periodic salary, per-parcel scanning pay in the warehouse, or both.',
                             )}
                             badge={
                                 <SectionBadge>
                                     {paymentMode === 'salary'
-                                        ? 'Salary Mode'
-                                        : 'Per Parcel Pay'}
+                                        ? t('Salary Mode')
+                                        : paymentMode === 'commission'
+                                          ? t('Per Parcel Pay')
+                                          : t('Salary + Per Parcel')}
                                 </SectionBadge>
                             }
                         >
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                 <ChoiceCard
                                     accent="amber"
                                     selected={paymentMode === 'salary'}
@@ -133,11 +140,24 @@ export function FulfilmentAgentForm({
                                         'Earn a fixed rate for every parcel prepared and staged for courier dispatch (e.g. 5 MAD / parcel).',
                                     )}
                                 />
+                                <ChoiceCard
+                                    accent="amber"
+                                    selected={
+                                        paymentMode === 'salary_and_commission'
+                                    }
+                                    onSelect={() =>
+                                        setPaymentMode('salary_and_commission')
+                                    }
+                                    title={t('Salary + Per Parcel')}
+                                    description={t(
+                                        'A fixed salary, plus a rate for every parcel prepared on top of it.',
+                                    )}
+                                />
                             </div>
                             <InputError message={errors.payment_mode} />
 
-                            <div className="border-t pt-4">
-                                {paymentMode === 'salary' ? (
+                            <div className="space-y-6 border-t pt-4">
+                                {paysSalary && (
                                     <SalaryFields
                                         amount={salaryAmount}
                                         onAmountChange={setSalaryAmount}
@@ -145,7 +165,8 @@ export function FulfilmentAgentForm({
                                         onPeriodChange={setSalaryPeriod}
                                         errors={errors}
                                     />
-                                ) : (
+                                )}
+                                {paysCommission && (
                                     <div className="grid max-w-sm gap-1.5">
                                         <Label
                                             htmlFor="amount"

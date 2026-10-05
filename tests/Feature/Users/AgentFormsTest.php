@@ -245,6 +245,133 @@ test('admin creates a fulfilment agent with per-parcel commission', function () 
     expect((float) $rule->amount)->toBe(5.0);
 });
 
+test('admin creates a confirmation agent paid a salary plus commission', function () {
+    [$admin, $store] = makeAdminWithStoreAndProduct();
+
+    $response = $this->actingAs($admin)->post(route('users.store'), [
+        'name' => 'Agent Both',
+        'email' => 'agent-both@example.com',
+        'role' => 'confirmation_agent',
+        'status' => 'active',
+        'password' => 'Password123!',
+        'password_confirmation' => 'Password123!',
+        'payment_mode' => 'salary_and_commission',
+        'salary_amount' => 2500,
+        'salary_period' => 'monthly',
+        'trigger_status' => 'confirmed',
+        'amount_type' => 'fixed',
+        'amount' => 8,
+        'overrides' => [
+            ['store_id' => $store->id, 'amount_type' => 'fixed', 'amount' => 12],
+        ],
+    ]);
+
+    $response->assertRedirect(route('users.index'));
+    $response->assertSessionHasNoErrors();
+
+    $agent = User::where('email', 'agent-both@example.com')->firstOrFail();
+    $rule = CommissionRule::where('user_id', $agent->id)
+        ->whereNull('store_id')
+        ->whereNull('product_id')
+        ->firstOrFail();
+
+    // Both halves are stored on the one default rule.
+    expect($rule->payment_mode->value)->toBe('salary_and_commission');
+    expect((float) $rule->salary_amount)->toBe(2500.0);
+    expect($rule->salary_period->value)->toBe('monthly');
+    expect($rule->trigger_status)->toBe('confirmed');
+    expect($rule->amount_type->value)->toBe('fixed');
+    expect((float) $rule->amount)->toBe(8.0);
+
+    // Overrides ride on the commission half, so they are kept.
+    expect(CommissionRule::where('user_id', $agent->id)->where('store_id', $store->id)->count())->toBe(1);
+});
+
+test('admin creates a fulfilment agent paid a salary plus per-parcel pay', function () {
+    [$admin] = makeAdminWithStoreAndProduct();
+
+    $response = $this->actingAs($admin)->post(route('users.store'), [
+        'name' => 'Fulfilment Both',
+        'email' => 'fulfilment-both@example.com',
+        'role' => 'fulfilment_agent',
+        'status' => 'active',
+        'password' => 'Password123!',
+        'password_confirmation' => 'Password123!',
+        'payment_mode' => 'salary_and_commission',
+        'salary_amount' => 2000,
+        'salary_period' => 'weekly',
+        'amount' => 3,
+    ]);
+
+    $response->assertRedirect(route('users.index'));
+    $response->assertSessionHasNoErrors();
+
+    $agent = User::where('email', 'fulfilment-both@example.com')->firstOrFail();
+    $rule = CommissionRule::where('user_id', $agent->id)->firstOrFail();
+
+    expect($rule->payment_mode->value)->toBe('salary_and_commission');
+    expect((float) $rule->salary_amount)->toBe(2000.0);
+    expect($rule->salary_period->value)->toBe('weekly');
+    expect($rule->trigger_status)->toBe('ready_for_pickup');
+    expect((float) $rule->amount)->toBe(3.0);
+});
+
+test('salary plus commission requires both the salary and the commission fields', function () {
+    [$admin] = makeAdminWithStoreAndProduct();
+
+    $response = $this->actingAs($admin)->post(route('users.store'), [
+        'name' => 'Half Agent',
+        'email' => 'half-agent@example.com',
+        'role' => 'confirmation_agent',
+        'status' => 'active',
+        'password' => 'Password123!',
+        'password_confirmation' => 'Password123!',
+        'payment_mode' => 'salary_and_commission',
+    ]);
+
+    $response->assertSessionHasErrors(['salary_amount', 'salary_period', 'trigger_status', 'amount_type', 'amount']);
+    expect(User::where('email', 'half-agent@example.com')->exists())->toBeFalse();
+});
+
+test('switching an agent from both to commission only clears the salary', function () {
+    [$admin] = makeAdminWithStoreAndProduct();
+    $base = [
+        'name' => 'Switch Agent',
+        'email' => 'switch-agent@example.com',
+        'role' => 'confirmation_agent',
+        'status' => 'active',
+        'trigger_status' => 'confirmed',
+        'amount_type' => 'fixed',
+        'amount' => 8,
+    ];
+
+    $this->actingAs($admin)->post(route('users.store'), [
+        ...$base,
+        'password' => 'Password123!',
+        'password_confirmation' => 'Password123!',
+        'payment_mode' => 'salary_and_commission',
+        'salary_amount' => 2500,
+        'salary_period' => 'monthly',
+    ])->assertSessionHasNoErrors();
+
+    $agent = User::where('email', 'switch-agent@example.com')->firstOrFail();
+
+    // A stale salary is submitted on purpose: the mode decides what is kept.
+    $this->actingAs($admin)->put(route('users.update', $agent), [
+        ...$base,
+        'payment_mode' => 'commission',
+        'salary_amount' => 2500,
+        'salary_period' => 'monthly',
+    ])->assertSessionHasNoErrors();
+
+    $rule = CommissionRule::where('user_id', $agent->id)->firstOrFail();
+
+    expect($rule->payment_mode->value)->toBe('commission');
+    expect($rule->salary_amount)->toBeNull();
+    expect($rule->salary_period)->toBeNull();
+    expect((float) $rule->amount)->toBe(8.0);
+});
+
 test('a confirmation agent missing amount fields for commission mode is rejected', function () {
     [$admin] = makeAdminWithStoreAndProduct();
 

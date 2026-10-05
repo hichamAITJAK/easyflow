@@ -1,4 +1,5 @@
-export type CommissionPaymentMode = 'salary' | 'commission';
+export type CommissionPaymentMode =
+    'salary' | 'commission' | 'salary_and_commission';
 export type SalaryPeriod = 'weekly' | 'monthly';
 export type CommissionAmountType = 'fixed' | 'percentage';
 export type PerformanceMetric = 'confirmation_rate' | 'delivery_success_rate';

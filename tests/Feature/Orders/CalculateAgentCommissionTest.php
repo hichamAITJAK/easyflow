@@ -120,3 +120,27 @@ test('a second order for the same agent still earns its own entry', function () 
     expect(earnedEntriesFor($order->id))->toBe(1)
         ->and(earnedEntriesFor($second->id))->toBe(1);
 });
+
+test('an agent on salary plus commission still earns the commission', function () {
+    [$admin, , $order] = makeCommissionableOrder(ruleOverrides: [
+        'payment_mode' => 'salary_and_commission',
+        'salary_amount' => 3000,
+        'salary_period' => 'monthly',
+    ]);
+
+    app(OrderService::class)->updateStatus($order, $admin, OrderConfirmationStatus::CONFIRMED);
+
+    expect(earnedEntriesFor($order->id))->toBe(1);
+});
+
+test('an agent on salary only earns no commission', function () {
+    [$admin, , $order] = makeCommissionableOrder(ruleOverrides: [
+        'payment_mode' => 'salary',
+        'salary_amount' => 3000,
+        'salary_period' => 'monthly',
+    ]);
+
+    app(OrderService::class)->updateStatus($order, $admin, OrderConfirmationStatus::CONFIRMED);
+
+    expect(earnedEntriesFor($order->id))->toBe(0);
+});

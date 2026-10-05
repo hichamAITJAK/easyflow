@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use App\Enums\CommissionPaymentMode;
 use App\Enums\PerformanceTargetPeriod;
 use App\Enums\UserRole;
 use App\Models\AgentScope;
@@ -11,7 +12,7 @@ use App\Models\User;
 
 /**
  * Persists a confirmation/fulfilment agent's store & product scope,
- * payment mode (salary or commission), and performance targets from the
+ * payment mode (salary, commission, or both), and performance targets from the
  * validated request data — shared by UserController's store() and update()
  * so both stay in lockstep with the same sync rules.
  */
@@ -131,14 +132,18 @@ trait SyncsAgentCompensation
     private function syncCommissionRule(User $user, array $data): void
     {
         $isFulfilment = $user->role === UserRole::FULFILMENT_AGENT;
-        $isCommission = $data['payment_mode'] === 'commission';
+        $mode = CommissionPaymentMode::from($data['payment_mode']);
+        $isCommission = $mode->paysCommission();
+        $isSalary = $mode->paysSalary();
 
         CommissionRule::updateOrCreate(
             ['business_id' => $user->business_id, 'user_id' => $user->id, 'store_id' => null, 'product_id' => null],
             [
-                'payment_mode' => $data['payment_mode'],
-                'salary_amount' => $data['salary_amount'] ?? null,
-                'salary_period' => $data['salary_period'] ?? null,
+                'payment_mode' => $mode,
+                // Each half is kept only when the mode pays it, so switching
+                // modes never leaves a stale salary or rate behind.
+                'salary_amount' => $isSalary ? ($data['salary_amount'] ?? null) : null,
+                'salary_period' => $isSalary ? ($data['salary_period'] ?? null) : null,
                 'trigger_status' => $isCommission
                     ? ($isFulfilment ? 'ready_for_pickup' : ($data['trigger_status'] ?? null))
                     : null,
@@ -157,7 +162,7 @@ trait SyncsAgentCompensation
      * Replace this agent's store/product commission overrides — one row per
      * submitted override, each scoped to exactly one store or one product
      * (never both, never neither; enforced in validation). Cleared entirely
-     * when the agent isn't in commission mode, since a per-store/product
+     * when the agent earns no commission, since a per-store/product
      * rate only means something on top of a commission-based default.
      *
      * There's no DB-level uniqueness on (user_id, store_id, product_id) —
