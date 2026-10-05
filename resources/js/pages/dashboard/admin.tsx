@@ -283,52 +283,49 @@ export default function AdminDashboard({
                     </div>
                 )}
 
-                {/* Money row. Courier money merges expected remittance and
-                    the latest settlement variance: same story, money
-                    sitting at couriers. */}
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+                {/* The period at a glance: count on top, its share under. */}
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                     <StatTile
-                        label={t('Total earned')}
-                        caption="Delivered & collected"
-                        value={money(moneyProps.totalEarned)}
-                        exactValue={`${formatNumber(moneyProps.totalEarned)} MAD`}
-                        icon={Wallet}
-                        delta={moneyProps.totalEarnedDelta ?? undefined}
+                        label={t('Orders')}
+                        caption={t('In this period')}
+                        value={formatNumber(summary.orders)}
+                        icon={ShoppingCart}
                     />
-
                     <StatTile
-                        label={t('Courier money')}
+                        label={t('Confirmed orders')}
                         caption={
-                            moneyProps.courierVariance === null
-                                ? t('Awaiting remittance')
-                                : moneyProps.courierVariance < 0
-                                  ? t(':amount vs received last settlement', {
-                                        amount: money(
-                                            moneyProps.courierVariance,
-                                        ),
-                                    })
-                                  : t('Settled in full last period')
+                            summary.confirmedRate === null
+                                ? '—'
+                                : t(':rate% of orders', {
+                                      rate: summary.confirmedRate,
+                                  })
                         }
-                        captionAccent={
-                            moneyProps.courierVariance === null
-                                ? undefined
-                                : moneyProps.courierVariance < 0
-                                  ? 'destructive'
-                                  : 'success'
-                        }
-                        value={money(moneyProps.courierExpected)}
-                        exactValue={`${formatNumber(moneyProps.courierExpected)} MAD`}
-                        icon={Truck}
+                        value={formatNumber(summary.confirmed)}
+                        icon={CircleCheck}
                     />
-
                     <StatTile
-                        label={t('Agent commissions')}
-                        caption={t('Owed this period')}
-                        value={money(moneyProps.commissions)}
-                        exactValue={`${formatNumber(moneyProps.commissions)} MAD`}
-                        icon={HandCoins}
-                        delta={moneyProps.commissionsDelta ?? undefined}
-                        higherIsBetter={false}
+                        label={t('Delivered orders')}
+                        caption={
+                            summary.deliveredRate === null
+                                ? '—'
+                                : t(':rate% of shipped', {
+                                      rate: summary.deliveredRate,
+                                  })
+                        }
+                        value={formatNumber(summary.delivered)}
+                        icon={PackageCheck}
+                    />
+                    <StatTile
+                        label={t('Returned orders')}
+                        caption={
+                            summary.returnedRate === null
+                                ? '—'
+                                : t(':rate% of delivered', {
+                                      rate: summary.returnedRate,
+                                  })
+                        }
+                        value={formatNumber(summary.returned)}
+                        icon={RotateCcw}
                     />
                 </div>
 
@@ -455,49 +452,52 @@ export default function AdminDashboard({
                 {/* Volume over time, on its own full-width row */}
                 <OrdersPerDayCard orders={ordersPerDay} />
 
-                {/* The period at a glance: count on top, its share under. */}
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                {/* Money row. Courier money merges expected remittance and
+                    the latest settlement variance: same story, money
+                    sitting at couriers. */}
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
                     <StatTile
-                        label={t('Orders')}
-                        caption={t('In this period')}
-                        value={formatNumber(summary.orders)}
-                        icon={ShoppingCart}
+                        label={t('Total earned')}
+                        caption="Delivered & collected"
+                        value={money(moneyProps.totalEarned)}
+                        exactValue={`${formatNumber(moneyProps.totalEarned)} MAD`}
+                        icon={Wallet}
+                        delta={moneyProps.totalEarnedDelta ?? undefined}
                     />
+
                     <StatTile
-                        label={t('Confirmed orders')}
+                        label={t('Courier money')}
                         caption={
-                            summary.confirmedRate === null
-                                ? '—'
-                                : t(':rate% of orders', {
-                                      rate: summary.confirmedRate,
-                                  })
+                            moneyProps.courierVariance === null
+                                ? t('Awaiting remittance')
+                                : moneyProps.courierVariance < 0
+                                  ? t(':amount vs received last settlement', {
+                                        amount: money(
+                                            moneyProps.courierVariance,
+                                        ),
+                                    })
+                                  : t('Settled in full last period')
                         }
-                        value={formatNumber(summary.confirmed)}
-                        icon={CircleCheck}
+                        captionAccent={
+                            moneyProps.courierVariance === null
+                                ? undefined
+                                : moneyProps.courierVariance < 0
+                                  ? 'destructive'
+                                  : 'success'
+                        }
+                        value={money(moneyProps.courierExpected)}
+                        exactValue={`${formatNumber(moneyProps.courierExpected)} MAD`}
+                        icon={Truck}
                     />
+
                     <StatTile
-                        label={t('Delivered orders')}
-                        caption={
-                            summary.deliveredRate === null
-                                ? '—'
-                                : t(':rate% of shipped', {
-                                      rate: summary.deliveredRate,
-                                  })
-                        }
-                        value={formatNumber(summary.delivered)}
-                        icon={PackageCheck}
-                    />
-                    <StatTile
-                        label={t('Returned orders')}
-                        caption={
-                            summary.returnedRate === null
-                                ? '—'
-                                : t(':rate% of delivered', {
-                                      rate: summary.returnedRate,
-                                  })
-                        }
-                        value={formatNumber(summary.returned)}
-                        icon={RotateCcw}
+                        label={t('Agent commissions')}
+                        caption={t('Owed this period')}
+                        value={money(moneyProps.commissions)}
+                        exactValue={`${formatNumber(moneyProps.commissions)} MAD`}
+                        icon={HandCoins}
+                        delta={moneyProps.commissionsDelta ?? undefined}
+                        higherIsBetter={false}
                     />
                 </div>
 
