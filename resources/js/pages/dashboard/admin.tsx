@@ -81,6 +81,10 @@ type Props = {
             delivery: number | null;
             return: number | null;
         };
+        counts: Record<
+            'confirmation' | 'delivery' | 'return',
+            { count: number; total: number }
+        >;
     };
     performanceTable: {
         stores: PerformanceRow[];
@@ -384,7 +388,16 @@ export default function AdminDashboard({
                                         <dd className="text-2xl font-semibold tabular-nums">
                                             {rates.totals[tile.key] === null
                                                 ? '—'
-                                                : `${rates.totals[tile.key]}%`}
+                                                : `${Math.round(rates.totals[tile.key] as number)}%`}
+                                        </dd>
+                                        <dd className="text-xs text-muted-foreground tabular-nums">
+                                            {formatNumber(
+                                                rates.counts[tile.key].count,
+                                            )}{' '}
+                                            /{' '}
+                                            {formatNumber(
+                                                rates.counts[tile.key].total,
+                                            )}
                                         </dd>
                                     </div>
                                 ))}

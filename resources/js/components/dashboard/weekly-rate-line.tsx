@@ -1,4 +1,11 @@
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
+import {
+    CartesianGrid,
+    LabelList,
+    Line,
+    LineChart,
+    XAxis,
+    YAxis,
+} from 'recharts';
 import {
     ChartContainer,
     ChartLegend,
@@ -14,6 +21,10 @@ export type WeeklyRatePoint = {
     week: string;
     /** Percentage 0-100; null = no volume that week. */
     rate: number | null;
+    /** Numerator behind the rate (e.g. confirmed orders). */
+    count?: number;
+    /** Denominator behind the rate (e.g. all orders). */
+    total?: number;
 };
 
 export type WeeklyRateSeries = {
@@ -59,8 +70,16 @@ export function WeeklyRateLine({
         const row: Record<string, string | number | null> = { week };
 
         for (const entry of series) {
-            row[entry.key] =
-                entry.data.find((point) => point.week === week)?.rate ?? null;
+            const point = entry.data.find((p) => p.week === week);
+            const rate = point?.rate ?? null;
+
+            // Whole percentages: a decimal on a weekly COD rate is noise.
+            row[entry.key] = rate === null ? null : Math.round(rate);
+            // The count is only drawn where there is a rate to label.
+            row[`${entry.key}Count`] =
+                rate === null ? null : (point?.count ?? null);
+            row[`${entry.key}Total`] =
+                rate === null ? null : (point?.total ?? null);
         }
 
         return row;
@@ -83,7 +102,7 @@ export function WeeklyRateLine({
             <LineChart
                 accessibilityLayer
                 data={chartData}
-                margin={{ top: 12, right: 12 }}
+                margin={{ top: 20, right: 16 }}
             >
                 <CartesianGrid vertical={false} />
                 <XAxis
@@ -103,17 +122,27 @@ export function WeeklyRateLine({
                     cursor={false}
                     content={
                         <ChartTooltipContent
-                            formatter={(value, name) => (
-                                <>
-                                    <span className="text-muted-foreground">
-                                        {chartConfig[name as string]?.label ??
-                                            name}
-                                    </span>
-                                    <span className="ml-auto font-mono font-medium tabular-nums">
-                                        {value}%
-                                    </span>
-                                </>
-                            )}
+                            formatter={(value, name, item) => {
+                                const count = item.payload?.[`${name}Count`];
+                                const total = item.payload?.[`${name}Total`];
+
+                                return (
+                                    <>
+                                        <span className="text-muted-foreground">
+                                            {chartConfig[name as string]
+                                                ?.label ?? name}
+                                        </span>
+                                        <span className="ml-auto pl-3 font-mono font-medium tabular-nums">
+                                            {value}%
+                                            {count != null && total != null && (
+                                                <span className="ml-1.5 font-normal text-muted-foreground">
+                                                    {count} / {total}
+                                                </span>
+                                            )}
+                                        </span>
+                                    </>
+                                );
+                            }}
                         />
                     }
                 />
@@ -125,7 +154,18 @@ export function WeeklyRateLine({
                         stroke={`var(--color-${entry.key})`}
                         strokeWidth={2}
                         dot={{ r: 3, fill: `var(--color-${entry.key})` }}
-                    />
+                    >
+                        {/* The number behind each point, in the line's own
+                            colour so two series stay tellable apart. */}
+                        <LabelList
+                            dataKey={`${entry.key}Count`}
+                            position="top"
+                            offset={8}
+                            fill={`var(--color-${entry.key})`}
+                            fontSize={11}
+                            className="tabular-nums"
+                        />
+                    </Line>
                 ))}
                 {series.length > 1 && (
                     <ChartLegend content={<ChartLegendContent />} />

@@ -63,6 +63,11 @@ test('the admin dashboard renders every widget prop with the right shape', funct
                 ->has('delivery')
                 ->has('return')
             )
+            ->has('counts', fn ($counts) => $counts
+                ->has('confirmation')
+                ->has('delivery')
+                ->has('return')
+            )
         )
         ->has('performanceTable', fn ($table) => $table
             ->has('stores')

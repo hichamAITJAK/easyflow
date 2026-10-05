@@ -409,7 +409,7 @@ class DashboardController extends Controller
      * which reads as "—" rather than a misleading 0%.
      *
      * @param  Collection<int, DailyStatsSummary>  $rows
-     * @return array{buckets: array<string, array<int, array{week: string, rate: float|null}>>, totals: array{confirmation: float|null, delivery: float|null, return: float|null}}
+     * @return array{buckets: array<string, array<int, array{week: string, rate: float|null, count: int, total: int}>>, totals: array{confirmation: float|null, delivery: float|null, return: float|null}, counts: array<string, array{count: int, total: int}>}
      */
     private function rateBuckets(Collection $rows, int $windowDays): array
     {
@@ -430,9 +430,11 @@ class DashboardController extends Controller
             $delivered = (int) $bucketRows->sum('delivered_count');
             $returned = (int) $bucketRows->sum('returned_count');
 
-            $confirmation[] = ['week' => $label, 'rate' => $orders > 0 ? round(($confirmed / $orders) * 100, 1) : null];
-            $delivery[] = ['week' => $label, 'rate' => $submitted > 0 ? round(($delivered / $submitted) * 100, 1) : null];
-            $return[] = ['week' => $label, 'rate' => $delivered > 0 ? round(($returned / $delivered) * 100, 1) : null];
+            // count / total ride along with each rate so the chart can
+            // show the real numbers, not just a percentage.
+            $confirmation[] = ['week' => $label, 'rate' => $orders > 0 ? round(($confirmed / $orders) * 100, 1) : null, 'count' => $confirmed, 'total' => $orders];
+            $delivery[] = ['week' => $label, 'rate' => $submitted > 0 ? round(($delivered / $submitted) * 100, 1) : null, 'count' => $delivered, 'total' => $submitted];
+            $return[] = ['week' => $label, 'rate' => $delivered > 0 ? round(($returned / $delivered) * 100, 1) : null, 'count' => $returned, 'total' => $delivered];
         }
 
         $totalOrders = (int) $rows->sum('orders_count');
@@ -451,6 +453,11 @@ class DashboardController extends Controller
                 'confirmation' => $totalOrders > 0 ? round(($totalConfirmed / $totalOrders) * 100, 1) : null,
                 'delivery' => $totalSubmitted > 0 ? round(($totalDelivered / $totalSubmitted) * 100, 1) : null,
                 'return' => $totalDelivered > 0 ? round(($totalReturned / $totalDelivered) * 100, 1) : null,
+            ],
+            'counts' => [
+                'confirmation' => ['count' => $totalConfirmed, 'total' => $totalOrders],
+                'delivery' => ['count' => $totalDelivered, 'total' => $totalSubmitted],
+                'return' => ['count' => $totalReturned, 'total' => $totalDelivered],
             ],
         ];
     }
