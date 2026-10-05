@@ -92,7 +92,7 @@ function RateCell({
     const wellBelow = value < target * 0.9;
 
     return (
-        <TableCell className="text-right tabular-nums">
+        <TableCell className="text-right font-semibold tabular-nums">
             <span
                 className={cn(
                     'inline-flex items-center justify-end gap-0.5',
@@ -112,7 +112,7 @@ function RateCell({
                     <span className="sr-only">{t(', well below target')}</span>
                 )}
             </span>
-            <span className="block text-xs text-muted-foreground">
+            <span className="block text-sm font-medium text-foreground/80">
                 {formatNumber(count)} / {formatNumber(total)}
             </span>
         </TableCell>
@@ -265,7 +265,7 @@ function RowsTable({
                                 </span>
                             </span>
                         </TableCell>
-                        <TableCell className="text-right text-muted-foreground tabular-nums">
+                        <TableCell className="text-right font-semibold tabular-nums">
                             {formatNumber(row.orders)}
                         </TableCell>
                         {!hideConfirmation && (
@@ -283,13 +283,13 @@ function RowsTable({
                             total={row.submitted}
                         />
                         {hideConfirmation && (
-                            <TableCell className="text-right text-muted-foreground tabular-nums">
+                            <TableCell className="text-right font-semibold tabular-nums">
                                 {row.avgDeliveryDays !== undefined
                                     ? `${row.avgDeliveryDays.toFixed(1)}d`
                                     : '—'}
                             </TableCell>
                         )}
-                        <TableCell className="text-right font-medium tabular-nums">
+                        <TableCell className="text-right font-semibold tabular-nums">
                             {formatCompactNumber(row.earned)} MAD
                             <span className="sr-only">
                                 {t(', exactly :amount MAD', {
