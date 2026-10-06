@@ -127,6 +127,12 @@ class DashboardController extends Controller
                     : $this->agentRows($businessId, $ratesAgentId, $since, $until)->get(),
                 $windowDays,
             ),
+            // Only while the Rates card is narrowed to one agent: what that
+            // agent is measured against, so the card can show the gap to
+            // target instead of raw counts.
+            'agentTargets' => $ratesAgentId === null
+                ? null
+                : $this->agentRateTargets($businessId, $ratesAgentId),
             'performanceTable' => $this->performanceTable($businessId, $since, $until),
             'inventory' => $this->lowStock($businessId, $storeIds),
             'alerts' => $this->alerts($businessId),
@@ -440,6 +446,33 @@ class DashboardController extends Controller
             'threshold' => self::LOW_STOCK_THRESHOLD,
             'products' => $products,
             'total' => $total,
+        ];
+    }
+
+    /**
+     * The confirmation and delivery targets one agent is judged against:
+     * their own row when they have one, else the configured default —
+     * the same value the agent form labels "Default (…)".
+     *
+     * @return array{confirmation: float, delivery: float}|null Null when
+     *                                                          the id is not one of this business's agents.
+     */
+    private function agentRateTargets(?int $businessId, int $agentId): ?array
+    {
+        $agent = User::where('business_id', $businessId)->find($agentId);
+
+        if ($agent === null) {
+            return null;
+        }
+
+        $target = fn (PerformanceMetric $metric, string $default): float => (float) (
+            $this->agentTarget($businessId, $agent, $metric)?->target_percentage
+            ?? config("performance.defaults.{$default}")
+        );
+
+        return [
+            'confirmation' => $target(PerformanceMetric::CONFIRMATION_RATE, 'confirmation_rate'),
+            'delivery' => $target(PerformanceMetric::DELIVERY_SUCCESS_RATE, 'delivery_success_rate'),
         ];
     }
 

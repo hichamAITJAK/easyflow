@@ -31,6 +31,7 @@
     ":count row skipped": ":count ligne ignorée",
     ":count rows skipped": ":count lignes ignorées",
     ":courier cities synced.": "Villes :courier synchronisées.",
+    ":gap vs :target% target": ":gap vs objectif :target %",
     ":imported added, :updated updated, :skipped skipped.": ":imported ajoutés, :updated mis à jour, :skipped ignorés.",
     ":inviterName has invited you to join the :teamName team.": ":inviterName has invited you to join the :teamName team.",
     ":invoices invoices generated from :entries entries.": ":invoices factures générées à partir de :entries écritures.",
@@ -1666,6 +1667,7 @@
     "your store": "votre boutique",
     "— Courier": "— Transporteur",
     "— one per agent. Invoiced entries can't be re-invoiced.": "— une par agent. Les entrées facturées ne peuvent pas être refacturées.",
+    "— vs :target% target": "— vs objectif :target %",
     "“Every order, every courier, and every store — in one place.”": "« Chaque commande, chaque transporteur et chaque boutique — au même endroit. »",
     "“Having every store, courier, and order in one workspace changed how our confirmation team works. We stopped chasing spreadsheets and started shipping faster.”": "« Avoir chaque boutique, transporteur et commande dans un seul espace a changé la façon de travailler de notre équipe de confirmation. Nous avons arrêté de courir après les tableurs et commencé à expédier plus vite. »"
 }

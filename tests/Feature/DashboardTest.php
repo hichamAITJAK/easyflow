@@ -50,6 +50,7 @@ test('the admin dashboard renders every widget prop with the right shape', funct
         )
         ->has('ordersPerDay', 30)
         ->has('team')
+        ->where('agentTargets', null)
         ->has('inventory', fn ($inventory) => $inventory
             ->where('threshold', 10)
             ->has('products')
@@ -607,4 +608,36 @@ test('the inventory section lists products with fewer than 10 in stock, lowest f
             ->where('inventory.products.2.stock', 9)
             ->etc()
         );
+});
+
+test('picking an agent on the Rates card exposes that agent\'s targets', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $agent = makeBusinessUser([
+        'role' => UserRole::CONFIRMATION_AGENT,
+        'business_id' => $admin->business_id,
+    ]);
+
+    PerformanceTarget::create([
+        'business_id' => $admin->business_id,
+        'user_id' => $agent->id,
+        'metric' => 'confirmation_rate',
+        'target_percentage' => 72,
+        'period' => 'weekly',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('dashboard', ['agent_id' => $agent->id]))
+        ->assertInertia(fn ($page) => $page
+            // Own row for confirmation, configured default for delivery.
+            ->where('agentTargets.confirmation', 72)
+            ->where('agentTargets.delivery', 90)
+            ->etc()
+        );
+
+    // An id from another business resolves to nothing.
+    $stranger = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT]);
+
+    $this->actingAs($admin)
+        ->get(route('dashboard', ['agent_id' => $stranger->id]))
+        ->assertInertia(fn ($page) => $page->where('agentTargets', null)->etc());
 });

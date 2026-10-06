@@ -48,6 +48,7 @@ import { useTableFilters } from '@/hooks/use-table-filters';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatCompactNumber, formatNumber } from '@/lib/format';
 import type { Translator } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { index as ordersIndex } from '@/routes/orders';
 import { index as parcelsIndex } from '@/routes/parcels';
@@ -103,6 +104,8 @@ type Props = {
             { count: number; total: number }
         >;
     };
+    /** Set only while the Rates card is filtered to one agent. */
+    agentTargets: { confirmation: number; delivery: number } | null;
     performanceTable: {
         stores: PerformanceRow[];
         products: PerformanceRow[];
@@ -113,6 +116,38 @@ type Props = {
 
 function money(value: number): string {
     return formatCompactNumber(value) + ' MAD';
+}
+
+/**
+ * How far a rate sits from its target, e.g. "+4 vs 80% target". Green at
+ * or above, red below; "—" when there is no rate to compare.
+ */
+function TargetGap({ rate, target }: { rate: number | null; target: number }) {
+    const { t } = useTranslation();
+
+    if (rate === null) {
+        return (
+            <dd className="text-xs text-muted-foreground tabular-nums">
+                {t('— vs :target% target', { target: Math.round(target) })}
+            </dd>
+        );
+    }
+
+    const gap = Math.round(rate - target);
+
+    return (
+        <dd
+            className={cn(
+                'text-xs font-medium tabular-nums',
+                gap >= 0 ? 'text-success' : 'text-destructive',
+            )}
+        >
+            {t(':gap vs :target% target', {
+                gap: `${gap > 0 ? '+' : ''}${gap}`,
+                target: Math.round(target),
+            })}
+        </dd>
+    );
 }
 
 function greeting(t: Translator): string {
@@ -187,6 +222,7 @@ export default function AdminDashboard({
     summary,
     targets,
     rates,
+    agentTargets,
     performanceTable,
     alerts,
 }: Props) {
@@ -400,15 +436,28 @@ export default function AdminDashboard({
                                                 ? '—'
                                                 : `${Math.round(rates.totals[tile.key] as number)}%`}
                                         </dd>
-                                        <dd className="text-xs text-muted-foreground tabular-nums">
-                                            {formatNumber(
-                                                rates.counts[tile.key].count,
-                                            )}{' '}
-                                            /{' '}
-                                            {formatNumber(
-                                                rates.counts[tile.key].total,
-                                            )}
-                                        </dd>
+                                        {/* With an agent picked, the gap to
+                                            their target replaces the raw
+                                            counts; return has no target. */}
+                                        {agentTargets &&
+                                        tile.key !== 'return' ? (
+                                            <TargetGap
+                                                rate={rates.totals[tile.key]}
+                                                target={agentTargets[tile.key]}
+                                            />
+                                        ) : (
+                                            <dd className="text-xs text-muted-foreground tabular-nums">
+                                                {formatNumber(
+                                                    rates.counts[tile.key]
+                                                        .count,
+                                                )}{' '}
+                                                /{' '}
+                                                {formatNumber(
+                                                    rates.counts[tile.key]
+                                                        .total,
+                                                )}
+                                            </dd>
+                                        )}
                                     </div>
                                 ))}
                             </dl>
