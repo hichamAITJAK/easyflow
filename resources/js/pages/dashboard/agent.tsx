@@ -4,6 +4,8 @@ import type {
     DashboardFilterValues,
     PeriodOption,
 } from '@/components/dashboard/dashboard-filters';
+import { PerformanceTrack } from '@/components/dashboard/performance-track';
+import type { PerformanceTrackData } from '@/components/dashboard/performance-track';
 import { RateBarChart } from '@/components/dashboard/rate-bar-chart';
 import { StatTile } from '@/components/dashboard/stat-tile';
 import { DataTableResetFiltersButton } from '@/components/data-table/data-table-reset-filters-button';
@@ -34,6 +36,7 @@ const PERIODS: PeriodOption[] = [
 
 type Props = {
     filters: AgentFilterValues;
+    performance: PerformanceTrackData;
     /** Length of the resolved window, in days. */
     periodDays: number;
     totals: {
@@ -64,6 +67,7 @@ function money(value: number): string {
 
 export default function AgentDashboard({
     filters,
+    performance,
     periodDays,
     totals,
     tileRates,
@@ -153,6 +157,8 @@ export default function AgentDashboard({
                         value={money(commissionEarned)}
                     />
                 </div>
+
+                <PerformanceTrack performance={performance} />
 
                 {/* Two charts rather than one with grouped bars: the two
                     metrics carry different targets (80% vs 90% by

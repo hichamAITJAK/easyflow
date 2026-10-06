@@ -365,6 +365,9 @@ test('the agent dashboard renders every stat/chart prop with the right shape', f
         ->has('commissionEarned')
         ->where('periodDays', 30)
         ->where('filters', ['period' => null, 'date_from' => null, 'date_to' => null])
+        ->where('performance.view.type', 'agent')
+        ->where('performance.view.name', $agent->name)
+        ->has('performance.daily', 30)
         ->missing('stores')
     );
 });

@@ -1032,6 +1032,9 @@ class DashboardController extends Controller
         ];
 
         return Inertia::render('dashboard/agent', [
+            // The same Performance track the admin sees, pinned to this
+            // agent: their own rows, no selector.
+            'performance' => $this->performance($businessId, $user, $rows, $since, $until, $windowDays, $this->goals($businessId)),
             'filters' => [
                 'period' => $period !== '30d' ? $period : null,
                 // Echoed from the resolved window (see adminDashboard).
