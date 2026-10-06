@@ -18,6 +18,11 @@ type Props = {
     canResetPassword: boolean;
 };
 
+// Taller, rounder fields than the app default: this is the one form a
+// merchant types into on a phone at the start of every day.
+const FIELD_CLASS =
+    'h-12 rounded-xl border-[1.5px] px-4 text-[0.95rem] focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary';
+
 export default function Login({ status, canResetPassword }: Props) {
     const { t } = useTranslation();
 
@@ -40,9 +45,14 @@ export default function Login({ status, canResetPassword }: Props) {
                 className="space-y-6"
             >
                 {({ processing, errors }) => (
-                    <FieldGroup>
+                    <FieldGroup className="gap-5">
                         <Field>
-                            <FieldLabel htmlFor="email">{t('Email')}</FieldLabel>
+                            <FieldLabel
+                                htmlFor="email"
+                                className="text-[0.84rem] font-semibold"
+                            >
+                                {t('Email')}
+                            </FieldLabel>
                             <Input
                                 id="email"
                                 type="email"
@@ -51,70 +61,76 @@ export default function Login({ status, canResetPassword }: Props) {
                                 autoFocus
                                 tabIndex={1}
                                 autoComplete="email"
-                                placeholder="email@example.com"
+                                placeholder="you@yourstore.com"
+                                className={FIELD_CLASS}
                             />
                             <InputError message={errors.email} />
                         </Field>
 
                         <Field>
-                            <div className="flex items-center justify-between">
-                                <FieldLabel htmlFor="password">
-                                    {t('Password')}
-                                </FieldLabel>
-                                {canResetPassword && (
-                                    <TextLink
-                                        href={request()}
-                                        className="text-sm"
-                                        tabIndex={5}
-                                    >
-                                        {t('Forgot password?')}
-                                    </TextLink>
-                                )}
-                            </div>
+                            <FieldLabel
+                                htmlFor="password"
+                                className="text-[0.84rem] font-semibold"
+                            >
+                                {t('Password')}
+                            </FieldLabel>
                             <PasswordInput
                                 id="password"
                                 name="password"
                                 required
                                 tabIndex={2}
                                 autoComplete="current-password"
-                                placeholder={t('Your password')}
+                                placeholder={t('Enter your password')}
+                                className={FIELD_CLASS}
                             />
                             <InputError message={errors.password} />
                         </Field>
 
-                        <Field orientation="horizontal">
-                            <Checkbox id="remember" name="remember" tabIndex={3} />
-                            <Label
-                                htmlFor="remember"
-                                className="font-normal text-muted-foreground"
-                            >
-                                {t('Remember me')}
-                            </Label>
-                        </Field>
+                        <div className="flex flex-wrap items-center justify-between gap-4">
+                            <Field orientation="horizontal" className="w-auto">
+                                <Checkbox
+                                    id="remember"
+                                    name="remember"
+                                    tabIndex={3}
+                                    className="size-5 rounded-md"
+                                />
+                                <Label
+                                    htmlFor="remember"
+                                    className="text-[0.88rem] font-normal"
+                                >
+                                    {t('Keep me logged in')}
+                                </Label>
+                            </Field>
+
+                            {canResetPassword && (
+                                <TextLink
+                                    href={request()}
+                                    className="text-[0.88rem] font-semibold text-primary no-underline hover:underline"
+                                    tabIndex={5}
+                                >
+                                    {t('Forgot password?')}
+                                </TextLink>
+                            )}
+                        </div>
 
                         <Field>
                             <Button
                                 type="submit"
-                                className="w-full"
+                                size="lg"
+                                className="h-13 w-full rounded-[14px] text-base font-semibold"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
                             >
                                 {processing && <Spinner />}
-                                Log in
+                                {t('Log in')}
                             </Button>
                         </Field>
 
-                        <div className="relative text-center text-sm after:absolute after:inset-x-0 after:top-1/2 after:border-t after:border-border">
-                            <span className="relative z-10 bg-background px-3 text-muted-foreground">
-                                or
-                            </span>
-                        </div>
-
-                        <Field>
-                            <PasskeyVerify />
-                        </Field>
-
+                        <PasskeyVerify
+                            separator={t('or')}
+                            separatorPosition="above"
+                        />
                     </FieldGroup>
                 )}
             </Form>
@@ -123,6 +139,6 @@ export default function Login({ status, canResetPassword }: Props) {
 }
 
 Login.layout = {
-    title: 'Welcome back',
-    description: 'Log in to pick up where your orders left off.',
+    title: 'Welcome back.',
+    description: 'Log in to run your cash-on-delivery operation.',
 };

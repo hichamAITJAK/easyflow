@@ -1,23 +1,19 @@
-import { Link, usePage } from '@inertiajs/react';
-import AppWordmark from '@/components/app-wordmark';
-import { IntegrationsOrbit } from '@/components/integrations-orbit';
+import { Link } from '@inertiajs/react';
+import AppLogoIcon from '@/components/app-logo-icon';
+import { OrderFlowStage } from '@/components/order-flow-stage';
 import { useTranslation } from '@/hooks/use-translation';
 import { home } from '@/routes';
-import type { AuthLayoutProps, PageProps } from '@/types';
+import type { AuthLayoutProps } from '@/types';
 
 /*
-  THESIS: a working merchant's front door — the form is the tool, the panel
-  shows what the tool connects: the stores orders come from and the couriers
-  they go out to, drawn as one slowly turning ring around the EasyFlow hub.
-  OWN-WORLD: app tokens on both halves. The panel is a quiet muted field
-  with the product's real integration marks on it — no stock scene, no
-  painted world, nothing that needs a veil to match the form side.
-  STORY: see what EasyFlow sits between, complete one focused form, get
-  back to orders.
-  FIRST VIEWPORT: logo top-left, heading + form left column at max-w-sm;
-  orbit centred right with one line of copy anchored at its foot.
-  MOTION: one authored moment (the ring turns, spokes pulse inward); still
-  under prefers-reduced-motion.
+  THESIS: a working merchant's front door. The form is the tool; the plum
+  stage beside it shows what the tool does — one order running itself from
+  store to courier, over and over.
+  LAYOUT: form column centred (logo, heading, form at max-w-[400px]); stage
+  column fills the rest with the gradient and the simulation. Below lg the
+  two stack, form first.
+  MOTION: the logo turns slowly; the stage loops. Both still under
+  prefers-reduced-motion.
 */
 export default function AuthSplitLayout({
     children,
@@ -26,55 +22,51 @@ export default function AuthSplitLayout({
 }: AuthLayoutProps) {
     const { t } = useTranslation();
 
-    const { name } = usePage<PageProps>().props;
-
     return (
-        <div className="grid min-h-svh lg:grid-cols-2">
-            <div className="relative flex flex-col px-6 py-8 sm:px-10">
-                <Link href={home()} className="self-center lg:self-start">
-                    <AppWordmark className="h-7" />
+        <div className="grid min-h-svh lg:grid-cols-[minmax(440px,46%)_1fr]">
+            <section className="flex flex-col items-center justify-center px-6 py-11 text-center sm:px-10 lg:px-[clamp(28px,6vw,96px)] lg:py-12">
+                <Link
+                    href={home()}
+                    className="mb-10 inline-flex items-center justify-center lg:mb-12"
+                >
+                    <AppLogoIcon className="size-[68px] motion-safe:animate-logo-spin" />
                 </Link>
 
-                <div className="flex flex-1 items-center justify-center py-10">
-                    <div className="w-full max-w-sm motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500">
-                        {(title || description) && (
-                            <div className="mb-8 space-y-1.5">
-                                <h1 className="text-2xl font-semibold tracking-tight text-balance">
-                                    {t(title)}
-                                </h1>
-                                {description && (
-                                    <p className="text-sm text-balance text-muted-foreground">
-                                        {t(description)}
-                                    </p>
-                                )}
-                            </div>
-                        )}
+                <div className="w-full max-w-[400px] motion-safe:animate-in motion-safe:duration-500 motion-safe:fade-in motion-safe:slide-in-from-bottom-2">
+                    {(title || description) && (
+                        <div className="mb-10 space-y-2.5">
+                            <h1 className="text-[clamp(1.7rem,2.6vw,2.15rem)] font-bold tracking-[-0.03em] text-balance">
+                                {t(title ?? '')}
+                            </h1>
+                            {description && (
+                                <p className="text-balance text-muted-foreground">
+                                    {t(description)}
+                                </p>
+                            )}
+                        </div>
+                    )}
 
-                        {children}
-                    </div>
+                    <div className="text-left">{children}</div>
                 </div>
-            </div>
+            </section>
 
-            <div className="relative hidden overflow-hidden bg-muted/40 lg:flex lg:flex-col lg:items-center lg:justify-center">
-                {/* Fine grid so the panel has a surface rather than a void;
-                    masked out toward the edges so it never competes with
-                    the ring. */}
-                <div
-                    aria-hidden
-                    className="absolute inset-0 [background-image:linear-gradient(to_right,var(--color-border)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-border)_1px,transparent_1px)] [background-size:48px_48px] opacity-40 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_72%)]"
-                />
+            <aside
+                aria-hidden
+                className="relative flex flex-col items-center justify-center overflow-hidden bg-[linear-gradient(160deg,#49183C_0%,#2A0C22_78%)] px-5 py-12 text-[#F6ECF2] lg:px-[clamp(24px,4vw,64px)] lg:py-14"
+            >
+                <div className="pointer-events-none absolute -top-40 -right-36 size-[560px] rounded-full bg-[radial-gradient(circle,rgba(74,114,232,.22),transparent_65%)]" />
 
-                <IntegrationsOrbit className="relative max-w-[32rem] px-10" />
-
-                <blockquote className="absolute inset-x-0 bottom-0 p-10">
-                    <p className="max-w-md text-lg font-medium text-balance text-foreground">
-                        {t('“Every order, every courier, and every store — in one place.”')}
+                <div className="relative mb-8 max-w-[460px] text-center lg:mb-10">
+                    <h2 className="mb-2.5 text-[clamp(1.45rem,2.2vw,1.9rem)] font-bold tracking-tight text-white">
+                        {t('Watch an order run itself.')}
+                    </h2>
+                    <p className="text-[#D9BFD0]">
+                        {t('Store in. Courier out. Zero manual updates.')}
                     </p>
-                    <footer className="mt-3 text-sm text-muted-foreground">
-                        {name} — built for cash-on-delivery commerce
-                    </footer>
-                </blockquote>
-            </div>
+                </div>
+
+                <OrderFlowStage />
+            </aside>
         </div>
     );
 }
