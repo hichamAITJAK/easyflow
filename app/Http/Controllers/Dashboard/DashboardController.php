@@ -26,14 +26,17 @@ class DashboardController extends Controller
 {
     private const PERIOD_DAYS = 30;
 
-    /** A product is listed as running low once its stock drops below this. */
-    private const LOW_STOCK_THRESHOLD = 10;
+    /** How many equal spans the KPI sparklines split the window into. */
+    private const KPI_SLICES = 8;
 
-    /** Most low-stock rows the dashboard lists; the rest are only counted. */
-    private const LOW_STOCK_LIMIT = 20;
+    /** Months of history the Income chart shows. */
+    private const INCOME_MONTHS = 8;
 
-    /** Stale-transit alert threshold (PRD 7.3's safety-net visibility). */
-    private const STALE_TRANSIT_DAYS = 5;
+    /** A product delivering under this share of its confirmed orders is flagged… */
+    private const LOW_DELIVERY_PCT = 50;
+
+    /** …once it has at least this many confirmed orders in the period. */
+    private const LOW_DELIVERY_MIN_CONFIRMED = 20;
 
     /**
      * Longest custom range the dashboard will honour. Every per-day widget
@@ -67,6 +70,11 @@ class DashboardController extends Controller
         return $this->agentDashboard($user, $request);
     }
 
+    /**
+     * The admin dashboard: one props payload built from the stats tables
+     * (never raw orders, except the few current-state snapshots noted
+     * on each method) for the selected stores / period / agent.
+     */
     private function adminDashboard(User $user, Request $request): Response
     {
         $businessId = $user->business_id;
@@ -82,10 +90,14 @@ class DashboardController extends Controller
         [$since, $until] = $this->resolvePeriod($period, $request);
         $windowDays = (int) $since->diffInDays($until) + 1;
 
-        // The Rates card carries its own per-card agent scope — agent is
-        // not a page-level filter because most business-wide widgets
-        // aren't agent-attributable facts.
-        $ratesAgentId = $request->integer('agent_id') ?: null;
+        // The agent filter only narrows the Performance track; the rest
+        // of the page keeps describing the whole business.
+        $agentId = $request->integer('agent_id') ?: null;
+        $agent = $agentId === null
+            ? null
+            : User::where('business_id', $businessId)
+                ->where('role', UserRole::CONFIRMATION_AGENT)
+                ->find($agentId, ['id', 'name']);
 
         $rows = $this->scopedRows($businessId, $storeIds, $since, $until)->get();
         $previousRows = $this->scopedRows(
@@ -97,45 +109,34 @@ class DashboardController extends Controller
 
         $agents = User::where('business_id', $businessId)
             ->where('role', UserRole::CONFIRMATION_AGENT)
-            ->get(['id', 'name', 'avatar']);
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
-        $stores = Store::where('business_id', $businessId)->get(['id', 'name']);
+        $stores = Store::where('business_id', $businessId)->orderBy('name')->get(['id', 'name']);
+
+        $breakdown = $this->breakdown($businessId, $since, $until);
+        $goals = $this->goals($businessId);
 
         return Inertia::render('dashboard/admin', [
             'filters' => [
                 'store_ids' => $storeIds !== [] ? implode(',', $storeIds) : null,
                 'period' => $period !== '30d' ? $period : null,
-                'agent_id' => $ratesAgentId ? (string) $ratesAgentId : null,
+                'agent_id' => $agent?->id !== null ? (string) $agent->id : null,
                 // Echoed from the resolved window, not the raw params, so
                 // a clamped or swapped range comes back as the dates
-                // actually charted — otherwise the picker would show a
-                // span the numbers below it don't cover.
+                // actually charted.
                 'date_from' => $period === 'custom' ? $since->toDateString() : null,
                 'date_to' => $period === 'custom' ? $until->toDateString() : null,
             ],
             'stores' => $stores,
             'agents' => $agents,
-            'money' => $this->moneyTiles($businessId, $rows, $previousRows),
-            'ordersPerDay' => $this->ordersPerDay($rows, $since, $windowDays),
-            'summary' => $this->orderSummary($rows),
-            'parcels' => $this->parcelStages($businessId, $storeIds, $since, $until),
-            'team' => $this->teamPerformance($businessId, $since, $until),
-            'targets' => $this->rateTargets($businessId),
-            'rates' => $this->rateBuckets(
-                $ratesAgentId === null
-                    ? $rows
-                    : $this->agentRows($businessId, $ratesAgentId, $since, $until)->get(),
-                $windowDays,
-            ),
-            // Only while the Rates card is narrowed to one agent: what that
-            // agent is measured against, so the card can show the gap to
-            // target instead of raw counts.
-            'agentTargets' => $ratesAgentId === null
-                ? null
-                : $this->agentRateTargets($businessId, $ratesAgentId),
-            'performanceTable' => $this->performanceTable($businessId, $since, $until),
-            'inventory' => $this->lowStock($businessId, $storeIds),
-            'alerts' => $this->alerts($businessId),
+            'alerts' => $this->attentionAlerts($businessId, $breakdown['products']),
+            'kpis' => $this->kpis($businessId, $storeIds, $rows, $previousRows, $since, $until),
+            'income' => $this->income($businessId, $storeIds),
+            'expected' => $this->expected($businessId),
+            'parcels' => $this->parcels($businessId, $storeIds, $since, $until),
+            'performance' => $this->performance($businessId, $agent, $rows, $since, $until, $windowDays, $goals),
+            'breakdown' => $breakdown,
         ]);
     }
 
@@ -164,10 +165,9 @@ class DashboardController extends Controller
     }
 
     /**
-     * Agent-scoped rows for the Rates card's per-card agent filter. Agent
-     * rows carry no store dimension, so an active store selection is
-     * intentionally ignored while an agent is picked — the agent is the
-     * narrower question.
+     * Agent-scoped rows. Agent rows carry no store dimension, so an
+     * active store selection is intentionally ignored while an agent is
+     * picked — the agent is the narrower question.
      *
      * @return Builder<DailyStatsSummary>
      */
@@ -180,6 +180,528 @@ class DashboardController extends Controller
             ->whereNull('delivery_account_id')
             ->whereBetween('stat_date', [$since, $until])
             ->orderBy('stat_date');
+    }
+
+    /**
+     * Needs-attention strip. Three rules, each a current-state check:
+     * orders sitting with an agent for over a day, a settlement that
+     * did not match, and products delivering under half of what they
+     * confirmed. Empty when nothing needs attention.
+     *
+     * @param  array<int, array<string, mixed>>  $products
+     * @return array<int, array<string, mixed>>
+     */
+    private function attentionAlerts(?int $businessId, array $products): array
+    {
+        $alerts = [];
+
+        $stale = $this->inProgressQuery($businessId)
+            ->where('created_at', '<', Carbon::now()->subDay())
+            ->count();
+
+        if ($stale > 0) {
+            $alerts[] = [
+                'severity' => 'warning',
+                'kind' => 'stale_in_progress',
+                'strong' => trans_choice(':count order|:count orders', $stale, ['count' => $stale]),
+                'text' => __('in progress for more than 24h'),
+                'action' => [
+                    'label' => __('Review'),
+                    'href' => route('orders.index', ['confirmation_status' => OrderConfirmationStatus::ASSIGNED->value]),
+                ],
+            ];
+        }
+
+        $settlement = CourierSettlement::where('business_id', $businessId)
+            ->where('status', '!=', 'pending')
+            ->with('deliveryAccount.courier:id,name')
+            ->latest('period_end')
+            ->first();
+
+        if ($settlement !== null && (float) $settlement->difference_amount != 0.0) {
+            $difference = (float) $settlement->difference_amount;
+
+            $alerts[] = [
+                'severity' => 'critical',
+                'kind' => 'settlement_difference',
+                'strong' => ($difference < 0 ? '−' : '+').number_format(abs($difference), 0, '.', ',').' MAD',
+                'text' => __('settlement difference with :courier', [
+                    'courier' => $settlement->deliveryAccount?->courier?->name ?? $settlement->deliveryAccount?->label ?? __('courier'),
+                ]),
+                'action' => ['label' => __('Settle'), 'href' => route('settlements.index')],
+            ];
+        }
+
+        $low = collect($products)->filter(fn (array $row) => $row['conf'] !== null
+            && $row['conf'][0] >= self::LOW_DELIVERY_MIN_CONFIRMED
+            && $row['deliv'][1] < self::LOW_DELIVERY_PCT);
+
+        if ($low->isNotEmpty()) {
+            $alerts[] = [
+                'severity' => 'critical',
+                'kind' => 'low_delivery_product',
+                'strong' => $low->count() === 1
+                    ? $low->first()['name']
+                    : trans_choice(':count product|:count products', $low->count(), ['count' => $low->count()]),
+                'text' => $low->count() === 1
+                    ? __('delivering at :rate% — below :threshold%', ['rate' => $low->first()['deliv'][1], 'threshold' => self::LOW_DELIVERY_PCT])
+                    : __('delivering below :threshold%', ['threshold' => self::LOW_DELIVERY_PCT]),
+                // The page handles this one: it jumps to the Products tab.
+                'action' => ['label' => __('Inspect'), 'href' => '#breakdown'],
+            ];
+        }
+
+        return $alerts;
+    }
+
+    /**
+     * Orders currently with an agent and without an outcome yet.
+     *
+     * @return Builder<Order>
+     */
+    private function inProgressQuery(?int $businessId): Builder
+    {
+        return Order::where('business_id', $businessId)
+            ->where('is_test', false)
+            ->whereIn('confirmation_status', [
+                OrderConfirmationStatus::NEW,
+                OrderConfirmationStatus::ASSIGNED,
+                OrderConfirmationStatus::CALLBACK,
+                OrderConfirmationStatus::VOICEMAIL,
+                OrderConfirmationStatus::NO_ANSWER,
+                OrderConfirmationStatus::BUSY,
+                OrderConfirmationStatus::WHATSAPP_SENT,
+            ]);
+    }
+
+    /**
+     * The funnel tiles. Received, confirmed, delivered and returned come
+     * from the period rows (with the previous window of the same length
+     * for the deltas); in-progress is a now snapshot of the orders table.
+     *
+     * @param  list<int>  $storeIds
+     * @param  Collection<int, DailyStatsSummary>  $rows
+     * @param  Collection<int, DailyStatsSummary>  $previousRows
+     * @return array<string, mixed>
+     */
+    private function kpis(?int $businessId, array $storeIds, Collection $rows, Collection $previousRows, Carbon $since, Carbon $until): array
+    {
+        $sum = fn (Collection $set, string $column): int => (int) $set->sum($column);
+
+        $received = $sum($rows, 'orders_count');
+        $confirmed = $sum($rows, 'confirmed_count');
+        $delivered = $sum($rows, 'delivered_count');
+        $returned = $sum($rows, 'returned_count');
+
+        $inProgress = $this->inProgressQuery($businessId)
+            ->when($storeIds !== [], fn ($query) => $query->whereIn('store_id', $storeIds));
+
+        $agentIds = (clone $inProgress)->whereNotNull('assigned_agent_id')->distinct()->pluck('assigned_agent_id');
+        $agentNames = User::whereIn('id', $agentIds)->orderBy('name')->pluck('name');
+
+        $inProgressCount = $inProgress->count();
+
+        return [
+            'received' => [
+                'value' => $received,
+                'deltaPct' => $this->percentDelta($received, $sum($previousRows, 'orders_count')),
+                'buckets' => $this->slices($rows, 'orders_count', $since, $until),
+            ],
+            'inProgress' => [
+                'value' => $inProgressCount,
+                'sharePct' => $received > 0 ? round($inProgressCount / $received * 100, 1) : 0,
+                // No yesterday snapshot is stored, so no delta is claimed.
+                'deltaPct' => null,
+                'agentInitials' => $agentNames->map(fn (string $name) => $this->initials($name))->values()->all(),
+                'agentCount' => $agentNames->count(),
+            ],
+            'confirmed' => [
+                'value' => $confirmed,
+                'ratePct' => $this->pct($confirmed, $received),
+                'deltaPct' => $this->percentDelta($confirmed, $sum($previousRows, 'confirmed_count')),
+                'of' => $received,
+            ],
+            'delivered' => [
+                'value' => $delivered,
+                'ratePct' => $this->pct($delivered, $confirmed),
+                'deltaPct' => $this->percentDelta($delivered, $sum($previousRows, 'delivered_count')),
+                'trend' => $this->slices($rows, 'delivered_count', $since, $until),
+            ],
+            'returned' => [
+                'value' => $returned,
+                'ratePct' => $this->pct($returned, $confirmed),
+                'deltaPct' => $this->percentDelta($returned, $sum($previousRows, 'returned_count')),
+                'buckets' => $this->slices($rows, 'returned_count', $since, $until),
+            ],
+        ];
+    }
+
+    /**
+     * The window split into KPI_SLICES equal spans, each summing one
+     * column; a one-day window yields one slice.
+     *
+     * @param  Collection<int, DailyStatsSummary>  $rows
+     * @return array<int, array{label: string, value: int}>
+     */
+    private function slices(Collection $rows, string $column, Carbon $since, Carbon $until): array
+    {
+        $days = (int) $since->diffInDays($until) + 1;
+        $count = min(self::KPI_SLICES, $days);
+        $byDate = $rows->groupBy(fn (DailyStatsSummary $row) => $row->stat_date->toDateString());
+
+        return collect(range(0, $count - 1))->map(function (int $index) use ($since, $days, $count, $byDate, $column) {
+            $start = $since->copy()->addDays((int) floor($index * $days / $count));
+            $end = $since->copy()->addDays((int) floor(($index + 1) * $days / $count) - 1);
+
+            $value = 0;
+            for ($day = $start->copy(); $day->lessThanOrEqualTo($end); $day->addDay()) {
+                $value += (int) ($byDate->get($day->toDateString())?->sum($column) ?? 0);
+            }
+
+            return [
+                'label' => $start->equalTo($end)
+                    ? $start->format('M j')
+                    : $start->format('M j').' – '.$end->format('M j'),
+                'value' => $value,
+            ];
+        })->all();
+    }
+
+    /**
+     * Money brought in by delivered orders, month by month for the last
+     * INCOME_MONTHS months. Follows the store filter, not the period —
+     * the chart is its own longer view.
+     *
+     * @param  list<int>  $storeIds
+     * @return array{months: array<int, array{label: string, amountMad: float, ordersSettled: int}>}
+     */
+    private function income(?int $businessId, array $storeIds): array
+    {
+        $start = Carbon::today()->subMonthsNoOverflow(self::INCOME_MONTHS - 1)->startOfMonth();
+
+        $byMonth = $this->scopedRows($businessId, $storeIds, $start, Carbon::today())
+            ->get()
+            ->groupBy(fn (DailyStatsSummary $row) => $row->stat_date->format('Y-m'));
+
+        $months = collect(range(0, self::INCOME_MONTHS - 1))->map(function (int $offset) use ($start, $byMonth) {
+            $month = $start->copy()->addMonthsNoOverflow($offset);
+            $rows = $byMonth->get($month->format('Y-m'));
+
+            return [
+                'label' => $month->format('M'),
+                'amountMad' => round((float) ($rows?->sum('revenue_delivered') ?? 0), 2),
+                'ordersSettled' => (int) ($rows?->sum('delivered_count') ?? 0),
+            ];
+        })->all();
+
+        return ['months' => $months];
+    }
+
+    /**
+     * Courier cash not yet in hand, owned by courier_settlements (UC-15):
+     * what pending settlements say couriers still owe, the delivered
+     * parcels no closed settlement covers, and how the last closed one
+     * squared.
+     *
+     * @return array<string, mixed>
+     */
+    private function expected(?int $businessId): array
+    {
+        $toReceive = (float) CourierSettlement::where('business_id', $businessId)
+            ->where('status', 'pending')
+            ->sum('expected_amount');
+
+        $deliveredUnpaid = Order::where('business_id', $businessId)
+            ->where('is_test', false)
+            ->where('delivery_status', OrderDeliveryStatus::DELIVERED)
+            ->whereNotExists(fn ($query) => $query->selectRaw('1')
+                ->from('courier_settlements')
+                ->whereColumn('courier_settlements.delivery_account_id', 'orders.delivery_account_id')
+                ->where('courier_settlements.status', '!=', 'pending')
+                ->whereNull('courier_settlements.deleted_at')
+                ->whereColumn('courier_settlements.period_start', '<=', 'orders.shipped_at')
+                ->whereColumn('courier_settlements.period_end', '>=', 'orders.shipped_at'))
+            ->count();
+
+        $last = CourierSettlement::where('business_id', $businessId)
+            ->where('status', '!=', 'pending')
+            ->latest('period_end')
+            ->first();
+
+        $difference = $last === null ? 0.0 : (float) $last->difference_amount;
+
+        return [
+            'toReceiveMad' => round($toReceive, 2),
+            'deliveredUnpaid' => $deliveredUnpaid,
+            'lastSettlement' => $last === null
+                ? null
+                : [
+                    'status' => $difference == 0.0 ? 'matched' : 'difference',
+                    'differenceMad' => round($difference, 2),
+                ],
+        ];
+    }
+
+    /**
+     * The shipment pipeline: the period's parcels by current stage, each
+     * with its share of the total.
+     *
+     * @param  list<int>  $storeIds
+     * @return array{total: int, stages: array<int, array{key: string, label: string, count: int, ratePct: float}>}
+     */
+    private function parcels(?int $businessId, array $storeIds, Carbon $since, Carbon $until): array
+    {
+        $stages = $this->parcelStages($businessId, $storeIds, $since, $until);
+        $total = array_sum($stages);
+
+        $labels = [
+            'ready' => ['ready_to_ship', __('Ready to ship')],
+            'shipped' => ['shipped', __('Shipped')],
+            'delivered' => ['delivered', __('Delivered')],
+            'returned' => ['returned', __('Returned')],
+        ];
+
+        return [
+            'total' => $total,
+            'stages' => collect($stages)->map(fn (int $count, string $stage) => [
+                'key' => $labels[$stage][0],
+                'label' => $labels[$stage][1],
+                'count' => $count,
+                'ratePct' => $this->pct($count, $total),
+            ])->values()->all(),
+        ];
+    }
+
+    /**
+     * The Performance track: a per-day series, the outcome figures and
+     * the goal panel, for one agent or the whole team.
+     *
+     * @param  Collection<int, DailyStatsSummary>  $rows
+     * @param  array{conf: float, deliv: float}  $goals
+     * @return array<string, mixed>
+     */
+    private function performance(?int $businessId, ?User $agent, Collection $rows, Carbon $since, Carbon $until, int $windowDays, array $goals): array
+    {
+        $teamRows = DailyStatsSummary::where('business_id', $businessId)
+            ->whereNotNull('agent_id')
+            ->whereNull('store_id')
+            ->whereNull('product_id')
+            ->whereNull('delivery_account_id')
+            ->whereBetween('stat_date', [$since, $until])
+            ->get();
+
+        $scoped = $agent === null ? $rows : $teamRows->where('agent_id', $agent->id);
+
+        $orders = (int) $scoped->sum('orders_count');
+        $confirmed = (int) $scoped->sum('confirmed_count');
+        $delivered = (int) $scoped->sum('delivered_count');
+        $returned = (int) $scoped->sum('returned_count');
+        $commissions = (float) $scoped->sum('commission_total');
+
+        $agentCount = $teamRows->pluck('agent_id')->unique()->count();
+
+        $confPct = $this->pct($confirmed, $orders);
+        $delivPct = $this->pct($delivered, $confirmed);
+
+        $agentNames = User::where('business_id', $businessId)
+            ->whereIn('id', $teamRows->pluck('agent_id')->unique())
+            ->pluck('name', 'id');
+
+        $agentViews = $teamRows->groupBy('agent_id')
+            ->map(function (Collection $agentRows, int $agentId) use ($agentNames, $goals) {
+                $name = $agentNames->get($agentId);
+
+                if ($name === null) {
+                    return null;
+                }
+
+                $conf = $this->pct((int) $agentRows->sum('confirmed_count'), (int) $agentRows->sum('orders_count'));
+                $deliv = $this->pct((int) $agentRows->sum('delivered_count'), (int) $agentRows->sum('confirmed_count'));
+                $attainment = $this->attainment($conf, $deliv, $goals);
+
+                return [
+                    'id' => $agentId,
+                    'name' => $name,
+                    'attainmentPct' => $attainment,
+                    'status' => $this->attainmentStatus($attainment),
+                    'confPct' => $conf,
+                    'delivPct' => $deliv,
+                ];
+            })
+            ->filter()
+            ->sortByDesc('attainmentPct')
+            ->values();
+
+        $attainment = $this->attainment($confPct, $delivPct, $goals);
+
+        $view = $agent === null
+            ? [
+                'type' => 'team',
+                'attainmentPct' => $attainment,
+                'status' => $this->attainmentStatus($attainment),
+                'confPct' => $confPct,
+                'delivPct' => $delivPct,
+                'agents' => $agentViews->map(fn (array $row) => collect($row)->except('id')->all())->all(),
+            ]
+            : [
+                'type' => 'agent',
+                'name' => $agent->name,
+                'ordersHandled' => $orders,
+                'attainmentPct' => $attainment,
+                'status' => $this->attainmentStatus($attainment),
+                'confPct' => $confPct,
+                'delivPct' => $delivPct,
+                'commissionsMad' => round($commissions, 2),
+            ];
+
+        return [
+            'rangeLabel' => $since->format('M j').' – '.$until->format('M j'),
+            'daily' => $this->ordersPerDay($scoped, $since, $windowDays),
+            'ordersLabel' => $agent === null
+                ? __('orders received')
+                : __('orders handled by :name', ['name' => $agent->name]),
+            'outcomes' => [
+                'conf' => [$confirmed, $confPct],
+                'deliv' => [$delivered, $delivPct],
+                'ret' => [$returned, $this->pct($returned, $confirmed)],
+                'commissionsMad' => round($commissions, 2),
+                'commissionsSub' => $agent === null
+                    ? trans_choice('MAD · :count agent|MAD · :count agents', $agentCount, ['count' => $agentCount])
+                    : 'MAD',
+            ],
+            'goals' => $goals,
+            'view' => $view,
+        ];
+    }
+
+    /**
+     * One point per day of the window.
+     *
+     * @param  Collection<int, DailyStatsSummary>  $rows
+     * @return array<int, array{label: string, value: int}>
+     */
+    private function ordersPerDay(Collection $rows, Carbon $since, int $days): array
+    {
+        $byDate = $rows->groupBy(fn (DailyStatsSummary $row) => $row->stat_date->toDateString());
+
+        return collect(range(0, $days - 1))->map(function (int $offset) use ($since, $byDate) {
+            $date = $since->copy()->addDays($offset);
+
+            return [
+                'label' => $date->format('M j'),
+                'value' => (int) ($byDate->get($date->toDateString())?->sum('orders_count') ?? 0),
+            ];
+        })->all();
+    }
+
+    /**
+     * Business-wide rate goals: the configured defaults, which are what
+     * the agent form labels "Default (…)".
+     *
+     * @return array{conf: float, deliv: float}
+     */
+    private function goals(?int $businessId): array
+    {
+        $targets = PerformanceTarget::where('business_id', $businessId)
+            ->whereNull('user_id')
+            ->where('is_active', true)
+            ->get()
+            ->keyBy(fn (PerformanceTarget $target) => $target->metric->value);
+
+        return [
+            'conf' => (float) ($targets->get(PerformanceMetric::CONFIRMATION_RATE->value)?->target_percentage
+                ?? config('performance.defaults.confirmation_rate')),
+            'deliv' => (float) ($targets->get(PerformanceMetric::DELIVERY_SUCCESS_RATE->value)?->target_percentage
+                ?? config('performance.defaults.delivery_success_rate')),
+        ];
+    }
+
+    /**
+     * Goal attainment: the mean of each rate over its goal, as a whole
+     * percentage (can exceed 100).
+     *
+     * @param  array{conf: float, deliv: float}  $goals
+     */
+    private function attainment(float $confPct, float $delivPct, array $goals): int
+    {
+        $parts = [];
+
+        if ($goals['conf'] > 0) {
+            $parts[] = $confPct / $goals['conf'];
+        }
+
+        if ($goals['deliv'] > 0) {
+            $parts[] = $delivPct / $goals['deliv'];
+        }
+
+        return $parts === [] ? 0 : (int) round(array_sum($parts) / count($parts) * 100);
+    }
+
+    private function attainmentStatus(int $attainment): string
+    {
+        return match (true) {
+            $attainment >= 105 => 'Excellent',
+            $attainment >= 90 => 'Good',
+            $attainment >= 75 => 'Average',
+            default => 'Low',
+        };
+    }
+
+    /**
+     * Breakdown tabs: each store / product / courier as
+     * {name, img, orders, conf, deliv, ret} with [count, ratePct] pairs.
+     * conf is null for couriers, who only ever see confirmed orders.
+     *
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    private function breakdown(?int $businessId, Carbon $since, Carbon $until): array
+    {
+        $table = $this->performanceTable($businessId, $since, $until);
+
+        $map = fn (array $row): array => [
+            'name' => $row['name'],
+            'img' => $row['image'],
+            'orders' => $row['orders'],
+            'conf' => $row['confirmationRate'] === null
+                ? null
+                : [$row['confirmed'], $this->pct($row['confirmed'], $row['orders'])],
+            'deliv' => [$row['delivered'], $this->pct($row['delivered'], $row['confirmed'])],
+            'ret' => [$row['returned'], $this->pct($row['returned'], $row['confirmed'])],
+        ];
+
+        return [
+            'stores' => array_map($map, $table['stores']),
+            'products' => array_map($map, $table['products']),
+            'couriers' => array_map(fn (array $row) => [
+                ...$map($row),
+                // Couriers: every parcel they carried counts as confirmed.
+                'deliv' => [$row['delivered'], $this->pct($row['delivered'], $row['orders'])],
+                'ret' => [$row['returned'], $this->pct($row['returned'], $row['orders'])],
+            ], $table['couriers']),
+        ];
+    }
+
+    /** Whole-ish percentage with one decimal; 0 when the base is empty. */
+    private function pct(int $count, int $base): float
+    {
+        return $base > 0 ? round($count / $base * 100, 1) : 0.0;
+    }
+
+    private function percentDelta(float $current, float $previous): ?float
+    {
+        if ($previous == 0.0) {
+            return null;
+        }
+
+        return round((($current - $previous) / $previous) * 100, 1);
+    }
+
+    private function initials(string $name): string
+    {
+        $parts = preg_split('/\s+/', trim($name)) ?: [];
+        $initials = implode('', array_map(fn (string $part) => mb_substr($part, 0, 1), array_slice($parts, 0, 2)));
+
+        return mb_strtoupper($initials);
     }
 
     /**
@@ -273,41 +795,6 @@ class DashboardController extends Controller
     }
 
     /**
-     * @param  Collection<int, DailyStatsSummary>  $rows
-     * @param  Collection<int, DailyStatsSummary>  $previousRows
-     * @return array<string, mixed>
-     */
-    private function moneyTiles(?int $businessId, Collection $rows, Collection $previousRows): array
-    {
-        $earned = (float) $rows->sum('revenue_delivered');
-        $previousEarned = (float) $previousRows->sum('revenue_delivered');
-
-        $commissions = (float) $rows->sum('commission_total');
-        $previousCommissions = (float) $previousRows->sum('commission_total');
-
-        // Courier money is owned by courier_settlements (UC-15), not the
-        // stats table: expected = what pending settlements say couriers
-        // still owe; variance = how the latest closed settlement squared.
-        $expected = (float) CourierSettlement::where('business_id', $businessId)
-            ->where('status', 'pending')
-            ->sum('expected_amount');
-
-        $variance = CourierSettlement::where('business_id', $businessId)
-            ->whereNotNull('difference_amount')
-            ->latest('period_end')
-            ->value('difference_amount');
-
-        return [
-            'totalEarned' => round($earned, 2),
-            'totalEarnedDelta' => $this->percentDelta($earned, $previousEarned),
-            'commissions' => round($commissions, 2),
-            'commissionsDelta' => $this->percentDelta($commissions, $previousCommissions),
-            'courierExpected' => round($expected, 2),
-            'courierVariance' => $variance !== null ? (float) $variance : null,
-        ];
-    }
-
-    /**
      * Where the period's parcels are right now, folded into the four
      * stages an owner thinks in. Counts orders placed inside the window
      * by their current delivery status, so the four numbers describe the
@@ -364,290 +851,6 @@ class DashboardController extends Controller
     }
 
     /**
-     * The period at a glance: how many orders came in, and how many of
-     * them were confirmed, delivered and returned.
-     *
-     * Always the page-level rows, never the Rates card's agent scope, so
-     * these tiles keep describing the whole business while that card is
-     * narrowed to one agent. Each rate uses the same base as the Rates
-     * card — confirmed over orders, delivered over shipped, returned over
-     * delivered — and is null when its base is zero.
-     *
-     * @param  Collection<int, DailyStatsSummary>  $rows
-     * @return array{orders: int, confirmed: int, delivered: int, returned: int, confirmedRate: int|null, deliveredRate: int|null, returnedRate: int|null}
-     */
-    private function orderSummary(Collection $rows): array
-    {
-        $orders = (int) $rows->sum('orders_count');
-        $confirmed = (int) $rows->sum('confirmed_count');
-        $submitted = (int) $rows->sum('submitted_to_courier_count');
-        $delivered = (int) $rows->sum('delivered_count');
-        $returned = (int) $rows->sum('returned_count');
-
-        $rate = fn (int $count, int $base): ?int => $base > 0
-            ? (int) round(($count / $base) * 100)
-            : null;
-
-        return [
-            'orders' => $orders,
-            'confirmed' => $confirmed,
-            'delivered' => $delivered,
-            'returned' => $returned,
-            'confirmedRate' => $rate($confirmed, $orders),
-            'deliveredRate' => $rate($delivered, $submitted),
-            'returnedRate' => $rate($returned, $delivered),
-        ];
-    }
-
-    /**
-     * Products running low, lowest stock first. A current-state snapshot,
-     * so it ignores the period filter; it does follow the store filter.
-     *
-     * A product's stock is the total of its variants when it has any,
-     * otherwise its own quantity — the same rule the products page uses.
-     * Products whose stock is not tracked (no quantity anywhere) are left
-     * out: unknown is not low. Inactive and test products are left out
-     * too, since nobody is selling them.
-     *
-     * @param  list<int>  $storeIds
-     * @return array{threshold: int, products: array<int, array{id: int, name: string, sku: string|null, image: string|null, stock: int}>, total: int}
-     */
-    private function lowStock(?int $businessId, array $storeIds): array
-    {
-        $stock = 'COALESCE((select sum(product_variants.inventory_quantity) from product_variants'
-            .' where product_variants.product_id = products.id and product_variants.deleted_at is null),'
-            .' products.inventory_quantity)';
-
-        $query = Product::where('business_id', $businessId)
-            ->where('is_active', true)
-            ->where('is_test', false)
-            ->when($storeIds !== [], fn ($query) => $query->whereIn('store_id', $storeIds))
-            ->whereRaw("{$stock} < ?", [self::LOW_STOCK_THRESHOLD]);
-
-        $total = (clone $query)->count();
-
-        $products = $query
-            ->select(['id', 'name', 'sku', 'thumbnail'])
-            ->selectRaw("{$stock} as stock")
-            ->orderByRaw("{$stock} asc")
-            ->orderBy('name')
-            ->limit(self::LOW_STOCK_LIMIT)
-            ->get()
-            ->map(fn (Product $product) => [
-                'id' => $product->id,
-                'name' => $product->name,
-                'sku' => $product->sku,
-                'image' => $product->thumbnail,
-                'stock' => (int) $product->getAttribute('stock'),
-            ])
-            ->all();
-
-        return [
-            'threshold' => self::LOW_STOCK_THRESHOLD,
-            'products' => $products,
-            'total' => $total,
-        ];
-    }
-
-    /**
-     * The confirmation and delivery targets one agent is judged against:
-     * their own row when they have one, else the configured default —
-     * the same value the agent form labels "Default (…)".
-     *
-     * @return array{confirmation: float, delivery: float}|null Null when
-     *                                                          the id is not one of this business's agents.
-     */
-    private function agentRateTargets(?int $businessId, int $agentId): ?array
-    {
-        $agent = User::where('business_id', $businessId)->find($agentId);
-
-        if ($agent === null) {
-            return null;
-        }
-
-        $target = fn (PerformanceMetric $metric, string $default): float => (float) (
-            $this->agentTarget($businessId, $agent, $metric)?->target_percentage
-            ?? config("performance.defaults.{$default}")
-        );
-
-        return [
-            'confirmation' => $target(PerformanceMetric::CONFIRMATION_RATE, 'confirmation_rate'),
-            'delivery' => $target(PerformanceMetric::DELIVERY_SUCCESS_RATE, 'delivery_success_rate'),
-        ];
-    }
-
-    private function percentDelta(float $current, float $previous): ?float
-    {
-        if ($previous == 0.0) {
-            return null;
-        }
-
-        return round((($current - $previous) / $previous) * 100, 1);
-    }
-
-    /**
-     * @param  Collection<int, DailyStatsSummary>  $rows
-     * @return array<int, array{date: string, count: int}>
-     */
-    private function ordersPerDay(Collection $rows, Carbon $since, int $days): array
-    {
-        $byDate = $rows->groupBy(fn (DailyStatsSummary $row) => $row->stat_date->toDateString());
-
-        return collect(range(0, $days - 1))->map(function (int $offset) use ($since, $byDate) {
-            $date = $since->copy()->addDays($offset)->toDateString();
-
-            return [
-                'date' => $date,
-                'count' => (int) ($byDate->get($date)?->sum('orders_count') ?? 0),
-            ];
-        })->all();
-    }
-
-    /**
-     * Per-agent rates for the team radial. Agent rows carry no store
-     * dimension, so this card reads business-wide agent activity
-     * regardless of the store filter.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private function teamPerformance(?int $businessId, Carbon $since, Carbon $until): array
-    {
-        $byAgent = DailyStatsSummary::where('business_id', $businessId)
-            ->whereNotNull('agent_id')
-            ->whereNull('store_id')
-            ->whereNull('product_id')
-            ->whereNull('delivery_account_id')
-            ->whereBetween('stat_date', [$since, $until])
-            ->get()
-            ->groupBy('agent_id');
-
-        $agents = User::where('business_id', $businessId)
-            ->whereIn('id', $byAgent->keys())
-            ->get(['id', 'name', 'avatar'])
-            ->keyBy('id');
-
-        return $byAgent->map(function (Collection $agentRows, int $agentId) use ($agents) {
-            $agent = $agents->get($agentId);
-
-            if ($agent === null) {
-                return null;
-            }
-
-            $orders = (int) $agentRows->sum('orders_count');
-            $confirmed = (int) $agentRows->sum('confirmed_count');
-            $submitted = (int) $agentRows->sum('submitted_to_courier_count');
-            $delivered = (int) $agentRows->sum('delivered_count');
-
-            return [
-                'id' => (string) $agent->id,
-                'name' => $agent->name,
-                'avatar' => $agent->avatar,
-                'confirmationRate' => $orders > 0 ? round(($confirmed / $orders) * 100, 1) : 0,
-                'deliveryRate' => $submitted > 0 ? round(($delivered / $submitted) * 100, 1) : 0,
-                'orders' => $orders,
-            ];
-        })->filter()->values()->all();
-    }
-
-    /**
-     * Business-wide rate targets (performance_targets with user_id null),
-     * falling back to sensible defaults when none are configured.
-     *
-     * @return array{confirmation: float, delivery: float}
-     */
-    private function rateTargets(?int $businessId): array
-    {
-        $targets = PerformanceTarget::where('business_id', $businessId)
-            ->whereNull('user_id')
-            ->where('is_active', true)
-            ->get()
-            ->keyBy(fn (PerformanceTarget $target) => $target->metric->value);
-
-        $confirmation = $targets->get(PerformanceMetric::CONFIRMATION_RATE->value);
-        $delivery = $targets->get(PerformanceMetric::DELIVERY_SUCCESS_RATE->value);
-
-        // Fallback covers businesses created before target seeding existed;
-        // a seeded business always has the business-wide rows. Reading the
-        // same config the seeder writes keeps the gauge and the agent
-        // form's "Default (…)" labels from drifting apart.
-        return [
-            'confirmation' => $confirmation instanceof PerformanceTarget
-                ? (float) $confirmation->target_percentage
-                : (float) config('performance.defaults.confirmation_rate'),
-            'delivery' => $delivery instanceof PerformanceTarget
-                ? (float) $delivery->target_percentage
-                : (float) config('performance.defaults.delivery_success_rate'),
-        ];
-    }
-
-    /**
-     * Time-bucketed rates for the Rates card: daily buckets for short
-     * windows, weekly beyond — per-day rates on a 30/90-day COD window
-     * are mostly noise.
-     *
-     * Also returns the window totals shown as headline numbers above the
-     * lines. These are computed from the summed counts, never by
-     * averaging the per-bucket rates: a mean of buckets weights a 3-order
-     * day the same as a 300-order day, so it would disagree with the
-     * business's real rate — and with the same figure elsewhere on the
-     * page. Null when nothing happened in the window (no denominator),
-     * which reads as "—" rather than a misleading 0%.
-     *
-     * @param  Collection<int, DailyStatsSummary>  $rows
-     * @return array{buckets: array<string, array<int, array{week: string, rate: float|null, count: int, total: int}>>, totals: array{confirmation: float|null, delivery: float|null, return: float|null}, counts: array<string, array{count: int, total: int}>}
-     */
-    private function rateBuckets(Collection $rows, int $windowDays): array
-    {
-        $grouped = $rows->groupBy(fn (DailyStatsSummary $row) => $windowDays <= 14
-            ? $row->stat_date->toDateString()
-            : $row->stat_date->copy()->startOfWeek()->toDateString());
-
-        $confirmation = [];
-        $delivery = [];
-        $return = [];
-
-        foreach ($grouped->sortKeys() as $bucketStart => $bucketRows) {
-            $label = Carbon::parse($bucketStart)->format('M j');
-
-            $orders = (int) $bucketRows->sum('orders_count');
-            $confirmed = (int) $bucketRows->sum('confirmed_count');
-            $submitted = (int) $bucketRows->sum('submitted_to_courier_count');
-            $delivered = (int) $bucketRows->sum('delivered_count');
-            $returned = (int) $bucketRows->sum('returned_count');
-
-            // count / total ride along with each rate so the chart can
-            // show the real numbers, not just a percentage.
-            $confirmation[] = ['week' => $label, 'rate' => $orders > 0 ? round(($confirmed / $orders) * 100, 1) : null, 'count' => $confirmed, 'total' => $orders];
-            $delivery[] = ['week' => $label, 'rate' => $submitted > 0 ? round(($delivered / $submitted) * 100, 1) : null, 'count' => $delivered, 'total' => $submitted];
-            $return[] = ['week' => $label, 'rate' => $delivered > 0 ? round(($returned / $delivered) * 100, 1) : null, 'count' => $returned, 'total' => $delivered];
-        }
-
-        $totalOrders = (int) $rows->sum('orders_count');
-        $totalConfirmed = (int) $rows->sum('confirmed_count');
-        $totalSubmitted = (int) $rows->sum('submitted_to_courier_count');
-        $totalDelivered = (int) $rows->sum('delivered_count');
-        $totalReturned = (int) $rows->sum('returned_count');
-
-        return [
-            'buckets' => [
-                'confirmation' => $confirmation,
-                'delivery' => $delivery,
-                'return' => $return,
-            ],
-            'totals' => [
-                'confirmation' => $totalOrders > 0 ? round(($totalConfirmed / $totalOrders) * 100, 1) : null,
-                'delivery' => $totalSubmitted > 0 ? round(($totalDelivered / $totalSubmitted) * 100, 1) : null,
-                'return' => $totalDelivered > 0 ? round(($totalReturned / $totalDelivered) * 100, 1) : null,
-            ],
-            'counts' => [
-                'confirmation' => ['count' => $totalConfirmed, 'total' => $totalOrders],
-                'delivery' => ['count' => $totalDelivered, 'total' => $totalSubmitted],
-                'return' => ['count' => $totalReturned, 'total' => $totalDelivered],
-            ],
-        ];
-    }
-
-    /**
      * Ranked store / product / courier rows. These read their own
      * dimension rows (store-, product-, courier-scoped), which carry no
      * second store dimension — so the page's store filter doesn't apply
@@ -668,6 +871,7 @@ class DashboardController extends Controller
             $confirmed = (int) $rows->sum('confirmed_count');
             $submitted = (int) $rows->sum('submitted_to_courier_count');
             $delivered = (int) $rows->sum('delivered_count');
+            $returned = (int) $rows->sum('returned_count');
 
             return [
                 'orders' => $orders,
@@ -678,6 +882,7 @@ class DashboardController extends Controller
                 'confirmed' => $confirmed,
                 'submitted' => $submitted,
                 'delivered' => $delivered,
+                'returned' => $returned,
             ];
         };
 
@@ -764,38 +969,6 @@ class DashboardController extends Controller
             'products' => $products->all(),
             'couriers' => $couriers->all(),
         ];
-    }
-
-    /**
-     * Operational alerts — current-state counts, not stats. Each carries
-     * enough for the page to render an act-now button.
-     *
-     * @return array<int, array<string, int|string>>
-     */
-    private function alerts(?int $businessId): array
-    {
-        $alerts = [];
-
-        $unassigned = Order::where('business_id', $businessId)
-            ->where('is_test', false)
-            ->where('confirmation_status', OrderConfirmationStatus::NEW)
-            ->whereNull('assigned_agent_id')
-            ->count();
-
-        if ($unassigned > 0) {
-            $alerts[] = ['id' => 'unassigned', 'count' => $unassigned];
-        }
-
-        $staleTransit = Order::where('business_id', $businessId)
-            ->where('is_delivery_active', true)
-            ->where('updated_at', '<', Carbon::now()->subDays(self::STALE_TRANSIT_DAYS))
-            ->count();
-
-        if ($staleTransit > 0) {
-            $alerts[] = ['id' => 'stale-transit', 'count' => $staleTransit];
-        }
-
-        return $alerts;
     }
 
     private function agentDashboard(User $user, Request $request): Response

@@ -1,58 +1,177 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+/* ============================================================
+   EASY FLOW — admin dashboard (Inertia + React + shadcn/ui)
+   Mirrors the approved reference (easyflow-dashboard-preview.html),
+   fed by DashboardController::adminDashboard(). Every figure comes
+   from the props; nothing here is hard-coded data.
+============================================================ */
+import { Head, router, usePage } from '@inertiajs/react';
 import {
-    CircleAlert,
-    CircleCheck,
-    HandCoins,
-    Info,
-    PackageCheck,
-    RotateCcw,
-    ShoppingCart,
+    Box,
+    CheckCircle2,
+    ChevronsUpDown,
+    CircleDollarSign,
+    Clock,
+    MessageCircle,
+    Package,
+    Store,
+    TrendingDown,
     TriangleAlert,
-    Truck,
     Wallet,
-    X,
 } from 'lucide-react';
-import { useState } from 'react';
-import { AgentFilter } from '@/components/dashboard/agent-filter';
+import type { MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { DashboardFilters } from '@/components/dashboard/dashboard-filters';
 import type {
     DashboardFilterValues,
     SimpleOption,
 } from '@/components/dashboard/dashboard-filters';
-import { InventoryCard } from '@/components/dashboard/inventory-card';
-import type { Inventory } from '@/components/dashboard/inventory-card';
-import { OrdersPerDayCard } from '@/components/dashboard/orders-per-day-card';
-import type { OrdersPerDayPoint } from '@/components/dashboard/orders-per-day-card';
-import { ParcelsCard } from '@/components/dashboard/parcels-card';
-import type { ParcelStages } from '@/components/dashboard/parcels-card';
-import { PerformanceTable } from '@/components/dashboard/performance-table';
-import type { PerformanceRow } from '@/components/dashboard/performance-table';
-import { StatTile } from '@/components/dashboard/stat-tile';
-import { WeeklyRateLine } from '@/components/dashboard/weekly-rate-line';
-import type { WeeklyRatePoint } from '@/components/dashboard/weekly-rate-line';
-import {
-    Alert,
-    AlertAction,
-    AlertDescription,
-    AlertTitle,
-} from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { useTableFilters } from '@/hooks/use-table-filters';
 import { useTranslation } from '@/hooks/use-translation';
-import { formatCompactNumber, formatNumber } from '@/lib/format';
 import type { Translator } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
-import { index as ordersIndex } from '@/routes/orders';
-import { index as parcelsIndex } from '@/routes/parcels';
+import { index as settlementsIndex } from '@/routes/settlements';
 import type { PageProps } from '@/types';
+
+/* ════════════════════════ API CONTRACT ════════════════════════ */
+export type Pair = [count: number, ratePct: number];
+export interface Bucket {
+    label: string;
+    value: number;
+}
+
+export interface AlertItem {
+    severity: 'warning' | 'critical';
+    kind:
+        'stale_in_progress' | 'settlement_difference' | 'low_delivery_product';
+    strong: string;
+    text: string;
+    action: { label: string; href: string };
+}
+
+export interface KpiBlock {
+    received: { value: number; deltaPct: number | null; buckets: Bucket[] };
+    inProgress: {
+        value: number;
+        sharePct: number;
+        deltaPct: number | null;
+        agentInitials: string[];
+        agentCount: number;
+    };
+    confirmed: {
+        value: number;
+        ratePct: number;
+        deltaPct: number | null;
+        of: number;
+    };
+    delivered: {
+        value: number;
+        ratePct: number;
+        deltaPct: number | null;
+        trend: Bucket[];
+    };
+    returned: {
+        value: number;
+        ratePct: number;
+        deltaPct: number | null;
+        buckets: Bucket[];
+    };
+}
+
+type Status = 'Excellent' | 'Good' | 'Average' | 'Low';
+
+export interface PerfAgentRow {
+    name: string;
+    attainmentPct: number;
+    status: Status;
+    confPct: number;
+    delivPct: number;
+}
+export type PerfView =
+    | {
+          type: 'team';
+          attainmentPct: number;
+          status: Status;
+          confPct: number;
+          delivPct: number;
+          agents: PerfAgentRow[];
+      }
+    | {
+          type: 'agent';
+          name: string;
+          ordersHandled: number;
+          attainmentPct: number;
+          status: Status;
+          confPct: number;
+          delivPct: number;
+          commissionsMad: number;
+      };
+
+export interface BreakdownRow {
+    name: string;
+    img?: string | null;
+    orders: number;
+    conf: Pair | null;
+    deliv: Pair;
+    ret: Pair;
+}
+
+export interface DashboardProps {
+    filters: DashboardFilterValues;
+    stores: SimpleOption[];
+    agents: SimpleOption[];
+    alerts: AlertItem[];
+    kpis: KpiBlock;
+    income: {
+        months: { label: string; amountMad: number; ordersSettled: number }[];
+    };
+    expected: {
+        toReceiveMad: number;
+        deliveredUnpaid: number;
+        lastSettlement: {
+            status: 'matched' | 'difference';
+            differenceMad: number;
+        } | null;
+    };
+    parcels: {
+        total: number;
+        stages: {
+            key: string;
+            label: string;
+            count: number;
+            ratePct: number;
+        }[];
+    };
+    performance: {
+        rangeLabel: string;
+        daily: Bucket[];
+        ordersLabel: string;
+        outcomes: {
+            conf: Pair;
+            deliv: Pair;
+            ret: Pair;
+            commissionsMad: number;
+            commissionsSub: string;
+        };
+        goals: { conf: number; deliv: number };
+        view: PerfView;
+    };
+    breakdown: {
+        stores: BreakdownRow[];
+        products: BreakdownRow[];
+        couriers: BreakdownRow[];
+    };
+}
 
 const FILTER_KEYS: (keyof DashboardFilterValues)[] = [
     'store_ids',
@@ -62,93 +181,184 @@ const FILTER_KEYS: (keyof DashboardFilterValues)[] = [
     'agent_id',
 ];
 
-type Props = {
-    filters: DashboardFilterValues;
-    stores: SimpleOption[];
-    agents: SimpleOption[];
-    money: {
-        totalEarned: number;
-        totalEarnedDelta: number | null;
-        commissions: number;
-        commissionsDelta: number | null;
-        courierExpected: number;
-        courierVariance: number | null;
-    };
-    ordersPerDay: OrdersPerDayPoint[];
-    parcels: ParcelStages;
-    inventory: Inventory;
-    summary: {
-        orders: number;
-        confirmed: number;
-        delivered: number;
-        returned: number;
-        /** Whole percentages; null when the base is zero. */
-        confirmedRate: number | null;
-        deliveredRate: number | null;
-        returnedRate: number | null;
-    };
-    targets: { confirmation: number; delivery: number };
-    rates: {
-        buckets: {
-            confirmation: WeeklyRatePoint[];
-            delivery: WeeklyRatePoint[];
-            return: WeeklyRatePoint[];
-        };
-        totals: {
-            confirmation: number | null;
-            delivery: number | null;
-            return: number | null;
-        };
-        counts: Record<
-            'confirmation' | 'delivery' | 'return',
-            { count: number; total: number }
-        >;
-    };
-    /** Set only while the Rates card is filtered to one agent. */
-    agentTargets: { confirmation: number; delivery: number } | null;
-    performanceTable: {
-        stores: PerformanceRow[];
-        products: PerformanceRow[];
-        couriers: PerformanceRow[];
-    };
-    alerts: { id: string; count: number }[];
+/* ════════════════════════ DESIGN TOKENS ════════════════════════ */
+// Semantic colours per the handoff — never repainted.
+const C = {
+    blue: '#4A72E8',
+    purple: '#A4539A',
+    green: '#209D72',
+    greenText: '#157A57',
+    amber: '#DA8E16',
+    amberText: '#A96A05',
+    red: '#D92D20',
+    redText: '#B3281D',
+    gray: '#A1A1AA',
+};
+const statusColor: Record<Status, string> = {
+    Excellent: C.green,
+    Good: C.blue,
+    Average: C.amber,
+    Low: C.red,
+};
+const badgeCls: Record<string, string> = {
+    [C.green]: 'bg-[#209D72]/10 text-[#157A57]',
+    [C.blue]: 'bg-[#4A72E8]/10 text-[#3558B8]',
+    [C.amber]: 'bg-[#DA8E16]/12 text-[#A96A05]',
+    [C.red]: 'bg-[#D92D20]/10 text-[#B3281D]',
 };
 
-function money(value: number): string {
-    return formatCompactNumber(value) + ' MAD';
-}
+const n = (value: number) => value.toLocaleString();
+const money = (value: number) => Math.round(value).toLocaleString();
 
-/**
- * How far a rate sits from its target, e.g. "+4 vs 80% target". Green at
- * or above, red below; "—" when there is no rate to compare.
- */
-function TargetGap({ rate, target }: { rate: number | null; target: number }) {
-    const { t } = useTranslation();
-
-    if (rate === null) {
-        return (
-            <dd className="text-xs text-muted-foreground tabular-nums">
-                {t('— vs :target% target', { target: Math.round(target) })}
-            </dd>
-        );
+/* ════════════════════════ SMALL PIECES ════════════════════════ */
+function DeltaBadge({
+    pct,
+    goodWhenDown = false,
+}: {
+    pct: number | null;
+    goodWhenDown?: boolean;
+}) {
+    // No previous window to compare against: no claim.
+    if (pct === null) {
+        return null;
     }
 
-    const gap = Math.round(rate - target);
+    const down = pct < 0;
+    const good = goodWhenDown ? down : !down;
 
     return (
-        <dd
+        <span
             className={cn(
-                'text-xs font-medium tabular-nums',
-                gap >= 0 ? 'text-success' : 'text-destructive',
+                'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold',
+                good
+                    ? 'bg-[#209D72]/10 text-[#157A57]'
+                    : 'bg-[#D92D20]/10 text-[#B3281D]',
             )}
         >
-            {t(':gap vs :target% target', {
-                gap: `${gap > 0 ? '+' : ''}${gap}`,
-                target: Math.round(target),
-            })}
-        </dd>
+            {down ? '▼' : '▲'} {Math.abs(pct)}%
+        </span>
     );
 }
+
+/** Cursor-following chart tooltip (shared). */
+function useChartTip() {
+    const [tip, setTip] = useState<{
+        v: string;
+        d: string;
+        x: number;
+        y: number;
+    } | null>(null);
+    const move = (e: MouseEvent, v: string, d: string) =>
+        setTip({ v, d, x: e.clientX, y: e.clientY });
+    const node = tip && (
+        <div
+            className="pointer-events-none fixed z-[100] rounded-md bg-foreground px-2.5 py-1.5 text-xs text-background shadow-md"
+            style={{ left: tip.x + 12, top: tip.y - 44 }}
+        >
+            <div className="font-semibold tabular-nums">{tip.v}</div>
+            <div className="mt-0.5 opacity-70">{tip.d}</div>
+        </div>
+    );
+
+    return { move, hide: () => setTip(null), node };
+}
+
+function Ring({
+    pct,
+    color,
+    size,
+    stroke,
+}: {
+    pct: number;
+    color: string;
+    size: number;
+    stroke: number;
+}) {
+    const r = (size - stroke) / 2 - 1;
+    const circ = 2 * Math.PI * r;
+
+    return (
+        <svg
+            viewBox={`0 0 ${size} ${size}`}
+            className="-rotate-90"
+            width={size}
+            height={size}
+        >
+            <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={r}
+                fill="none"
+                stroke="var(--border)"
+                strokeWidth={stroke}
+            />
+            <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={r}
+                fill="none"
+                stroke={color}
+                strokeWidth={stroke}
+                strokeLinecap="round"
+                strokeDasharray={`${(Math.min(pct, 100) / 100) * circ} ${circ}`}
+            />
+        </svg>
+    );
+}
+
+function PillBars({
+    buckets,
+    color,
+    unit,
+    onTip,
+    hideTip,
+}: {
+    buckets: Bucket[];
+    color: string;
+    unit: string;
+    onTip: (e: MouseEvent, v: string, d: string) => void;
+    hideTip: () => void;
+}) {
+    const max = Math.max(...buckets.map((b) => b.value), 1);
+
+    return (
+        <div className="mt-auto flex h-12 items-end gap-1.5 pt-4">
+            {buckets.map((b, i) => (
+                <span
+                    key={i}
+                    className="relative h-full w-2 cursor-default overflow-hidden rounded-full bg-muted transition-opacity hover:opacity-80"
+                    onMouseMove={(e) =>
+                        onTip(e, `${n(b.value)} ${unit}`, b.label)
+                    }
+                    onMouseLeave={hideTip}
+                >
+                    <i
+                        className="absolute bottom-0 w-full rounded-full"
+                        style={{
+                            height: `${(b.value / max) * 100}%`,
+                            background: color,
+                        }}
+                    />
+                </span>
+            ))}
+        </div>
+    );
+}
+
+function StatusBadge({ status, t }: { status: Status; t: Translator }) {
+    return (
+        <span
+            className={cn(
+                'rounded-full px-2.5 py-1 text-xs font-semibold',
+                badgeCls[statusColor[status]],
+            )}
+        >
+            {t(status)}
+        </span>
+    );
+}
+
+/* ════════════════════════ SECTIONS ════════════════════════ */
 
 function greeting(t: Translator): string {
     const hour = new Date().getHours();
@@ -164,104 +374,1379 @@ function greeting(t: Translator): string {
     return t('Good evening');
 }
 
-/**
- * Alert content templates keyed by the server's alert id — the server
- * sends facts (id + count), the page owns copy and routing.
- */
-const ALERT_TEMPLATES: Record<
-    string,
-    {
-        variant: 'warning' | 'info';
-        title: (count: number, t: Translator) => string;
-        description: string;
-        actionLabel: string;
-        href: () => string;
-        dismissible: boolean;
+function AlertsStrip({ alerts }: { alerts: AlertItem[] }) {
+    if (!alerts.length) {
+        return null;
     }
-> = {
-    unassigned: {
-        variant: 'warning',
-        title: (count, t) =>
-            count === 1
-                ? t(':count order unassigned', { count })
-                : t(':count orders unassigned', { count }),
-        description:
-            'No eligible agent covers these orders — assign them manually before they go stale.',
-        actionLabel: 'Assign now',
-        href: () => ordersIndex({ query: { confirmation_status: 'new' } }).url,
-        dismissible: false,
-    },
-    'stale-transit': {
-        variant: 'info',
-        title: (count, t) =>
-            count === 1
-                ? t(':count parcel stuck in transit', { count })
-                : t(':count parcels stuck in transit', { count }),
-        description:
-            'No courier status change in 5 days. Worth a call to the courier.',
-        actionLabel: 'View parcels',
-        href: () => parcelsIndex().url,
-        dismissible: true,
-    },
-};
 
-const ALERT_ICONS = {
-    warning: TriangleAlert,
-    destructive: CircleAlert,
-    info: Info,
-} as const;
+    const icon = (a: AlertItem) =>
+        a.kind === 'stale_in_progress' ? (
+            <Clock className="size-4 shrink-0" style={{ color: C.amberText }} />
+        ) : a.kind === 'settlement_difference' ? (
+            <TriangleAlert
+                className="size-4 shrink-0"
+                style={{ color: C.redText }}
+            />
+        ) : (
+            <TrendingDown
+                className="size-4 shrink-0"
+                style={{ color: C.redText }}
+            />
+        );
 
-export default function AdminDashboard({
-    filters,
-    stores,
-    agents,
-    money: moneyProps,
-    ordersPerDay,
+    const onAction = (a: AlertItem) => {
+        if (a.kind === 'low_delivery_product') {
+            // In-page jump: Products tab, worst delivery first.
+            window.dispatchEvent(new CustomEvent('ef:inspect-products'));
+        } else {
+            router.visit(a.action.href);
+        }
+    };
+
+    return (
+        <section className="grid gap-3 lg:grid-cols-3" data-slot="alerts">
+            {alerts.map((a, i) => (
+                <div
+                    key={i}
+                    className={cn(
+                        'flex items-center gap-3 rounded-lg border px-4 py-3',
+                        a.severity === 'warning'
+                            ? 'border-[#DA8E16]/30 bg-[#DA8E16]/8'
+                            : 'border-[#D92D20]/30 bg-[#D92D20]/8',
+                    )}
+                >
+                    {icon(a)}
+                    <p className="min-w-0 flex-1 truncate text-sm">
+                        <b className="font-semibold">{a.strong}</b>{' '}
+                        <span className="text-muted-foreground">{a.text}</span>
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => onAction(a)}
+                        className={cn(
+                            'shrink-0 text-sm font-semibold hover:underline',
+                            a.severity === 'warning'
+                                ? 'text-[#A96A05]'
+                                : 'text-[#B3281D]',
+                        )}
+                    >
+                        {a.action.label}
+                    </button>
+                </div>
+            ))}
+        </section>
+    );
+}
+
+function KpiRow({ kpis }: { kpis: KpiBlock }) {
+    const { t } = useTranslation();
+    const { move, hide, node } = useChartTip();
+
+    const trend = kpis.delivered.trend;
+    const maxTrend = Math.max(...trend.map((b) => b.value), 1);
+    const px = (i: number) =>
+        trend.length > 1 ? 2 + (i * 112) / (trend.length - 1) : 58;
+    const py = (v: number) => 30 - (v / maxTrend) * 24;
+    const linePts = trend.map((b, i) => `${px(i)},${py(b.value)}`).join(' ');
+    const last = trend.at(-1);
+
+    return (
+        <section
+            className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"
+            data-slot="stats.kpis"
+        >
+            {node}
+            {/* 1 · Orders received */}
+            <Card className="p-5">
+                <CardContent className="flex h-full flex-col p-0">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <span
+                                className="size-2 rounded-full"
+                                style={{ background: C.blue }}
+                            />
+                            <span className="text-sm font-medium text-muted-foreground">
+                                {t('Orders received')}
+                            </span>
+                        </div>
+                        <DeltaBadge pct={kpis.received.deltaPct} />
+                    </div>
+                    <div className="mt-3 text-[26px] leading-none font-semibold tabular-nums">
+                        {n(kpis.received.value)}
+                    </div>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                        {t('leads in selected period')}
+                    </p>
+                    <PillBars
+                        buckets={kpis.received.buckets}
+                        color={C.blue}
+                        unit={t('orders')}
+                        onTip={move}
+                        hideTip={hide}
+                    />
+                </CardContent>
+            </Card>
+
+            {/* 2 · In progress */}
+            <Card className="p-5">
+                <CardContent className="flex h-full flex-col p-0">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <span
+                                className="size-2 rounded-full"
+                                style={{ background: C.amber }}
+                            />
+                            <span className="text-sm font-medium text-muted-foreground">
+                                {t('In progress')}
+                            </span>
+                        </div>
+                        <DeltaBadge
+                            pct={kpis.inProgress.deltaPct}
+                            goodWhenDown
+                        />
+                    </div>
+                    <div className="mt-3 flex items-baseline gap-2">
+                        <div className="text-[26px] leading-none font-semibold tabular-nums">
+                            {n(kpis.inProgress.value)}
+                        </div>
+                        <span
+                            className="text-sm font-semibold tabular-nums"
+                            style={{ color: C.amberText }}
+                        >
+                            {kpis.inProgress.sharePct}%
+                        </span>
+                    </div>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                        {t('assigned to agents · no status yet')}
+                    </p>
+                    <div className="mt-auto flex items-center gap-2.5 pt-4">
+                        <div className="flex -space-x-2">
+                            {kpis.inProgress.agentInitials
+                                .slice(0, 4)
+                                .map((ini, i) => (
+                                    <span
+                                        key={`${ini}-${i}`}
+                                        className="flex size-7 items-center justify-center rounded-full bg-[#DA8E16]/15 text-[10px] font-semibold text-[#A96A05] ring-2 ring-card"
+                                    >
+                                        {ini}
+                                    </span>
+                                ))}
+                            {kpis.inProgress.agentCount > 4 && (
+                                <span className="flex size-7 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground ring-2 ring-card">
+                                    +{kpis.inProgress.agentCount - 4}
+                                </span>
+                            )}
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                            {t(':count agents on it', {
+                                count: kpis.inProgress.agentCount,
+                            })}
+                        </span>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* 3 · Confirmed */}
+            <Card className="p-5">
+                <CardContent className="flex h-full flex-col p-0">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <span
+                                className="size-2 rounded-full"
+                                style={{ background: C.purple }}
+                            />
+                            <span className="text-sm font-medium text-muted-foreground">
+                                {t('Confirmed')}
+                            </span>
+                        </div>
+                        <DeltaBadge pct={kpis.confirmed.deltaPct} />
+                    </div>
+                    <div className="mt-auto flex items-end justify-between gap-3 pt-3">
+                        <div>
+                            <div className="text-[26px] leading-none font-semibold tabular-nums">
+                                {n(kpis.confirmed.value)}
+                            </div>
+                            <p className="mt-1.5 text-xs text-muted-foreground">
+                                {t('of :count orders', {
+                                    count: n(kpis.confirmed.of),
+                                })}
+                            </p>
+                        </div>
+                        <div className="relative size-16 shrink-0">
+                            <Ring
+                                pct={kpis.confirmed.ratePct}
+                                color={C.purple}
+                                size={64}
+                                stroke={7}
+                            />
+                            <span className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold tabular-nums">
+                                {kpis.confirmed.ratePct}%
+                            </span>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* 4 · Delivered */}
+            <Card className="p-5">
+                <CardContent className="flex h-full flex-col p-0">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <span
+                                className="size-2 rounded-full"
+                                style={{ background: C.green }}
+                            />
+                            <span className="text-sm font-medium text-muted-foreground">
+                                {t('Delivered')}
+                            </span>
+                        </div>
+                        <DeltaBadge pct={kpis.delivered.deltaPct} />
+                    </div>
+                    <div className="mt-3 flex items-baseline gap-2">
+                        <div className="text-[26px] leading-none font-semibold tabular-nums">
+                            {n(kpis.delivered.value)}
+                        </div>
+                        <span
+                            className="text-sm font-semibold tabular-nums"
+                            style={{ color: C.greenText }}
+                        >
+                            {kpis.delivered.ratePct}%
+                        </span>
+                    </div>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                        {t('of confirmed')}
+                    </p>
+                    <div className="mt-auto h-12 pt-4">
+                        <svg
+                            viewBox="0 0 120 32"
+                            className="h-8 w-full overflow-visible"
+                        >
+                            <polyline
+                                points={linePts}
+                                fill="none"
+                                stroke={C.green}
+                                strokeWidth={2}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                            {last && (
+                                <circle
+                                    cx={px(trend.length - 1)}
+                                    cy={py(last.value)}
+                                    r={3}
+                                    fill={C.green}
+                                    stroke="var(--card)"
+                                    strokeWidth={2}
+                                />
+                            )}
+                            {trend.map((b, i) => (
+                                <circle
+                                    key={i}
+                                    cx={px(i)}
+                                    cy={py(b.value)}
+                                    r={9}
+                                    fill="transparent"
+                                    className="cursor-default"
+                                    onMouseMove={(e) =>
+                                        move(
+                                            e,
+                                            `${n(b.value)} ${t('delivered')}`,
+                                            b.label,
+                                        )
+                                    }
+                                    onMouseLeave={hide}
+                                />
+                            ))}
+                        </svg>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* 5 · Returned */}
+            <Card className="p-5">
+                <CardContent className="flex h-full flex-col p-0">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <span
+                                className="size-2 rounded-full"
+                                style={{ background: C.red }}
+                            />
+                            <span className="text-sm font-medium text-muted-foreground">
+                                {t('Returned')}
+                            </span>
+                        </div>
+                        <DeltaBadge pct={kpis.returned.deltaPct} goodWhenDown />
+                    </div>
+                    <div className="mt-3 flex items-baseline gap-2">
+                        <div className="text-[26px] leading-none font-semibold tabular-nums">
+                            {n(kpis.returned.value)}
+                        </div>
+                        <span
+                            className="text-sm font-semibold tabular-nums"
+                            style={{ color: C.redText }}
+                        >
+                            {kpis.returned.ratePct}%
+                        </span>
+                    </div>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                        {t('of confirmed')}
+                    </p>
+                    <PillBars
+                        buckets={kpis.returned.buckets}
+                        color={C.red}
+                        unit={t('returns')}
+                        onTip={move}
+                        hideTip={hide}
+                    />
+                </CardContent>
+            </Card>
+        </section>
+    );
+}
+
+/** A "nice" axis ceiling (1 / 2 / 5 × 10ⁿ) at or above the max. */
+function niceCeiling(max: number): number {
+    if (max <= 0) {
+        return 1000;
+    }
+
+    const magnitude = 10 ** Math.floor(Math.log10(max));
+    const scaled = max / magnitude;
+    const step = scaled <= 1 ? 1 : scaled <= 2 ? 2 : scaled <= 5 ? 5 : 10;
+
+    return step * magnitude;
+}
+
+function FinanceRow({
+    income,
+    expected,
     parcels,
-    inventory,
-    summary,
-    targets,
-    rates,
-    agentTargets,
-    performanceTable,
-    alerts,
-}: Props) {
+}: Pick<DashboardProps, 'income' | 'expected' | 'parcels'>) {
+    const { t } = useTranslation();
+    const { move, hide, node } = useChartTip();
+
+    /* income area chart geometry; y-scale follows the data */
+    const X0 = 46;
+    const X1 = 586;
+    const Y1 = 224;
+    const Y0 = 16;
+    const months = income.months;
+    const top = niceCeiling(Math.max(...months.map((m) => m.amountMad), 0));
+    const X = (i: number) =>
+        months.length > 1
+            ? X0 + (i * (X1 - X0)) / (months.length - 1)
+            : (X0 + X1) / 2;
+    const Y = (v: number) => Y1 - (v / top) * (Y1 - Y0);
+    const pts = months.map((m, i) => [X(i), Y(m.amountMad)] as const);
+    const line = pts.map((p) => p.join(',')).join(' ');
+    const first = pts[0];
+    const lastPt = pts.at(-1);
+    const area =
+        first && lastPt
+            ? `M${first[0]},${Y1} ` +
+              pts.map((p) => `L${p[0]},${p[1]}`).join(' ') +
+              ` L${lastPt[0]},${Y1} Z`
+            : '';
+    const ticks = [0.25, 0.5, 0.75, 1].map((f) => f * top);
+    const tickLabel = (v: number) =>
+        v >= 1000 ? `${Math.round(v / 1000)}K` : String(Math.round(v));
+    const settled = expected.lastSettlement;
+    const hasIncome = months.some((m) => m.amountMad > 0);
+
+    return (
+        <section
+            className="grid gap-4 lg:grid-cols-3"
+            data-slot="finance.overview"
+        >
+            {node}
+            <Card className="grid overflow-hidden p-0 lg:col-span-2 lg:grid-cols-[1.2fr_1fr]">
+                {/* INCOME */}
+                <div className="p-6" data-slot="finance.income">
+                    <h2 className="text-lg font-semibold tracking-tight">
+                        {t('Income')}
+                    </h2>
+                    <p className="mt-0.5 text-sm text-muted-foreground">
+                        {t('Collected from delivered orders')}
+                    </p>
+                    <div className="mt-6">
+                        {hasIncome ? (
+                            <svg
+                                viewBox="0 0 600 258"
+                                className="h-64 w-full overflow-visible"
+                            >
+                                <defs>
+                                    <linearGradient
+                                        id="incomeGrad"
+                                        x1="0"
+                                        y1="0"
+                                        x2="0"
+                                        y2="1"
+                                    >
+                                        <stop
+                                            offset="0%"
+                                            stopColor={C.green}
+                                            stopOpacity={0.28}
+                                        />
+                                        <stop
+                                            offset="100%"
+                                            stopColor={C.green}
+                                            stopOpacity={0}
+                                        />
+                                    </linearGradient>
+                                </defs>
+                                {ticks.map((g) => (
+                                    <g key={g}>
+                                        <line
+                                            x1={X0}
+                                            y1={Y(g)}
+                                            x2={X1}
+                                            y2={Y(g)}
+                                            stroke="var(--border)"
+                                            strokeWidth={1.5}
+                                            strokeDasharray="1.5 6"
+                                            strokeLinecap="round"
+                                        />
+                                        <text
+                                            x={X0 - 10}
+                                            y={Y(g) + 4}
+                                            textAnchor="end"
+                                            fontSize={11}
+                                            fill="var(--muted-foreground)"
+                                        >
+                                            {tickLabel(g)}
+                                        </text>
+                                    </g>
+                                ))}
+                                <path d={area} fill="url(#incomeGrad)" />
+                                <polyline
+                                    points={line}
+                                    fill="none"
+                                    stroke={C.green}
+                                    strokeWidth={2.5}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                                {lastPt && (
+                                    <circle
+                                        cx={lastPt[0]}
+                                        cy={lastPt[1]}
+                                        r={4}
+                                        fill={C.green}
+                                        stroke="var(--card)"
+                                        strokeWidth={2}
+                                    />
+                                )}
+                                {months.map((m, i) => (
+                                    <g key={`${m.label}-${i}`}>
+                                        <text
+                                            x={X(i)}
+                                            y={250}
+                                            textAnchor="middle"
+                                            fontSize={11}
+                                            fill="var(--muted-foreground)"
+                                        >
+                                            {t(m.label)}
+                                        </text>
+                                        <circle
+                                            cx={X(i)}
+                                            cy={Y(m.amountMad)}
+                                            r={13}
+                                            fill="transparent"
+                                            className="cursor-default"
+                                            onMouseMove={(e) =>
+                                                move(
+                                                    e,
+                                                    `${money(m.amountMad)} MAD`,
+                                                    `${t(m.label)} · ${t(':count orders delivered', { count: n(m.ordersSettled) })}`,
+                                                )
+                                            }
+                                            onMouseLeave={hide}
+                                        />
+                                    </g>
+                                ))}
+                            </svg>
+                        ) : (
+                            <EmptyState title={t('No income to show')} />
+                        )}
+                    </div>
+                </div>
+                {/* EXPECTED */}
+                <div
+                    className="flex flex-col border-t border-border p-6 lg:border-t-0 lg:border-l"
+                    data-slot="finance.expected"
+                >
+                    <h2 className="text-lg font-semibold tracking-tight">
+                        {t('Expected')}
+                    </h2>
+                    <p className="mt-0.5 text-sm text-muted-foreground">
+                        {t('Cash with your couriers · not settled yet')}
+                    </p>
+                    <div className="my-auto grid grid-cols-2 py-8">
+                        <div className="flex flex-col items-center gap-3 text-center">
+                            <span className="flex size-12 items-center justify-center rounded-xl bg-[#DA8E16]/12">
+                                <CircleDollarSign
+                                    className="size-5"
+                                    style={{ color: C.amberText }}
+                                />
+                            </span>
+                            <div>
+                                <p className="text-sm text-muted-foreground">
+                                    {t('To receive')}
+                                </p>
+                                <p className="mt-1 text-2xl font-semibold tabular-nums">
+                                    {money(expected.toReceiveMad)}{' '}
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                        MAD
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-center gap-3 border-l border-border text-center">
+                            <span className="flex size-12 items-center justify-center rounded-xl bg-[#209D72]/12">
+                                <Wallet
+                                    className="size-5"
+                                    style={{ color: C.greenText }}
+                                />
+                            </span>
+                            <div>
+                                <p className="text-sm text-muted-foreground">
+                                    {t('Delivered, unpaid')}
+                                </p>
+                                <p className="mt-1 text-2xl font-semibold tabular-nums">
+                                    {n(expected.deliveredUnpaid)}{' '}
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                        {t('orders')}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="mt-auto flex items-center justify-between gap-4 border-t border-border pt-5">
+                        <div>
+                            <p className="text-sm text-muted-foreground">
+                                {t('Last settlement')}
+                            </p>
+                            {settled === null ? (
+                                <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
+                                    {t('None yet')}
+                                </p>
+                            ) : settled.status === 'matched' ? (
+                                <p
+                                    className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-semibold"
+                                    style={{ color: C.greenText }}
+                                >
+                                    <CheckCircle2 className="size-4" />
+                                    {t('All good · matched')}
+                                </p>
+                            ) : (
+                                <p
+                                    className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-semibold"
+                                    style={{ color: C.redText }}
+                                >
+                                    <TriangleAlert className="size-4" />
+                                    {t(':amount MAD difference', {
+                                        amount: money(settled.differenceMad),
+                                    })}
+                                </p>
+                            )}
+                        </div>
+                        <Button asChild>
+                            <a href={settlementsIndex().url}>
+                                {t('View settlements')}
+                            </a>
+                        </Button>
+                    </div>
+                </div>
+            </Card>
+
+            {/* PARCELS */}
+            <Card className="p-6">
+                <CardContent
+                    className="flex h-full flex-col p-0"
+                    data-slot="parcels.pipeline"
+                >
+                    <div className="flex items-center gap-3">
+                        <span className="flex size-10 items-center justify-center rounded-lg bg-secondary">
+                            <Package className="size-[18px] text-primary" />
+                        </span>
+                        <div>
+                            <h2 className="text-lg font-semibold tracking-tight">
+                                {t('Parcels')}
+                            </h2>
+                            <p className="text-sm text-muted-foreground">
+                                {t('Shipment pipeline')}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="mt-4 border-t border-border pt-4">
+                        <span className="text-2xl font-semibold tabular-nums">
+                            {n(parcels.total)}
+                        </span>
+                        <span className="ml-1.5 text-sm text-muted-foreground">
+                            {t('parcels this period')}
+                        </span>
+                    </div>
+                    <div className="mt-5 flex flex-1 flex-col justify-between gap-5">
+                        {parcels.stages.map((s) => {
+                            const col =
+                                {
+                                    ready_to_ship: C.amber,
+                                    shipped: C.blue,
+                                    delivered: C.green,
+                                    returned: C.red,
+                                }[s.key] ?? C.gray;
+
+                            return (
+                                <div key={s.key} data-slot={`parcels.${s.key}`}>
+                                    <div className="flex items-baseline justify-between gap-2">
+                                        <span className="text-sm font-medium">
+                                            {s.label}
+                                        </span>
+                                        <span className="text-sm font-semibold tabular-nums">
+                                            {n(s.count)}{' '}
+                                            <span className="ml-1 font-normal text-muted-foreground">
+                                                {s.ratePct}%
+                                            </span>
+                                        </span>
+                                    </div>
+                                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+                                        <div
+                                            className="h-full rounded-full"
+                                            style={{
+                                                width: `${s.ratePct}%`,
+                                                background: col,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </CardContent>
+            </Card>
+        </section>
+    );
+}
+
+function GoalBar({
+    label,
+    actual,
+    goal,
+}: {
+    label: string;
+    actual: number;
+    goal: number;
+}) {
+    const { t } = useTranslation();
+    const col = actual >= goal ? C.green : actual >= goal - 8 ? C.amber : C.red;
+
+    return (
+        <div>
+            <div className="flex items-baseline justify-between gap-2">
+                <span className="text-sm font-medium">{label}</span>
+                <span className="text-sm tabular-nums">
+                    <b className="font-semibold" style={{ color: col }}>
+                        {actual}%
+                    </b>{' '}
+                    <span className="text-muted-foreground">
+                        / {goal} {t('goal')}
+                    </span>
+                </span>
+            </div>
+            <div className="relative mt-2 h-2 rounded-full bg-muted">
+                <div
+                    className="h-full rounded-full"
+                    style={{
+                        width: `${Math.min(actual, 100)}%`,
+                        background: col,
+                    }}
+                />
+                <span
+                    className="absolute top-1/2 h-3.5 w-0.5 -translate-y-1/2 rounded bg-foreground/60"
+                    style={{ left: `${Math.min(goal, 100)}%` }}
+                    title={t('goal')}
+                />
+            </div>
+        </div>
+    );
+}
+
+function PerformanceSection({
+    performance,
+    agents,
+    agentId,
+    onAgentChange,
+}: {
+    performance: DashboardProps['performance'];
+    agents: SimpleOption[];
+    agentId: string | undefined;
+    onAgentChange: (agentId: string | undefined) => void;
+}) {
+    const { t } = useTranslation();
+    const { move, hide, node } = useChartTip();
+    const daily = performance.daily;
+    const max = Math.max(...daily.map((b) => b.value), 1);
+    const total = daily.reduce((s, b) => s + b.value, 0);
+    const v = performance.view;
+    const ALL = '__all__';
+
+    const axisLabels =
+        daily.length === 0
+            ? []
+            : [0, 1, 2, 3].map(
+                  (i) =>
+                      daily[
+                          Math.min(
+                              Math.round((i * (daily.length - 1)) / 3),
+                              daily.length - 1,
+                          )
+                      ].label,
+              );
+
+    const outcomes = performance.outcomes;
+    const blob = (value: number, min: number, maxH: number, scale: number) =>
+        Math.max(min, Math.min(maxH, Math.round(value * scale)));
+    const outcomeCols: {
+        label: string;
+        big: string;
+        col: string;
+        bh: number;
+        sub: string;
+        arr: string;
+    }[] = [
+        {
+            label: t('Confirmed'),
+            big: `${outcomes.conf[1]}%`,
+            col: C.purple,
+            bh: blob(outcomes.conf[1], 20, 80, 0.85),
+            sub: n(outcomes.conf[0]),
+            arr: '↗',
+        },
+        {
+            label: t('Delivered'),
+            big: `${outcomes.deliv[1]}%`,
+            col: C.green,
+            bh: blob(outcomes.deliv[1], 20, 80, 0.85),
+            sub: n(outcomes.deliv[0]),
+            arr: '↗',
+        },
+        {
+            label: t('Returned'),
+            big: `${outcomes.ret[1]}%`,
+            col: C.red,
+            bh: blob(outcomes.ret[1], 12, 80, 2.2),
+            sub: n(outcomes.ret[0]),
+            arr: '↘',
+        },
+        {
+            label: t('Commissions'),
+            big: money(outcomes.commissionsMad),
+            col: C.amber,
+            bh: 38,
+            sub: outcomes.commissionsSub,
+            arr: '↗',
+        },
+    ];
+
+    return (
+        <section data-slot="perf.section">
+            {node}
+            <Card className="p-6">
+                <CardContent className="p-0">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                        <div>
+                            <h2 className="text-lg font-semibold tracking-tight">
+                                {t('Performance track')}
+                            </h2>
+                            <p className="mt-0.5 text-sm text-muted-foreground">
+                                {t('Orders, outcomes & goals')} ·{' '}
+                                {performance.rangeLabel}
+                            </p>
+                        </div>
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="dashboard-agent-filter">
+                                {t('Agent')}
+                            </Label>
+                            <Select
+                                value={agentId ?? ALL}
+                                onValueChange={(value) =>
+                                    onAgentChange(
+                                        value === ALL ? undefined : value,
+                                    )
+                                }
+                            >
+                                <SelectTrigger
+                                    id="dashboard-agent-filter"
+                                    className="w-44 bg-card"
+                                >
+                                    <SelectValue />
+                                    <ChevronsUpDown className="size-4 opacity-50" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value={ALL}>
+                                        {t('All agents')}
+                                    </SelectItem>
+                                    {agents.map((a) => (
+                                        <SelectItem
+                                            key={a.id}
+                                            value={String(a.id)}
+                                        >
+                                            {a.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 grid gap-6 lg:grid-cols-3">
+                        {/* chart + outcomes */}
+                        <div className="lg:col-span-2">
+                            <div className="flex items-baseline justify-between">
+                                <p className="text-sm text-muted-foreground">
+                                    <span className="text-base font-semibold text-foreground tabular-nums">
+                                        {n(total)}
+                                    </span>{' '}
+                                    {performance.ordersLabel}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                    {t('peak')}{' '}
+                                    <span className="font-semibold text-foreground tabular-nums">
+                                        {n(max)}
+                                    </span>
+                                    /{t('day')}
+                                </p>
+                            </div>
+                            <div className="mt-4 flex h-52 items-end gap-[3px]">
+                                {daily.map((b, i) => (
+                                    <span
+                                        key={i}
+                                        className="relative flex-1 cursor-default self-stretch"
+                                        onMouseMove={(e) =>
+                                            move(
+                                                e,
+                                                `${n(b.value)} ${t('orders')}`,
+                                                b.label,
+                                            )
+                                        }
+                                        onMouseLeave={hide}
+                                    >
+                                        <i
+                                            className="absolute bottom-0 w-full rounded-t-[4px] transition-opacity hover:opacity-75"
+                                            style={{
+                                                height: `${(b.value / max) * 100}%`,
+                                                background: C.blue,
+                                            }}
+                                        />
+                                    </span>
+                                ))}
+                            </div>
+                            <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
+                                {axisLabels.map((label, i) => (
+                                    <span key={i}>{label}</span>
+                                ))}
+                            </div>
+
+                            <div
+                                className="mt-5 grid grid-cols-2 gap-y-6 border-t border-border pt-5 sm:grid-cols-4"
+                                data-slot="perf.outcomes"
+                            >
+                                {outcomeCols.map((o, i) => (
+                                    <div
+                                        key={o.label}
+                                        className={cn(
+                                            'flex flex-col px-4 first:pl-0 last:pr-0',
+                                            i > 0 &&
+                                                'border-l border-dashed border-border',
+                                        )}
+                                    >
+                                        <p className="text-sm text-muted-foreground">
+                                            {o.label}
+                                        </p>
+                                        <p className="mt-1 text-2xl font-semibold tabular-nums">
+                                            {o.big}
+                                        </p>
+                                        <div className="mt-auto w-full pt-4">
+                                            <div
+                                                className="w-full rounded-xl"
+                                                style={{
+                                                    height: o.bh,
+                                                    background: o.col,
+                                                }}
+                                            />
+                                        </div>
+                                        <p className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                                            <span className="tabular-nums">
+                                                {o.sub}
+                                            </span>
+                                            <span
+                                                className="font-semibold"
+                                                style={{ color: C.greenText }}
+                                            >
+                                                {o.arr}
+                                            </span>
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* goals panel */}
+                        <div
+                            className="flex flex-col gap-5 border-t border-border pt-5 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6"
+                            data-slot="perf.goals"
+                        >
+                            <p className="text-sm font-medium text-muted-foreground">
+                                {t('Goal tracking')}{' '}
+                                <span className="font-normal">
+                                    · {t('vs targets you set per agent')}
+                                </span>
+                            </p>
+                            {v.type === 'team' ? (
+                                <>
+                                    <div className="flex items-center gap-4 rounded-lg bg-muted/50 p-3.5">
+                                        <div className="relative size-16 shrink-0">
+                                            <Ring
+                                                pct={v.attainmentPct}
+                                                color={statusColor[v.status]}
+                                                size={64}
+                                                stroke={6}
+                                            />
+                                            <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold tabular-nums">
+                                                {v.attainmentPct}%
+                                            </span>
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-semibold">
+                                                {t('Whole team')}
+                                            </p>
+                                            <p className="font-mono text-[11px] text-muted-foreground">
+                                                {t('Conf')} {v.confPct}% /{' '}
+                                                {performance.goals.conf} ·{' '}
+                                                {t('Deliv')} {v.delivPct}% /{' '}
+                                                {performance.goals.deliv}
+                                            </p>
+                                        </div>
+                                        <StatusBadge status={v.status} t={t} />
+                                    </div>
+                                    <div className="border-t border-border" />
+                                    {v.agents.length === 0 && (
+                                        <p className="text-sm text-muted-foreground">
+                                            {t(
+                                                'No agent activity in this period.',
+                                            )}
+                                        </p>
+                                    )}
+                                    {v.agents.map((a) => (
+                                        <div
+                                            key={a.name}
+                                            className="flex items-center gap-3.5"
+                                        >
+                                            <div className="relative size-12 shrink-0">
+                                                <Ring
+                                                    pct={a.attainmentPct}
+                                                    color={
+                                                        statusColor[a.status]
+                                                    }
+                                                    size={48}
+                                                    stroke={5}
+                                                />
+                                                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold tabular-nums">
+                                                    {a.attainmentPct}%
+                                                </span>
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm font-semibold">
+                                                    {a.name}
+                                                </p>
+                                                <p className="truncate font-mono text-[11px] text-muted-foreground">
+                                                    {t('Conf')} {a.confPct}% /{' '}
+                                                    {performance.goals.conf} ·{' '}
+                                                    {t('Deliv')} {a.delivPct}% /{' '}
+                                                    {performance.goals.deliv}
+                                                </p>
+                                            </div>
+                                            <StatusBadge
+                                                status={a.status}
+                                                t={t}
+                                            />
+                                        </div>
+                                    ))}
+                                </>
+                            ) : (
+                                <>
+                                    <div className="flex items-center gap-4 rounded-lg bg-muted/50 p-3.5">
+                                        <div className="relative size-16 shrink-0">
+                                            <Ring
+                                                pct={v.attainmentPct}
+                                                color={statusColor[v.status]}
+                                                size={64}
+                                                stroke={6}
+                                            />
+                                            <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold tabular-nums">
+                                                {v.attainmentPct}%
+                                            </span>
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-semibold">
+                                                {v.name}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {t(
+                                                    ':count orders handled · this period',
+                                                    {
+                                                        count: n(
+                                                            v.ordersHandled,
+                                                        ),
+                                                    },
+                                                )}
+                                            </p>
+                                        </div>
+                                        <StatusBadge status={v.status} t={t} />
+                                    </div>
+                                    <div className="flex flex-col gap-5 pt-1">
+                                        <GoalBar
+                                            label={t('Confirmation rate')}
+                                            actual={v.confPct}
+                                            goal={performance.goals.conf}
+                                        />
+                                        <GoalBar
+                                            label={t('Delivery rate')}
+                                            actual={v.delivPct}
+                                            goal={performance.goals.deliv}
+                                        />
+                                    </div>
+                                    <div className="mt-auto flex items-center justify-between border-t border-border pt-4">
+                                        <span className="text-sm text-muted-foreground">
+                                            {t('Commissions earned')}
+                                        </span>
+                                        <span className="text-sm font-semibold tabular-nums">
+                                            {money(v.commissionsMad)} MAD
+                                        </span>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </section>
+    );
+}
+
+/* ---------- breakdown ---------- */
+type BdTab = 'stores' | 'products' | 'couriers';
+type SortKey = 'name' | 'orders' | 'conf' | 'deliv' | 'ret';
+
+function Metric({ cell, color }: { cell: Pair | null; color: string }) {
+    if (!cell) {
+        return <span className="text-muted-foreground">—</span>;
+    }
+
+    const [count, rate] = cell;
+
+    return (
+        <div className="max-w-36">
+            <p className="tabular-nums">
+                <span className="font-semibold">{n(count)}</span>{' '}
+                <span className="text-xs text-muted-foreground">· {rate}%</span>
+            </p>
+            <div className="mt-1.5 h-1.5 w-full rounded-full bg-muted">
+                <div
+                    className="h-full rounded-full"
+                    style={{
+                        width: `${Math.min(rate, 100)}%`,
+                        background: color,
+                    }}
+                />
+            </div>
+        </div>
+    );
+}
+
+function EmptyState({ title }: { title: string }) {
     const { t } = useTranslation();
 
+    return (
+        <div className="flex min-h-56 flex-col items-center justify-center p-8 text-center">
+            <span className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <MessageCircle className="size-5" />
+            </span>
+            <p className="mt-4 text-sm font-semibold">{title}</p>
+            <p className="mt-1 max-w-64 text-xs text-muted-foreground">
+                {t(
+                    'No data for this selection. Try a wider period or different stores.',
+                )}
+            </p>
+        </div>
+    );
+}
+
+const sortVal = (r: BreakdownRow, k: SortKey): string | number =>
+    k === 'name'
+        ? r.name.toLowerCase()
+        : k === 'orders'
+          ? r.orders
+          : k === 'conf'
+            ? r.conf
+                ? r.conf[0]
+                : -1
+            : k === 'deliv'
+              ? r.deliv[0]
+              : r.ret[0];
+
+export function BreakdownSection({
+    breakdown,
+}: Pick<DashboardProps, 'breakdown'>) {
+    const { t } = useTranslation();
+    const [tab, setTab] = useState<BdTab>('stores');
+    const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({
+        key: 'orders',
+        dir: -1,
+    });
+    const secRef = useRef<HTMLElement>(null);
+    const [flash, setFlash] = useState(false);
+
+    /* alert "Inspect" jump */
+    useEffect(() => {
+        const handler = () => {
+            setTab('products');
+            setSort({ key: 'deliv', dir: 1 });
+            secRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+            });
+            setFlash(true);
+            const timer = window.setTimeout(() => setFlash(false), 1800);
+
+            return () => window.clearTimeout(timer);
+        };
+
+        window.addEventListener('ef:inspect-products', handler);
+
+        return () => window.removeEventListener('ef:inspect-products', handler);
+    }, []);
+
+    const isC = tab === 'couriers';
+    const rows = useMemo(
+        () =>
+            [...breakdown[tab]].sort((a, b) => {
+                const va = sortVal(a, sort.key);
+                const vb = sortVal(b, sort.key);
+
+                return (va < vb ? -1 : va > vb ? 1 : 0) * sort.dir;
+            }),
+        [breakdown, tab, sort],
+    );
+    const cols: { key: SortKey; label: string; cls: string }[] = [
+        { key: 'name', label: t('Name'), cls: 'px-6 text-left' },
+        {
+            key: 'orders',
+            label: isC ? t('Parcels') : t('Orders'),
+            cls: 'w-28 px-4 text-left',
+        },
+        ...(isC
+            ? []
+            : [
+                  {
+                      key: 'conf' as SortKey,
+                      label: t('Confirmed'),
+                      cls: 'w-44 px-4 text-left',
+                  },
+              ]),
+        { key: 'deliv', label: t('Delivered'), cls: 'w-44 px-4 text-left' },
+        { key: 'ret', label: t('Returned'), cls: 'w-44 px-4 text-left' },
+    ];
+    const clickSort = (k: SortKey) =>
+        setSort((s) =>
+            s.key === k
+                ? { key: k, dir: (s.dir * -1) as 1 | -1 }
+                : { key: k, dir: k === 'name' ? 1 : -1 },
+        );
+
+    const tabLabels: Record<BdTab, string> = {
+        stores: t('Stores'),
+        products: t('Products'),
+        couriers: t('Couriers'),
+    };
+
+    return (
+        <section ref={secRef} id="breakdown" data-slot="breakdown">
+            <Card
+                className={cn(
+                    'p-0 transition-shadow',
+                    flash && 'ring-2 ring-[#D92D20]/40',
+                )}
+            >
+                <div className="flex flex-wrap items-end justify-between gap-4 p-6 pb-4">
+                    <div>
+                        <h2 className="text-lg font-semibold tracking-tight">
+                            {t('Breakdown')}
+                        </h2>
+                        <p className="mt-0.5 text-sm text-muted-foreground">
+                            {t('How each store, product and courier is doing')}
+                        </p>
+                    </div>
+                    <div
+                        className="flex rounded-full bg-muted p-1"
+                        role="tablist"
+                    >
+                        {(['stores', 'products', 'couriers'] as BdTab[]).map(
+                            (tb) => (
+                                <button
+                                    key={tb}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={tab === tb}
+                                    onClick={() => setTab(tb)}
+                                    className={cn(
+                                        'rounded-full px-4 py-1.5 text-sm font-medium',
+                                        tab === tb
+                                            ? 'bg-card text-foreground shadow-xs'
+                                            : 'text-muted-foreground',
+                                    )}
+                                >
+                                    {tabLabels[tb]}
+                                </button>
+                            ),
+                        )}
+                    </div>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-border text-muted-foreground">
+                                {cols.map((c) => (
+                                    <th
+                                        key={c.key}
+                                        className={cn(
+                                            'h-11 font-medium',
+                                            c.cls,
+                                        )}
+                                    >
+                                        <button
+                                            type="button"
+                                            onClick={() => clickSort(c.key)}
+                                            className={cn(
+                                                'inline-flex items-center gap-1 hover:text-foreground',
+                                                sort.key === c.key &&
+                                                    'text-foreground',
+                                            )}
+                                        >
+                                            {c.label}
+                                            <span
+                                                className={cn(
+                                                    'text-[11px]',
+                                                    sort.key !== c.key &&
+                                                        'opacity-40',
+                                                )}
+                                            >
+                                                {sort.key === c.key
+                                                    ? sort.dir < 0
+                                                        ? '↓'
+                                                        : '↑'
+                                                    : '↕'}
+                                            </span>
+                                        </button>
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows.map((r) => (
+                                <tr
+                                    key={r.name}
+                                    className="border-b border-border last:border-0 hover:bg-muted/40"
+                                >
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            {r.img ? (
+                                                <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-white">
+                                                    <img
+                                                        src={r.img}
+                                                        className="size-6 object-contain"
+                                                        alt=""
+                                                    />
+                                                </span>
+                                            ) : (
+                                                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                                                    {tab === 'stores' ? (
+                                                        <Store className="size-4" />
+                                                    ) : (
+                                                        <Box className="size-4" />
+                                                    )}
+                                                </span>
+                                            )}
+                                            <span className="font-semibold">
+                                                {r.name}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-4 font-semibold tabular-nums">
+                                        {n(r.orders)}
+                                    </td>
+                                    {!isC && (
+                                        <td className="px-4 py-4">
+                                            <Metric
+                                                cell={r.conf}
+                                                color={C.purple}
+                                            />
+                                        </td>
+                                    )}
+                                    <td className="px-4 py-4">
+                                        <Metric
+                                            cell={r.deliv}
+                                            color={C.green}
+                                        />
+                                    </td>
+                                    <td className="px-4 py-4">
+                                        <Metric cell={r.ret} color={C.red} />
+                                    </td>
+                                </tr>
+                            ))}
+                            {rows.length === 0 && (
+                                <tr>
+                                    <td colSpan={cols.length}>
+                                        <EmptyState
+                                            title={t('Nothing to break down')}
+                                        />
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </Card>
+        </section>
+    );
+}
+
+/* ════════════════════════ PAGE ════════════════════════ */
+export default function AdminDashboard(props: DashboardProps) {
+    const { t } = useTranslation();
     const { auth } = usePage<PageProps>().props;
     const { draft, updateFilters, resetFilters, hasActiveFilters } =
-        useTableFilters(dashboard().url, filters, FILTER_KEYS);
+        useTableFilters(dashboard().url, props.filters, FILTER_KEYS);
 
     const firstName = auth.user.name.split(' ')[0];
-
-    // Session-local: dismissed info alerts return on reload, which is fine —
-    // dismissal is "quiet this for now", not a durable acknowledgement.
-    const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);
-
-    const visibleAlerts = alerts
-        .filter((alert) => !dismissedAlerts.includes(alert.id))
-        .map((alert) => ({ ...alert, template: ALERT_TEMPLATES[alert.id] }))
-        .filter((alert) => alert.template !== undefined);
 
     return (
         <>
             <Head title={t('Dashboard')} />
 
-            <div className="space-y-6 p-4">
-                {/* The period preset in the filter bar names the window, so
-                    no separate "Last N days" caption. */}
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                    <div className="grid gap-1">
-                        <h1 className="text-xl font-semibold">
+            <div className="space-y-6 p-4 sm:p-6">
+                <div className="flex flex-wrap items-end justify-between gap-6">
+                    <div>
+                        <h1 className="text-2xl font-semibold tracking-tight">
                             {greeting(t)}, {firstName}
                         </h1>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="mt-1 text-sm text-muted-foreground">
                             {t("Here's how the business is doing.")}
                         </p>
                     </div>
 
                     <DashboardFilters
-                        stores={stores}
+                        stores={props.stores}
                         draft={draft}
                         onChange={updateFilters}
                         onReset={resetFilters}
@@ -269,301 +1754,22 @@ export default function AdminDashboard({
                     />
                 </div>
 
-                {/* Alerts — server sends id + count; templates own the copy */}
-                {visibleAlerts.length > 0 && (
-                    <div className="grid gap-2">
-                        {visibleAlerts.map(({ id, count, template }) => {
-                            const AlertIcon = ALERT_ICONS[template.variant];
-
-                            return (
-                                <Alert key={id} variant={template.variant}>
-                                    <AlertIcon />
-                                    <AlertTitle>
-                                        {template.title(count, t)}
-                                    </AlertTitle>
-                                    <AlertDescription>
-                                        {t(template.description)}
-                                    </AlertDescription>
-                                    <AlertAction className="flex items-center gap-1">
-                                        <Button
-                                            asChild
-                                            size="sm"
-                                            variant="outline"
-                                        >
-                                            <Link href={template.href()}>
-                                                {t(template.actionLabel)}
-                                            </Link>
-                                        </Button>
-                                        {template.dismissible && (
-                                            <Button
-                                                size="icon-sm"
-                                                variant="ghost"
-                                                aria-label={t(
-                                                    'Dismiss ":title"',
-                                                    {
-                                                        title: template.title(
-                                                            count,
-                                                            t,
-                                                        ),
-                                                    },
-                                                )}
-                                                onClick={() =>
-                                                    setDismissedAlerts(
-                                                        (prev) => [...prev, id],
-                                                    )
-                                                }
-                                            >
-                                                <X />
-                                            </Button>
-                                        )}
-                                    </AlertAction>
-                                </Alert>
-                            );
-                        })}
-                    </div>
-                )}
-
-                {/* The period at a glance: count on top, its share under. */}
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    <StatTile
-                        label={t('Orders')}
-                        caption={t('In this period')}
-                        value={formatNumber(summary.orders)}
-                        icon={ShoppingCart}
-                    />
-                    <StatTile
-                        label={t('Confirmed orders')}
-                        caption={
-                            summary.confirmedRate === null
-                                ? '—'
-                                : t(':rate% of orders', {
-                                      rate: summary.confirmedRate,
-                                  })
-                        }
-                        value={formatNumber(summary.confirmed)}
-                        icon={CircleCheck}
-                    />
-                    <StatTile
-                        label={t('Delivered orders')}
-                        caption={
-                            summary.deliveredRate === null
-                                ? '—'
-                                : t(':rate% of shipped', {
-                                      rate: summary.deliveredRate,
-                                  })
-                        }
-                        value={formatNumber(summary.delivered)}
-                        icon={PackageCheck}
-                    />
-                    <StatTile
-                        label={t('Returned orders')}
-                        caption={
-                            summary.returnedRate === null
-                                ? '—'
-                                : t(':rate% of delivered', {
-                                      rate: summary.returnedRate,
-                                  })
-                        }
-                        value={formatNumber(summary.returned)}
-                        icon={RotateCcw}
-                    />
-                </div>
-
-                {/* Where the period's parcels are now + rate quality */}
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                    <ParcelsCard stages={parcels} />
-
-                    <Card className="shadow-none lg:col-span-2">
-                        <CardHeader className="flex flex-wrap items-start justify-between gap-2 space-y-0">
-                            <div className="grid gap-1.5">
-                                <CardTitle>{t('Rates')}</CardTitle>
-                                <CardDescription>
-                                    {t(
-                                        'Confirmation, delivery and return over the selected period',
-                                    )}
-                                </CardDescription>
-                            </div>
-                            <AgentFilter
-                                agents={agents}
-                                value={draft.agent_id}
-                                onChange={(next) =>
-                                    updateFilters({ agent_id: next })
-                                }
-                                ariaLabel={t('Filter rates by agent')}
-                            />
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/* Window totals, computed server-side from
-                                summed counts. These answer "how is the
-                                business doing" at a glance; the lines
-                                below answer "which way is it moving". */}
-                            <dl className="grid grid-cols-3 gap-3">
-                                {(
-                                    [
-                                        {
-                                            key: 'confirmation',
-                                            label: t('Confirmation'),
-                                            color: 'var(--color-chart-1)',
-                                        },
-                                        {
-                                            key: 'delivery',
-                                            label: t('Delivery'),
-                                            color: 'var(--color-chart-3)',
-                                        },
-                                        {
-                                            key: 'return',
-                                            label: t('Return'),
-                                            color: 'var(--color-chart-2)',
-                                        },
-                                    ] as const
-                                ).map((tile) => (
-                                    <div
-                                        key={tile.key}
-                                        className="grid gap-0.5"
-                                    >
-                                        <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                            <span
-                                                aria-hidden
-                                                className="size-2 shrink-0 rounded-full"
-                                                style={{
-                                                    background: tile.color,
-                                                }}
-                                            />
-                                            {tile.label}
-                                        </dt>
-                                        <dd className="text-2xl font-semibold tabular-nums">
-                                            {rates.totals[tile.key] === null
-                                                ? '—'
-                                                : `${Math.round(rates.totals[tile.key] as number)}%`}
-                                        </dd>
-                                        {/* With an agent picked, the gap to
-                                            their target replaces the raw
-                                            counts; return has no target. */}
-                                        {agentTargets &&
-                                        tile.key !== 'return' ? (
-                                            <TargetGap
-                                                rate={rates.totals[tile.key]}
-                                                target={agentTargets[tile.key]}
-                                            />
-                                        ) : (
-                                            <dd className="text-xs text-muted-foreground tabular-nums">
-                                                {formatNumber(
-                                                    rates.counts[tile.key]
-                                                        .count,
-                                                )}{' '}
-                                                /{' '}
-                                                {formatNumber(
-                                                    rates.counts[tile.key]
-                                                        .total,
-                                                )}
-                                            </dd>
-                                        )}
-                                    </div>
-                                ))}
-                            </dl>
-                            <WeeklyRateLine
-                                series={[
-                                    {
-                                        key: 'confirmation',
-                                        label: t('Confirmation rate'),
-                                        color: 'var(--color-chart-1)',
-                                        data: rates.buckets.confirmation,
-                                    },
-                                    {
-                                        key: 'delivery',
-                                        label: t('Delivery success'),
-                                        color: 'var(--color-chart-3)',
-                                        data: rates.buckets.delivery,
-                                    },
-                                ]}
-                                className="h-48 w-full"
-                            />
-                            {/* Return rate gets its own strip and scale —
-                                on a shared 0-100 axis its 6→10% drift (the
-                                COD danger signal) would be invisible.
-                                Rising is bad here, hence the hot accent. */}
-                            <div>
-                                <p className="mb-1 text-xs font-medium text-muted-foreground">
-                                    {t('Return rate — lower is better')}
-                                </p>
-                                <WeeklyRateLine
-                                    series={[
-                                        {
-                                            key: 'return',
-                                            label: t('Return rate'),
-                                            color: 'var(--color-chart-2)',
-                                            data: rates.buckets.return,
-                                        },
-                                    ]}
-                                    className="h-24 w-full"
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Volume over time, on its own full-width row */}
-                <OrdersPerDayCard orders={ordersPerDay} />
-
-                {/* Money row. Courier money merges expected remittance and
-                    the latest settlement variance: same story, money
-                    sitting at couriers. */}
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-                    <StatTile
-                        label={t('Total earned')}
-                        caption="Delivered & collected"
-                        value={money(moneyProps.totalEarned)}
-                        exactValue={`${formatNumber(moneyProps.totalEarned)} MAD`}
-                        icon={Wallet}
-                        delta={moneyProps.totalEarnedDelta ?? undefined}
-                    />
-
-                    <StatTile
-                        label={t('Courier money')}
-                        caption={
-                            moneyProps.courierVariance === null
-                                ? t('Awaiting remittance')
-                                : moneyProps.courierVariance < 0
-                                  ? t(':amount vs received last settlement', {
-                                        amount: money(
-                                            moneyProps.courierVariance,
-                                        ),
-                                    })
-                                  : t('Settled in full last period')
-                        }
-                        captionAccent={
-                            moneyProps.courierVariance === null
-                                ? undefined
-                                : moneyProps.courierVariance < 0
-                                  ? 'destructive'
-                                  : 'success'
-                        }
-                        value={money(moneyProps.courierExpected)}
-                        exactValue={`${formatNumber(moneyProps.courierExpected)} MAD`}
-                        icon={Truck}
-                    />
-
-                    <StatTile
-                        label={t('Agent commissions')}
-                        caption={t('Owed this period')}
-                        value={money(moneyProps.commissions)}
-                        exactValue={`${formatNumber(moneyProps.commissions)} MAD`}
-                        icon={HandCoins}
-                        delta={moneyProps.commissionsDelta ?? undefined}
-                        higherIsBetter={false}
-                    />
-                </div>
-
-                {/* What sells — own row so image + name + metrics breathe */}
-                <PerformanceTable
-                    stores={performanceTable.stores}
-                    products={performanceTable.products}
-                    couriers={performanceTable.couriers}
-                    targets={targets}
+                <AlertsStrip alerts={props.alerts} />
+                <KpiRow kpis={props.kpis} />
+                <FinanceRow
+                    income={props.income}
+                    expected={props.expected}
+                    parcels={props.parcels}
                 />
-
-                {/* Stock running low, last: an action list, not a headline */}
-                <InventoryCard inventory={inventory} />
+                <PerformanceSection
+                    performance={props.performance}
+                    agents={props.agents}
+                    agentId={draft.agent_id}
+                    onAgentChange={(agentId) =>
+                        updateFilters({ agent_id: agentId })
+                    }
+                />
+                <BreakdownSection breakdown={props.breakdown} />
             </div>
         </>
     );

@@ -8,7 +8,6 @@ use App\Enums\UserRole;
 use App\Models\DailyStatsSummary;
 use App\Models\PerformanceTarget;
 use App\Models\Product;
-use App\Models\ProductVariant;
 use App\Models\User;
 use App\Services\Operations\Orders\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,7 +27,7 @@ test('authenticated users can visit the dashboard', function () {
     $response->assertOk();
 });
 
-test('the admin dashboard renders every widget prop with the right shape', function () {
+test('the admin dashboard renders every section prop with the right shape', function () {
     $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
     $this->actingAs($admin);
 
@@ -40,91 +39,71 @@ test('the admin dashboard renders every widget prop with the right shape', funct
         ->has('filters')
         ->has('stores')
         ->has('agents')
-        ->has('money', fn ($money) => $money
-            ->has('totalEarned')
-            ->has('totalEarnedDelta')
-            ->has('commissions')
-            ->has('commissionsDelta')
-            ->has('courierExpected')
-            ->has('courierVariance')
-        )
-        ->has('ordersPerDay', 30)
-        ->has('team')
-        ->where('agentTargets', null)
-        ->has('inventory', fn ($inventory) => $inventory
-            ->where('threshold', 10)
-            ->has('products')
-            ->has('total')
-        )
-        ->has('summary', fn ($summary) => $summary
-            ->has('orders')
-            ->has('confirmed')
-            ->has('delivered')
-            ->has('returned')
-            ->has('confirmedRate')
-            ->has('deliveredRate')
-            ->has('returnedRate')
-        )
-        ->has('parcels', fn ($parcels) => $parcels
-            ->has('ready')
-            ->has('shipped')
-            ->has('delivered')
-            ->has('returned')
-        )
-        ->has('targets', fn ($targets) => $targets
-            ->has('confirmation')
-            ->has('delivery')
-        )
-        ->has('rates', fn ($rates) => $rates
-            ->has('buckets', fn ($buckets) => $buckets
-                ->has('confirmation')
-                ->has('delivery')
-                ->has('return')
-            )
-            ->has('totals', fn ($totals) => $totals
-                ->has('confirmation')
-                ->has('delivery')
-                ->has('return')
-            )
-            ->has('counts', fn ($counts) => $counts
-                ->has('confirmation')
-                ->has('delivery')
-                ->has('return')
-            )
-        )
-        ->has('performanceTable', fn ($table) => $table
-            ->has('stores')
-            ->has('products')
-            ->has('couriers')
-        )
         ->has('alerts')
+        ->has('kpis', fn ($kpis) => $kpis
+            ->has('received', fn ($k) => $k->has('value')->has('deltaPct')->has('buckets', 8))
+            ->has('inProgress', fn ($k) => $k->has('value')->has('sharePct')->has('deltaPct')->has('agentInitials')->has('agentCount'))
+            ->has('confirmed', fn ($k) => $k->has('value')->has('ratePct')->has('deltaPct')->has('of'))
+            ->has('delivered', fn ($k) => $k->has('value')->has('ratePct')->has('deltaPct')->has('trend', 8))
+            ->has('returned', fn ($k) => $k->has('value')->has('ratePct')->has('deltaPct')->has('buckets', 8))
+        )
+        ->has('income.months', 8)
+        ->has('expected', fn ($e) => $e->has('toReceiveMad')->has('deliveredUnpaid')->has('lastSettlement'))
+        ->has('parcels', fn ($p) => $p->has('total')->has('stages', 4))
+        ->has('performance', fn ($perf) => $perf
+            ->has('rangeLabel')
+            ->has('daily', 30)
+            ->has('ordersLabel')
+            ->has('outcomes', fn ($o) => $o->has('conf')->has('deliv')->has('ret')->has('commissionsMad')->has('commissionsSub'))
+            ->has('goals', fn ($g) => $g->has('conf')->has('deliv'))
+            ->where('view.type', 'team')
+            ->has('view.agents')
+            ->etc()
+        )
+        ->has('breakdown', fn ($b) => $b->has('stores')->has('products')->has('couriers'))
     );
 });
 
-test('the period preset drives the ordersPerDay window length', function () {
+test('the period preset drives the daily window length', function () {
     $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
     $this->actingAs($admin);
 
-    $response = $this->get(route('dashboard', ['period' => '7d']));
+    $this->get(route('dashboard', ['period' => '7d']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('filters.period', '7d')
+            ->has('performance.daily', 7)
+            // A short window has fewer slices than days, never more.
+            ->has('kpis.received.buckets', 7)
+            ->etc()
+        );
 
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->where('filters.period', '7d')
-        ->has('ordersPerDay', 7)
-    );
+    $this->get(route('dashboard', ['period' => 'today']))
+        ->assertInertia(fn ($page) => $page->has('kpis.received.buckets', 1)->etc());
 });
 
 test('store and agent filters echo back through the filters prop', function () {
     $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $agent = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT, 'business_id' => $admin->business_id]);
     $this->actingAs($admin);
 
-    $response = $this->get(route('dashboard', ['store_ids' => '3,7', 'agent_id' => 888]));
+    $this->get(route('dashboard', ['store_ids' => '3,7', 'agent_id' => $agent->id]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('filters.store_ids', '3,7')
+            ->where('filters.agent_id', (string) $agent->id)
+            ->where('performance.view.type', 'agent')
+            ->where('performance.view.name', $agent->name)
+            ->etc()
+        );
 
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->where('filters.store_ids', '3,7')
-        ->where('filters.agent_id', '888')
-    );
+    // An id that is not one of this business's agents is ignored.
+    $this->get(route('dashboard', ['agent_id' => 888]))
+        ->assertInertia(fn ($page) => $page
+            ->where('filters.agent_id', null)
+            ->where('performance.view.type', 'team')
+            ->etc()
+        );
 });
 
 test('real order activity lands in the admin dashboard props', function () {
@@ -151,12 +130,213 @@ test('real order activity lands in the admin dashboard props', function () {
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
-        ->where('money.totalEarned', 500)
-        ->has('team', 1)
-        ->where('team.0.orders', 0)
-        ->where('team.0.confirmationRate', 0)
+        ->where('kpis.confirmed.value', 1)
+        ->where('kpis.delivered.value', 1)
+        ->where('income.months.7.amountMad', 500)
+        ->has('performance.view.agents', 1)
         ->etc()
     );
+});
+
+test('kpi rates read confirmed over received and delivered over confirmed, summed across the window', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+
+    foreach ([[40, 20, 8, 2], [60, 30, 12, 1]] as $index => [$orders, $confirmed, $delivered, $returned]) {
+        DailyStatsSummary::factory()->create([
+            'business_id' => $admin->business_id,
+            'stat_date' => today()->subDays($index + 1),
+            'orders_count' => $orders,
+            'confirmed_count' => $confirmed,
+            'submitted_to_courier_count' => $confirmed,
+            'delivered_count' => $delivered,
+            'returned_count' => $returned,
+        ]);
+    }
+
+    $this->actingAs($admin)
+        ->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('kpis.received.value', 100)
+            ->where('kpis.confirmed.value', 50)
+            ->where('kpis.confirmed.ratePct', 50)
+            ->where('kpis.confirmed.of', 100)
+            ->where('kpis.delivered.value', 20)
+            ->where('kpis.delivered.ratePct', 40)
+            ->where('kpis.returned.value', 3)
+            ->where('kpis.returned.ratePct', 6)
+            // No previous window: no delta claimed.
+            ->where('kpis.received.deltaPct', null)
+            ->where('performance.outcomes.conf', [50, 50])
+            ->where('performance.outcomes.deliv', [20, 40])
+            ->etc()
+        );
+});
+
+test('deltas compare against the previous window of the same length', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+
+    DailyStatsSummary::factory()->create([
+        'business_id' => $admin->business_id,
+        'stat_date' => today()->subDays(2),
+        'orders_count' => 30,
+    ]);
+    DailyStatsSummary::factory()->create([
+        'business_id' => $admin->business_id,
+        'stat_date' => today()->subDays(10),
+        'orders_count' => 20,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('dashboard', ['period' => '7d']))
+        ->assertInertia(fn ($page) => $page
+            ->where('kpis.received.value', 30)
+            ->where('kpis.received.deltaPct', 50)
+            ->etc()
+        );
+});
+
+test('the parcels pipeline counts the period orders by their current stage', function () {
+    $admin = makeBusinessUser();
+    $businessId = $admin->business_id;
+
+    $stage = fn (string $status, array $extra = []) => makeOrder($businessId, [
+        'confirmation_status' => 'submitted_to_courier',
+        'delivery_status' => $status,
+        ...$extra,
+    ]);
+
+    $stage('awaiting_pickup');
+    $stage('ready_for_pickup');
+    $stage('in_transit');
+    $stage('out_for_delivery');
+    $stage('delivery_attempt_failed');
+    $stage('delivered');
+    $stage('refused');
+    $stage('return_received');
+
+    // None of these belong to a stage in this business's window.
+    $stage('cancelled_at_courier');
+    $stage('delivered', ['is_test' => true]);
+    makeOrder($businessId);
+    makeOrder(makeBusinessUser()->business_id, [
+        'confirmation_status' => 'submitted_to_courier',
+        'delivery_status' => 'delivered',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('parcels.total', 8)
+            ->where('parcels.stages.0.key', 'ready_to_ship')
+            ->where('parcels.stages.0.count', 2)
+            ->where('parcels.stages.0.ratePct', 25)
+            ->where('parcels.stages.1.count', 3)
+            ->where('parcels.stages.2.count', 1)
+            ->where('parcels.stages.3.count', 2)
+            ->etc()
+        );
+});
+
+test('the parcels pipeline follows the store filter', function () {
+    $admin = makeBusinessUser();
+    $store = makeStore($admin->business_id);
+    $other = makeStore($admin->business_id);
+
+    foreach ([$store, $store, $other] as $owner) {
+        makeOrder($admin->business_id, [
+            'store_id' => $owner->id,
+            'confirmation_status' => 'submitted_to_courier',
+            'delivery_status' => 'delivered',
+        ]);
+    }
+
+    $this->actingAs($admin)
+        ->get(route('dashboard', ['store_ids' => (string) $store->id]))
+        ->assertInertia(fn ($page) => $page
+            ->where('parcels.total', 2)
+            ->where('parcels.stages.2.count', 2)
+            ->etc()
+        );
+});
+
+test('in-progress counts the orders still with an agent and who holds them', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $agent = User::factory()->create([
+        'business_id' => $admin->business_id,
+        'role' => UserRole::CONFIRMATION_AGENT,
+        'name' => 'Aya El Mansouri',
+    ]);
+
+    makeOrder($admin->business_id, ['confirmation_status' => 'assigned', 'assigned_agent_id' => $agent->id]);
+    makeOrder($admin->business_id, ['confirmation_status' => 'callback', 'assigned_agent_id' => $agent->id]);
+    makeOrder($admin->business_id, ['confirmation_status' => 'confirmed', 'assigned_agent_id' => $agent->id]);
+    // Over a day old: also raises the stale alert.
+    makeOrder($admin->business_id, ['confirmation_status' => 'assigned', 'assigned_agent_id' => $agent->id])
+        ->forceFill(['created_at' => now()->subDays(2)])->save();
+
+    $this->actingAs($admin)
+        ->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('kpis.inProgress.value', 3)
+            ->where('kpis.inProgress.agentCount', 1)
+            ->where('kpis.inProgress.agentInitials', ['AE'])
+            ->where('alerts.0.kind', 'stale_in_progress')
+            ->where('alerts.0.strong', '1 order')
+            ->etc()
+        );
+});
+
+test('a product delivering under half of its confirmed orders raises the low-delivery alert', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $product = Product::factory()->create(['business_id' => $admin->business_id, 'name' => 'Posture Corrector Pro']);
+
+    DailyStatsSummary::factory()->create([
+        'business_id' => $admin->business_id,
+        'product_id' => $product->id,
+        'stat_date' => today()->subDay(),
+        'orders_count' => 40,
+        'confirmed_count' => 25,
+        'delivered_count' => 10,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('alerts.0.kind', 'low_delivery_product')
+            ->where('alerts.0.strong', 'Posture Corrector Pro')
+            ->where('breakdown.products.0.conf', [25, 62.5])
+            ->where('breakdown.products.0.deliv', [10, 40])
+            ->etc()
+        );
+});
+
+test('goal attainment averages each rate over its goal and grades it', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $agent = User::factory()->create(['business_id' => $admin->business_id, 'role' => UserRole::CONFIRMATION_AGENT]);
+
+    // conf 80/80 = 1.0, deliv 72.5/90 = 0.81 → 90% → Good (defaults 80 / 90)
+    DailyStatsSummary::factory()->create([
+        'business_id' => $admin->business_id,
+        'agent_id' => $agent->id,
+        'stat_date' => today()->subDay(),
+        'orders_count' => 100,
+        'confirmed_count' => 80,
+        'delivered_count' => 58,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('dashboard', ['agent_id' => $agent->id]))
+        ->assertInertia(fn ($page) => $page
+            ->where('performance.goals.conf', 80)
+            ->where('performance.goals.deliv', 90)
+            ->where('performance.view.type', 'agent')
+            ->where('performance.view.confPct', 80)
+            ->where('performance.view.delivPct', 72.5)
+            ->where('performance.view.attainmentPct', 90)
+            ->where('performance.view.status', 'Good')
+            ->where('performance.ordersLabel', 'orders handled by '.$agent->name)
+            ->etc()
+        );
 });
 
 test('the agent dashboard renders every stat/chart prop with the right shape', function () {
@@ -239,54 +419,6 @@ test('the agent dashboard sends no payload for the charts it no longer renders',
         ->missing('weekOverWeekConfirmationRate')
         ->missing('cancelReasonBreakdown')
         ->missing('returnReasonBreakdown')
-        ->etc()
-    );
-});
-
-test('rate totals are computed from summed counts, not averaged buckets', function () {
-    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
-
-    // Deliberately lopsided volume: a tiny perfect day and a large poor
-    // one. Averaging the two days' rates gives (100 + 50) / 2 = 75%.
-    // Summing the counts gives 51/101 = 50.5% — the real business rate.
-    // The gap between those two numbers is what this test pins down.
-    DailyStatsSummary::factory()->create([
-        'business_id' => $admin->business_id,
-        'stat_date' => today()->subDays(2),
-        'orders_count' => 1,
-        'confirmed_count' => 1,
-    ]);
-    DailyStatsSummary::factory()->create([
-        'business_id' => $admin->business_id,
-        'stat_date' => today()->subDay(),
-        'orders_count' => 100,
-        'confirmed_count' => 50,
-    ]);
-
-    $this->actingAs($admin);
-    // 7d so the rows land in separate daily buckets. On the 30d default
-    // they'd share one weekly bucket and already be summed, which would
-    // make averaging and summing agree and leave this test proving
-    // nothing.
-    $response = $this->get(route('dashboard', ['period' => '7d']));
-
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->where('rates.totals.confirmation', 50.5)
-        ->etc()
-    );
-});
-
-test('rate totals are null when the window has no volume to divide by', function () {
-    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
-    $this->actingAs($admin);
-
-    // A zero denominator must not render as 0% — "no orders yet" and
-    // "every order failed" are different facts.
-    $this->get(route('dashboard'))->assertInertia(fn ($page) => $page
-        ->where('rates.totals.confirmation', null)
-        ->where('rates.totals.delivery', null)
-        ->where('rates.totals.return', null)
         ->etc()
     );
 });
@@ -421,7 +553,7 @@ test('a custom period window is driven by the date_from/date_to pair', function 
     // ordersPerDay carries one point per day in the window, so its length
     // is the window length — 5 days inclusive here, not the 30-day default.
     $response->assertInertia(fn ($page) => $page
-        ->has('ordersPerDay', 5)
+        ->has('performance.daily', 5)
         ->where('filters.period', 'custom')
         ->where('filters.date_from', today()->subDays(4)->toDateString())
         ->where('filters.date_to', today()->toDateString())
@@ -440,7 +572,7 @@ test('a backwards custom range is swapped rather than returning nothing', functi
         'date_from' => today()->toDateString(),
         'date_to' => today()->subDays(2)->toDateString(),
     ]))->assertInertia(fn ($page) => $page
-        ->has('ordersPerDay', 3)
+        ->has('performance.daily', 3)
         ->where('filters.date_from', today()->subDays(2)->toDateString())
         ->where('filters.date_to', today()->toDateString())
         ->etc()
@@ -458,7 +590,7 @@ test('a custom range is clamped so one link cannot request years of points', fun
         'date_from' => today()->subYears(5)->toDateString(),
         'date_to' => today()->toDateString(),
     ]))->assertInertia(fn ($page) => $page
-        ->has('ordersPerDay', 366)
+        ->has('performance.daily', 366)
         ->etc()
     );
 });
@@ -474,7 +606,7 @@ test('a custom range never reaches past today', function () {
         'date_from' => today()->subDays(2)->toDateString(),
         'date_to' => today()->addDays(30)->toDateString(),
     ]))->assertInertia(fn ($page) => $page
-        ->has('ordersPerDay', 3)
+        ->has('performance.daily', 3)
         ->where('filters.date_to', today()->toDateString())
         ->etc()
     );
@@ -493,185 +625,6 @@ test('an unusable custom range falls back to the default window', function () {
     ] as $query) {
         $this->get(route('dashboard', $query))
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('ordersPerDay', 30)->etc());
+            ->assertInertia(fn ($page) => $page->has('performance.daily', 30)->etc());
     }
-});
-
-test('the parcels card counts the period orders by their current stage', function () {
-    $admin = makeBusinessUser();
-    $businessId = $admin->business_id;
-
-    $stage = fn (string $status, array $extra = []) => makeOrder($businessId, [
-        'confirmation_status' => 'submitted_to_courier',
-        'delivery_status' => $status,
-        ...$extra,
-    ]);
-
-    $stage('awaiting_pickup');
-    $stage('ready_for_pickup');
-    $stage('in_transit');
-    $stage('out_for_delivery');
-    $stage('delivery_attempt_failed');
-    $stage('delivered');
-    $stage('refused');
-    $stage('return_received');
-
-    // None of these belong to a stage in this business's window.
-    $stage('cancelled_at_courier');
-    $stage('delivered', ['is_test' => true]);
-    makeOrder($businessId);
-    makeOrder(makeBusinessUser()->business_id, [
-        'confirmation_status' => 'submitted_to_courier',
-        'delivery_status' => 'delivered',
-    ]);
-
-    $this->actingAs($admin)
-        ->get(route('dashboard'))
-        ->assertInertia(fn ($page) => $page
-            ->where('parcels.ready', 2)
-            ->where('parcels.shipped', 3)
-            ->where('parcels.delivered', 1)
-            ->where('parcels.returned', 2)
-            ->etc()
-        );
-});
-
-test('the parcels card follows the store filter', function () {
-    $admin = makeBusinessUser();
-    $store = makeStore($admin->business_id);
-    $other = makeStore($admin->business_id);
-
-    foreach ([$store, $store, $other] as $owner) {
-        makeOrder($admin->business_id, [
-            'store_id' => $owner->id,
-            'confirmation_status' => 'submitted_to_courier',
-            'delivery_status' => 'delivered',
-        ]);
-    }
-
-    $this->actingAs($admin)
-        ->get(route('dashboard', ['store_ids' => (string) $store->id]))
-        ->assertInertia(fn ($page) => $page
-            ->where('parcels.delivered', 2)
-            ->etc()
-        );
-});
-
-test('the summary tiles report the period counts and their shares', function () {
-    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
-
-    foreach ([[40, 20, 16, 8, 2], [60, 30, 24, 12, 1]] as $index => [$orders, $confirmed, $submitted, $delivered, $returned]) {
-        DailyStatsSummary::factory()->create([
-            'business_id' => $admin->business_id,
-            'stat_date' => today()->subDays($index + 1),
-            'orders_count' => $orders,
-            'confirmed_count' => $confirmed,
-            'submitted_to_courier_count' => $submitted,
-            'delivered_count' => $delivered,
-            'returned_count' => $returned,
-        ]);
-    }
-
-    $this->actingAs($admin)
-        ->get(route('dashboard'))
-        ->assertInertia(fn ($page) => $page
-            ->where('summary.orders', 100)
-            ->where('summary.confirmed', 50)
-            ->where('summary.delivered', 20)
-            ->where('summary.returned', 3)
-            // confirmed / orders, delivered / shipped, returned / delivered
-            ->where('summary.confirmedRate', 50)
-            ->where('summary.deliveredRate', 50)
-            ->where('summary.returnedRate', 15)
-            ->etc()
-        );
-});
-
-test('the summary tiles leave a rate empty when nothing happened', function () {
-    $this->actingAs(makeBusinessUser(['role' => UserRole::ADMIN]))
-        ->get(route('dashboard'))
-        ->assertInertia(fn ($page) => $page
-            ->where('summary.orders', 0)
-            ->where('summary.confirmedRate', null)
-            ->where('summary.deliveredRate', null)
-            ->where('summary.returnedRate', null)
-            ->etc()
-        );
-});
-
-test('the inventory section lists products with fewer than 10 in stock, lowest first', function () {
-    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
-    $make = fn (string $name, ?int $stock, array $extra = []) => Product::factory()->create([
-        'business_id' => $admin->business_id,
-        'name' => $name,
-        'inventory_quantity' => $stock,
-        ...$extra,
-    ]);
-
-    $make('Nine left', 9);
-    $make('Sold out', 0);
-    $make('Exactly ten', 10);
-    $make('Plenty', 80);
-    $make('Untracked', null);
-    $make('Inactive', 1, ['is_active' => false]);
-    $make('Test item', 1, ['is_test' => true]);
-    // Another business's product never shows up here.
-    Product::factory()->create(['inventory_quantity' => 1]);
-
-    // Variants decide the stock when a product has them: 2 + 3 = 5,
-    // whatever the product's own figure says.
-    $withVariants = $make('By variant', 500);
-    foreach ([2, 3] as $quantity) {
-        ProductVariant::factory()->create([
-            'business_id' => $admin->business_id,
-            'product_id' => $withVariants->id,
-            'inventory_quantity' => $quantity,
-        ]);
-    }
-
-    $this->actingAs($admin)
-        ->get(route('dashboard'))
-        ->assertInertia(fn ($page) => $page
-            ->where('inventory.total', 3)
-            ->has('inventory.products', 3)
-            ->where('inventory.products.0.name', 'Sold out')
-            ->where('inventory.products.0.stock', 0)
-            ->where('inventory.products.1.name', 'By variant')
-            ->where('inventory.products.1.stock', 5)
-            ->where('inventory.products.2.name', 'Nine left')
-            ->where('inventory.products.2.stock', 9)
-            ->etc()
-        );
-});
-
-test('picking an agent on the Rates card exposes that agent\'s targets', function () {
-    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
-    $agent = makeBusinessUser([
-        'role' => UserRole::CONFIRMATION_AGENT,
-        'business_id' => $admin->business_id,
-    ]);
-
-    PerformanceTarget::create([
-        'business_id' => $admin->business_id,
-        'user_id' => $agent->id,
-        'metric' => 'confirmation_rate',
-        'target_percentage' => 72,
-        'period' => 'weekly',
-    ]);
-
-    $this->actingAs($admin)
-        ->get(route('dashboard', ['agent_id' => $agent->id]))
-        ->assertInertia(fn ($page) => $page
-            // Own row for confirmation, configured default for delivery.
-            ->where('agentTargets.confirmation', 72)
-            ->where('agentTargets.delivery', 90)
-            ->etc()
-        );
-
-    // An id from another business resolves to nothing.
-    $stranger = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT]);
-
-    $this->actingAs($admin)
-        ->get(route('dashboard', ['agent_id' => $stranger->id]))
-        ->assertInertia(fn ($page) => $page->where('agentTargets', null)->etc());
 });
