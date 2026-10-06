@@ -183,9 +183,43 @@ test('the agent dashboard renders every stat/chart prop with the right shape', f
             ->has('delivery')
         )
         ->has('commissionEarned')
-        ->missing('filters')
+        ->where('periodDays', 30)
+        ->where('filters', ['period' => null, 'date_from' => null, 'date_to' => null])
         ->missing('stores')
     );
+});
+
+test('the agent dashboard honours the period presets and a custom range', function () {
+    $agent = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT]);
+    $this->actingAs($agent);
+
+    $this->get(route('dashboard', ['period' => 'today']))
+        ->assertInertia(fn ($page) => $page
+            ->where('periodDays', 1)
+            ->where('filters.period', 'today')
+            ->has('confirmationRateTrend', 1)
+            ->etc()
+        );
+
+    $this->get(route('dashboard', ['period' => '7d']))
+        ->assertInertia(fn ($page) => $page
+            ->where('periodDays', 7)
+            ->has('deliveryRateTrend', 7)
+            ->etc()
+        );
+
+    $from = now()->subDays(9)->toDateString();
+    $to = now()->subDays(5)->toDateString();
+
+    $this->get(route('dashboard', ['period' => 'custom', 'date_from' => $from, 'date_to' => $to]))
+        ->assertInertia(fn ($page) => $page
+            ->where('periodDays', 5)
+            ->where('filters.period', 'custom')
+            ->where('filters.date_from', $from)
+            ->where('filters.date_to', $to)
+            ->has('confirmationRateTrend', 5)
+            ->etc()
+        );
 });
 
 test('the agent dashboard sends no payload for the charts it no longer renders', function () {

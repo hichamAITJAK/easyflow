@@ -32,7 +32,7 @@ export type DashboardFilterValues = {
     agent_id?: string;
 };
 
-const CUSTOM_PERIOD = 'custom';
+export const CUSTOM_PERIOD = 'custom';
 
 /**
  * Presets first, because an admin usually checks "how are we doing today /
@@ -40,7 +40,9 @@ const CUSTOM_PERIOD = 'custom';
  * spans a preset can't name (a campaign week, a supplier's billing cycle).
  * The default (unset) is the server's 30-day window.
  */
-const PERIODS = [
+export type PeriodOption = { value: string; label: string };
+
+const PERIODS: PeriodOption[] = [
     { value: 'today', label: 'Today' },
     { value: '7d', label: 'Last 7 days' },
     { value: '30d', label: 'Last 30 days' },
@@ -50,7 +52,7 @@ const PERIODS = [
     { value: CUSTOM_PERIOD, label: 'Custom range…' },
 ];
 
-const DEFAULT_PERIOD = '30d';
+export const DEFAULT_PERIOD = '30d';
 
 /** Y-m-d in the viewer's own zone. toISOString() would convert to UTC and
  *  shift the day backwards for anyone east of it, so picking "today" could
@@ -80,26 +82,28 @@ function fromDateParam(value: string | undefined): Date | undefined {
 }
 
 /**
- * Page-level dashboard scope: stores (multi) + period preset. Deliberately
- * no agent here — agent is a per-chart scope (see AgentFilter), because
- * most business-wide widgets aren't agent-attributable facts.
+ * Period preset select plus, when "custom" is picked, the date-range
+ * popover. Shared by the admin and agent dashboards; `periods` lets a
+ * page offer a shorter list of presets. Works on any filter shape that
+ * carries period/date_from/date_to.
  */
-export function DashboardFilters({
-    stores,
+export function PeriodFilter({
     draft,
     onChange,
-    onReset,
-    hasActiveFilters,
+    periods = PERIODS,
+    idPrefix = 'dashboard',
 }: {
-    stores: SimpleOption[];
-    draft: DashboardFilterValues;
-    onChange: (next: Partial<DashboardFilterValues>) => void;
-    onReset: () => void;
-    hasActiveFilters: boolean;
+    draft: Pick<DashboardFilterValues, 'period' | 'date_from' | 'date_to'>;
+    onChange: (
+        next: Partial<
+            Pick<DashboardFilterValues, 'period' | 'date_from' | 'date_to'>
+        >,
+    ) => void;
+    periods?: PeriodOption[];
+    idPrefix?: string;
 }) {
     const { t } = useTranslation();
 
-    const selectedStores = draft.store_ids ? draft.store_ids.split(',') : [];
     const isCustom = draft.period === CUSTOM_PERIOD;
     const rangeFrom = fromDateParam(draft.date_from);
     const rangeTo = fromDateParam(draft.date_to);
@@ -110,31 +114,11 @@ export function DashboardFilters({
             : t('Pick dates');
 
     return (
-        <div className="flex flex-wrap items-end gap-3">
+        <>
             <div className="grid gap-1.5">
-                <Label htmlFor="dashboard-store-filter">{t('Stores')}</Label>
-                <MultiCombobox
-                    id="dashboard-store-filter"
-                    className="w-52"
-                    options={stores.map((store) => ({
-                        value: String(store.id),
-                        label: store.name,
-                    }))}
-                    value={selectedStores}
-                    onChange={(next) =>
-                        onChange({
-                            store_ids:
-                                next.length > 0 ? next.join(',') : undefined,
-                        })
-                    }
-                    placeholder={t('All stores')}
-                    searchPlaceholder="Search stores…"
-                    emptyMessage={t('No stores found.')}
-                />
-            </div>
-
-            <div className="grid gap-1.5">
-                <Label htmlFor="dashboard-period-filter">{t('Period')}</Label>
+                <Label htmlFor={`${idPrefix}-period-filter`}>
+                    {t('Period')}
+                </Label>
                 <Select
                     value={draft.period ?? DEFAULT_PERIOD}
                     onValueChange={(value) =>
@@ -151,17 +135,14 @@ export function DashboardFilters({
                     }
                 >
                     <SelectTrigger
-                        id="dashboard-period-filter"
+                        id={`${idPrefix}-period-filter`}
                         className="w-40"
                     >
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        {PERIODS.map((period) => (
-                            <SelectItem
-                                key={period.value}
-                                value={period.value}
-                            >
+                        {periods.map((period) => (
+                            <SelectItem key={period.value} value={period.value}>
                                 {t(period.label)}
                             </SelectItem>
                         ))}
@@ -171,11 +152,13 @@ export function DashboardFilters({
 
             {isCustom && (
                 <div className="grid gap-1.5">
-                    <Label htmlFor="dashboard-range-filter">{t('Dates')}</Label>
+                    <Label htmlFor={`${idPrefix}-range-filter`}>
+                        {t('Dates')}
+                    </Label>
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button
-                                id="dashboard-range-filter"
+                                id={`${idPrefix}-range-filter`}
                                 variant="outline"
                                 className="w-56 justify-start font-normal"
                             >
@@ -219,6 +202,57 @@ export function DashboardFilters({
                     </Popover>
                 </div>
             )}
+        </>
+    );
+}
+
+/**
+ * Page-level dashboard scope: stores (multi) + period preset. Deliberately
+ * no agent here — agent is a per-chart scope (see AgentFilter), because
+ * most business-wide widgets aren't agent-attributable facts.
+ */
+export function DashboardFilters({
+    stores,
+    draft,
+    onChange,
+    onReset,
+    hasActiveFilters,
+}: {
+    stores: SimpleOption[];
+    draft: DashboardFilterValues;
+    onChange: (next: Partial<DashboardFilterValues>) => void;
+    onReset: () => void;
+    hasActiveFilters: boolean;
+}) {
+    const { t } = useTranslation();
+
+    const selectedStores = draft.store_ids ? draft.store_ids.split(',') : [];
+
+    return (
+        <div className="flex flex-wrap items-end gap-3">
+            <div className="grid gap-1.5">
+                <Label htmlFor="dashboard-store-filter">{t('Stores')}</Label>
+                <MultiCombobox
+                    id="dashboard-store-filter"
+                    className="w-52"
+                    options={stores.map((store) => ({
+                        value: String(store.id),
+                        label: store.name,
+                    }))}
+                    value={selectedStores}
+                    onChange={(next) =>
+                        onChange({
+                            store_ids:
+                                next.length > 0 ? next.join(',') : undefined,
+                        })
+                    }
+                    placeholder={t('All stores')}
+                    searchPlaceholder="Search stores…"
+                    emptyMessage={t('No stores found.')}
+                />
+            </div>
+
+            <PeriodFilter draft={draft} onChange={onChange} />
 
             {hasActiveFilters && (
                 <DataTableResetFiltersButton onReset={onReset} />

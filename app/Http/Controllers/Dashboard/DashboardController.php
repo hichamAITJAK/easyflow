@@ -64,7 +64,7 @@ class DashboardController extends Controller
             return $this->adminDashboard($user, $request);
         }
 
-        return $this->agentDashboard($user);
+        return $this->agentDashboard($user, $request);
     }
 
     private function adminDashboard(User $user, Request $request): Response
@@ -798,21 +798,26 @@ class DashboardController extends Controller
         return $alerts;
     }
 
-    private function agentDashboard(User $user): Response
+    private function agentDashboard(User $user, Request $request): Response
     {
         $businessId = $user->business_id;
-        $since = Carbon::today()->subDays(self::PERIOD_DAYS - 1);
+
+        // Same window rules as the admin view (presets + custom range),
+        // so a link copied between the two dashboards means the same days.
+        $period = $request->string('period')->toString() ?: '30d';
+        [$since, $until] = $this->resolvePeriod($period, $request);
+        $windowDays = (int) $since->diffInDays($until) + 1;
 
         $rows = DailyStatsSummary::where('business_id', $businessId)
             ->where('agent_id', $user->id)
             ->whereNull('store_id')
             ->whereNull('product_id')
             ->whereNull('delivery_account_id')
-            ->where('stat_date', '>=', $since)
+            ->whereBetween('stat_date', [$since, $until])
             ->orderBy('stat_date')
             ->get();
 
-        $series = $this->zeroFilledSeries($rows, $since, self::PERIOD_DAYS);
+        $series = $this->zeroFilledSeries($rows, $since, $windowDays);
 
         $totals = [
             'assigned' => (int) $rows->sum('orders_count'),
@@ -854,7 +859,13 @@ class DashboardController extends Controller
         ];
 
         return Inertia::render('dashboard/agent', [
-            'periodDays' => self::PERIOD_DAYS,
+            'filters' => [
+                'period' => $period !== '30d' ? $period : null,
+                // Echoed from the resolved window (see adminDashboard).
+                'date_from' => $period === 'custom' ? $since->toDateString() : null,
+                'date_to' => $period === 'custom' ? $until->toDateString() : null,
+            ],
+            'periodDays' => $windowDays,
             'totals' => $totals,
             'tileRates' => $tileRates,
             'confirmationRateTrend' => $series->map(fn ($row) => [

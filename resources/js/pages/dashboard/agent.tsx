@@ -1,10 +1,40 @@
 import { Head } from '@inertiajs/react';
+import { PeriodFilter } from '@/components/dashboard/dashboard-filters';
+import type {
+    DashboardFilterValues,
+    PeriodOption,
+} from '@/components/dashboard/dashboard-filters';
 import { RateBarChart } from '@/components/dashboard/rate-bar-chart';
 import { StatTile } from '@/components/dashboard/stat-tile';
+import { DataTableResetFiltersButton } from '@/components/data-table/data-table-reset-filters-button';
+import { useTableFilters } from '@/hooks/use-table-filters';
 import { useTranslation } from '@/hooks/use-translation';
+import { formatDateRange } from '@/lib/format';
 import { dashboard } from '@/routes';
 
+type AgentFilterValues = Pick<
+    DashboardFilterValues,
+    'period' | 'date_from' | 'date_to'
+>;
+
+const FILTER_KEYS: (keyof AgentFilterValues)[] = [
+    'period',
+    'date_from',
+    'date_to',
+];
+
+// A shorter list than the admin's: an agent checks their own day or
+// week, and the custom range covers anything longer.
+const PERIODS: PeriodOption[] = [
+    { value: 'today', label: 'Today' },
+    { value: '7d', label: 'Last 7 days' },
+    { value: '30d', label: 'Last 30 days' },
+    { value: 'custom', label: 'Custom range…' },
+];
+
 type Props = {
+    filters: AgentFilterValues;
+    /** Length of the resolved window, in days. */
     periodDays: number;
     totals: {
         assigned: number;
@@ -33,6 +63,7 @@ function money(value: number): string {
 }
 
 export default function AgentDashboard({
+    filters,
     periodDays,
     totals,
     tileRates,
@@ -44,6 +75,9 @@ export default function AgentDashboard({
     commissionEarned,
 }: Props) {
     const { t } = useTranslation();
+
+    const { draft, updateFilters, resetFilters, hasActiveFilters } =
+        useTableFilters(dashboard().url, filters, FILTER_KEYS);
 
     // "Confirmed" and the like are already translated as one order's
     // status. These tiles count many orders, which other languages word
@@ -61,9 +95,30 @@ export default function AgentDashboard({
             <Head title={t('Dashboard')} />
 
             <div className="space-y-6 p-4">
-                <p className="text-sm text-muted-foreground">
-                    {t('Last :days days', { days: periodDays })}
-                </p>
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                    <p className="text-sm text-muted-foreground">
+                        {filters.date_from && filters.date_to
+                            ? formatDateRange(
+                                  filters.date_from,
+                                  filters.date_to,
+                              )
+                            : t('Last :days days', { days: periodDays })}
+                    </p>
+
+                    <div className="flex flex-wrap items-end gap-3">
+                        <PeriodFilter
+                            draft={draft}
+                            onChange={updateFilters}
+                            periods={PERIODS}
+                            idPrefix="agent"
+                        />
+                        {hasActiveFilters && (
+                            <DataTableResetFiltersButton
+                                onReset={resetFilters}
+                            />
+                        )}
+                    </div>
+                </div>
 
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
                     {/* Assigned carries no share: it is the denominator
