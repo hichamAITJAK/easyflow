@@ -1,5 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { Menu } from 'lucide-react';
+import { useState } from 'react';
 import AppLogo from '@/components/app-logo';
 import AppWordmark from '@/components/app-wordmark';
 import { AppearanceDropdown } from '@/components/appearance-dropdown';
@@ -43,13 +44,21 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const mainNavItems = getVisibleNavItems(auth.user?.role);
     const activeNavItem = mainNavItems.find((item) => isCurrentUrl(item.href));
 
+    // Controlled so a tap on a nav link can close the sheet: an Inertia
+    // visit swaps the page under it, and an uncontrolled sheet would stay
+    // open over the new page.
+    const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
     return (
         <>
             <div>
                 <div className="mx-auto flex h-16 items-center gap-2 px-4 md:max-w-[95rem]">
                     {/* Mobile Menu */}
                     <div className="lg:hidden">
-                        <Sheet>
+                        <Sheet
+                            open={mobileNavOpen}
+                            onOpenChange={setMobileNavOpen}
+                        >
                             <SheetTrigger asChild>
                                 <Button
                                     variant="ghost"
@@ -75,6 +84,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             <Link
                                                 key={item.title}
                                                 href={item.href}
+                                                onClick={() =>
+                                                    setMobileNavOpen(false)
+                                                }
                                                 className="flex items-center space-x-2 font-medium"
                                             >
                                                 {item.icon && (
