@@ -246,7 +246,7 @@ class OrderController extends Controller
                 'quantity' => (int) $item['quantity'],
                 'unit_price' => (float) $item['unit_price'],
             ], $validated['items'] ?? []),
-        ]);
+        ], trackUpsell: $request->user()->role === UserRole::CONFIRMATION_AGENT);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Order updated.')]);
 

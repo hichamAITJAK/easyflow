@@ -106,6 +106,8 @@ export type Order = {
     customer_city: string | null;
     items?: OrderItem[];
     total_amount: string;
+    /** Signed change a confirmation agent made to the items total; null when untouched. */
+    upsell_amount: string | null;
     delivery_cost: string | null;
     returned_cost: string | null;
     refused_cost: string | null;
@@ -167,11 +169,7 @@ export type OrderFilters = {
 };
 
 export type OrderQueueBucket =
-    | 'all'
-    | 'new'
-    | 'follow_up'
-    | 'confirmed'
-    | 'shipped';
+    'all' | 'new' | 'follow_up' | 'confirmed' | 'shipped';
 
 export type OrderBucketCounts = Record<OrderQueueBucket, number>;
 

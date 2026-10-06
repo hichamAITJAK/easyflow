@@ -134,11 +134,18 @@ class OrderService
      * callers must check before reaching this method (see
      * OrderController::update).
      *
+     * When $trackUpsell is set (the editor is a confirmation agent), the
+     * change in the items total is added to upsell_amount, so the column
+     * always reads as "how far this agent moved the order from what came
+     * in": positive for an upsell, negative for a down-sell.
+     *
      * @param  array{customer_name: string, customer_phone: string, customer_address: string, customer_city?: string|null, source_platform?: string|null, total_amount: float, notes?: string|null, items?: array<int, array{product_id?: int|null, product_variant_id?: int|null, product_name: string, quantity: int, unit_price: float}>}  $data
      */
-    public function updateManualOrder(Order $order, array $data): Order
+    public function updateManualOrder(Order $order, array $data, bool $trackUpsell = false): Order
     {
         $customerPhone = PhoneNumber::format($data['customer_phone']) ?? $data['customer_phone'];
+
+        $itemsTotalBefore = $this->itemsTotal($order);
 
         $order->update([
             'source_platform' => $data['source_platform'] ?? $order->source_platform,
@@ -175,7 +182,23 @@ class OrderService
             ]);
         }
 
+        if ($trackUpsell) {
+            $delta = round($this->itemsTotal($order->unsetRelation('items')) - $itemsTotalBefore, 2);
+
+            if ($delta != 0.0) {
+                $order->update(['upsell_amount' => round((float) $order->upsell_amount + $delta, 2)]);
+            }
+        }
+
         return $order;
+    }
+
+    /** Sum of quantity × unit price over the order's current line items. */
+    private function itemsTotal(Order $order): float
+    {
+        return (float) $order->items()
+            ->get(['quantity', 'unit_price'])
+            ->sum(fn (OrderItem $item) => $item->quantity * (float) $item->unit_price);
     }
 
     /**

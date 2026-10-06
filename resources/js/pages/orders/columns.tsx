@@ -1,6 +1,8 @@
 import { router } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
+    ArrowDown,
+    ArrowUp,
     Check,
     Copy,
     CopyX,
@@ -43,6 +45,11 @@ import {
     SelectItem,
     SelectTrigger,
 } from '@/components/ui/select';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatDateTime } from '@/lib/format';
 import type { Translator } from '@/lib/i18n';
@@ -56,6 +63,7 @@ import {
     orderSourceLabel,
 } from '@/lib/order-status';
 import { formatMoroccoPhoneForWhatsApp } from '@/lib/phone';
+import { cn } from '@/lib/utils';
 import type { Order, OrderFilters } from '@/types';
 
 export type AgentOption = { id: number; name: string; avatar: string | null };
@@ -164,7 +172,8 @@ function ConfirmationStatusPopover({
 function CopyShippingDetailsButton({ order }: { order: Order }) {
     const { t } = useTranslation();
     const [copied, setCopied] = useState(false);
-    const copyText = `${order.customer_name ?? ''} | Phone: ${order.customer_phone ?? ''} | Address: ${order.customer_address ?? ''}${order.customer_city ? `, ${order.customer_city}` : ''}`.trim();
+    const copyText =
+        `${order.customer_name ?? ''} | Phone: ${order.customer_phone ?? ''} | Address: ${order.customer_address ?? ''}${order.customer_city ? `, ${order.customer_city}` : ''}`.trim();
 
     return (
         <Button
@@ -182,11 +191,7 @@ function CopyShippingDetailsButton({ order }: { order: Order }) {
             aria-label={t('Copy shipping details')}
             className="ml-1.5 text-muted-foreground"
         >
-            {copied ? (
-                <Check className="text-emerald-500" />
-            ) : (
-                <Copy />
-            )}
+            {copied ? <Check className="text-emerald-500" /> : <Copy />}
         </Button>
     );
 }
@@ -197,11 +202,19 @@ function CopyShippingDetailsButton({ order }: { order: Order }) {
  * since here the value itself is the clickable target rather than a
  * separate action next to it.
  */
-function CopyableValue({ value, label }: { value: string | null; label: string }) {
+function CopyableValue({
+    value,
+    label,
+}: {
+    value: string | null;
+    label: string;
+}) {
     const [copied, setCopied] = useState(false);
 
     if (!value) {
-        return <span className="font-mono text-sm text-muted-foreground">—</span>;
+        return (
+            <span className="font-mono text-sm text-muted-foreground">—</span>
+        );
     }
 
     return (
@@ -226,6 +239,42 @@ function CopyableValue({ value, label }: { value: string | null; label: string }
                 <Copy className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/copy:opacity-100" />
             )}
         </Button>
+    );
+}
+
+/**
+ * Up or down arrow beside the agent when their edits moved the order's
+ * items total; the amount is in the tooltip. Nothing when untouched.
+ */
+function UpsellArrow({ amount }: { amount: string | null }) {
+    const { t } = useTranslation();
+    const value = amount === null ? 0 : parseFloat(amount);
+
+    if (!value) {
+        return null;
+    }
+
+    const up = value > 0;
+    const Icon = up ? ArrowUp : ArrowDown;
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <span
+                    className={cn(
+                        'inline-flex items-center',
+                        up ? 'text-success' : 'text-destructive',
+                    )}
+                    aria-label={up ? t('Upsell') : t('Down-sell')}
+                >
+                    <Icon className="size-3.5" />
+                </span>
+            </TooltipTrigger>
+            <TooltipContent>
+                {up ? t('Upsell') : t('Down-sell')}: {up ? '+' : ''}
+                {value.toFixed(2)} MAD
+            </TooltipContent>
+        </Tooltip>
     );
 }
 
@@ -273,7 +322,7 @@ function AgentCell({
         >
             <SelectTrigger
                 size="sm"
-                className="w-auto border-none bg-transparent shadow-none [&_svg]:opacity-60 disabled:opacity-70"
+                className="w-auto border-none bg-transparent shadow-none disabled:opacity-70 [&_svg]:opacity-60"
             >
                 {updating ? (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -292,9 +341,12 @@ function AgentCell({
                             </AvatarFallback>
                         </Avatar>
                         <span>{agent.name}</span>
+                        <UpsellArrow amount={order.upsell_amount} />
                     </div>
                 ) : (
-                    <span className="text-muted-foreground">{t('Unassigned')}</span>
+                    <span className="text-muted-foreground">
+                        {t('Unassigned')}
+                    </span>
                 )}
             </SelectTrigger>
             <SelectContent position="popper" align="start">
@@ -444,7 +496,9 @@ export function createColumns({
                                 <Badge
                                     variant="outline"
                                     className="shrink-0 border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                                    title={t('Matches a recent order from the same phone number')}
+                                    title={t(
+                                        'Matches a recent order from the same phone number',
+                                    )}
                                 >
                                     <CopyX />
                                     {t('Duplicate')}
@@ -454,7 +508,9 @@ export function createColumns({
                                 <Badge
                                     variant="destructive"
                                     className="shrink-0"
-                                    title={t('Customer phone number is on the blacklist')}
+                                    title={t(
+                                        'Customer phone number is on the blacklist',
+                                    )}
                                 >
                                     <ShieldAlert />
                                     {t('Blacklisted')}
