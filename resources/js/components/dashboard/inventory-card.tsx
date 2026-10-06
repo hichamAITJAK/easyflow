@@ -78,11 +78,11 @@ export function InventoryCard({ inventory }: { inventory: Inventory }) {
                     </p>
                 ) : (
                     <>
-                        <Table>
+                        <Table className="[&_td:last-child]:pr-6 [&_th:last-child]:pr-6">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>{t('Product')}</TableHead>
-                                    <TableHead className="text-right">
+                                    <TableHead className="text-center">
                                         {t('In stock')}
                                     </TableHead>
                                 </TableRow>
@@ -123,8 +123,8 @@ export function InventoryCard({ inventory }: { inventory: Inventory }) {
                                                     </span>
                                                 </span>
                                             </TableCell>
-                                            <TableCell className="text-right">
-                                                <span className="inline-flex items-center justify-end gap-2">
+                                            <TableCell className="text-center">
+                                                <span className="inline-flex items-center justify-center gap-2">
                                                     {out && (
                                                         <Badge
                                                             variant="outline"
