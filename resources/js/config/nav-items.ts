@@ -5,7 +5,6 @@ import {
     PackageSearch,
     ScaleIcon,
     ScanLine,
-    ShieldBan,
     ShoppingCart,
     Store,
     Truck,
@@ -15,10 +14,7 @@ import {
 } from 'lucide-react';
 import { dashboard } from '@/routes';
 import { index as commissionEntriesIndex } from '@/routes/commission-entries';
-import {
-    blacklist as customersBlacklist,
-    index as customersIndex,
-} from '@/routes/customers';
+import { index as customersIndex } from '@/routes/customers';
 import { index as deliveryCouriersIndex } from '@/routes/delivery-couriers';
 import { index as fulfillmentIndex } from '@/routes/fulfillment';
 import { index as ordersIndex } from '@/routes/orders';
@@ -56,11 +52,14 @@ export const mainNavItems: NavItem[] = [
         href: customersIndex(),
         icon: UsersRound,
     },
-    {
-        title: 'Blacklist',
-        href: customersBlacklist(),
-        icon: ShieldBan,
-    },
+    // Blacklist is hidden from every sidebar for now, not removed: the
+    // page still works at /customers/blacklist. Restore this entry (and
+    // the ShieldBan + customersBlacklist imports) to bring the link back.
+    // {
+    //     title: 'Blacklist',
+    //     href: customersBlacklist(),
+    //     icon: ShieldBan,
+    // },
     {
         title: 'Team',
         href: usersIndex(),
@@ -114,9 +113,6 @@ export const navItemRoles: Partial<Record<string, UserRole[]>> = {
     Parcels: ['super_admin', 'admin', 'confirmation_agent'],
     Products: ['super_admin', 'admin', 'confirmation_agent'],
     Customers: ['super_admin', 'admin', 'confirmation_agent'],
-    // Hidden from the admin sidebar only; the page still works for them at
-    // /customers/blacklist. Add 'admin' back to restore the link.
-    Blacklist: ['confirmation_agent'],
     Commissions: ['super_admin', 'admin', 'confirmation_agent'],
     Team: ['super_admin', 'admin'],
     Stores: ['super_admin', 'admin'],
