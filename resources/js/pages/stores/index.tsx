@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Plus, Store as StoreIcon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import Heading from '@/components/heading';
 import { DeleteStoreDialog } from '@/components/stores/delete-store-dialog';
@@ -14,7 +14,6 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from '@/components/ui/empty';
-import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import { create as createStore } from '@/routes/stores';
@@ -23,7 +22,6 @@ import type { StoreSummary } from '@/types';
 export default function StoresIndex({ stores }: { stores: StoreSummary[] }) {
     const { t } = useTranslation();
 
-    const [search, setSearch] = useState('');
     const [deletingStore, setDeletingStore] = useState<StoreSummary | null>(
         null,
     );
@@ -38,26 +36,6 @@ export default function StoresIndex({ stores }: { stores: StoreSummary[] }) {
     const reconnectWithCredentials = (store: StoreSummary) => {
         router.get(createStore().url, { reconnect: store.id });
     };
-
-    const filteredStores = useMemo(() => {
-        const query = search.trim().toLowerCase();
-
-        if (!query) {
-            return stores;
-        }
-
-        return stores.filter((store) =>
-            [
-                store.name,
-                store.platform?.name ?? '',
-                store.domain ?? '',
-                store.connection_status,
-            ]
-                .join(' ')
-                .toLowerCase()
-                .includes(query),
-        );
-    }, [stores, search]);
 
     return (
         <>
@@ -78,15 +56,6 @@ export default function StoresIndex({ stores }: { stores: StoreSummary[] }) {
                         </Link>
                     </Button>
                 </div>
-
-                {stores.length > 0 && (
-                    <Input
-                        placeholder={t('Filter stores…')}
-                        value={search}
-                        onChange={(event) => setSearch(event.target.value)}
-                        className="max-w-sm"
-                    />
-                )}
 
                 {stores.length === 0 ? (
                     <Empty className="border">
@@ -129,23 +98,9 @@ export default function StoresIndex({ stores }: { stores: StoreSummary[] }) {
                             </Button>
                         </EmptyContent>
                     </Empty>
-                ) : filteredStores.length === 0 ? (
-                    <Empty className="border">
-                        <EmptyHeader>
-                            <EmptyMedia variant="icon">
-                                <StoreIcon />
-                            </EmptyMedia>
-                            <EmptyTitle>{t('No matches found')}</EmptyTitle>
-                            <EmptyDescription>
-                                {t(
-                                    'Try a different name, platform, or status.',
-                                )}
-                            </EmptyDescription>
-                        </EmptyHeader>
-                    </Empty>
                 ) : (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                        {filteredStores.map((store) => (
+                        {stores.map((store) => (
                             <StoreCard
                                 key={store.id}
                                 store={store}

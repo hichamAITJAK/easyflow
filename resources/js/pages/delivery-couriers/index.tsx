@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { Plus, Truck } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { CourierCard } from '@/components/delivery-couriers/courier-card';
 import { DeleteDeliveryAccountDialog } from '@/components/delivery-couriers/delete-delivery-account-dialog';
@@ -14,7 +14,6 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from '@/components/ui/empty';
-import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
 import { create as createDeliveryCourrier } from '@/routes/delivery-couriers';
@@ -27,29 +26,8 @@ export default function DeliveryCouriersIndex({
 }) {
     const { t } = useTranslation();
 
-    const [search, setSearch] = useState('');
     const [deletingAccount, setDeletingAccount] =
         useState<DeliveryAccount | null>(null);
-
-    const filteredAccounts = useMemo(() => {
-        const query = search.trim().toLowerCase();
-
-        if (!query) {
-            return accounts;
-        }
-
-        return accounts.filter((account) =>
-            [
-                account.courier?.name ?? '',
-                account.label,
-                account.collect_city?.name ?? '',
-                account.status,
-            ]
-                .join(' ')
-                .toLowerCase()
-                .includes(query),
-        );
-    }, [accounts, search]);
 
     return (
         <>
@@ -70,15 +48,6 @@ export default function DeliveryCouriersIndex({
                         </Link>
                     </Button>
                 </div>
-
-                {accounts.length > 0 && (
-                    <Input
-                        placeholder={t('Filter couriers…')}
-                        value={search}
-                        onChange={(event) => setSearch(event.target.value)}
-                        className="max-w-sm"
-                    />
-                )}
 
                 {accounts.length === 0 ? (
                     <Empty className="border">
@@ -121,21 +90,9 @@ export default function DeliveryCouriersIndex({
                             </Button>
                         </EmptyContent>
                     </Empty>
-                ) : filteredAccounts.length === 0 ? (
-                    <Empty className="border">
-                        <EmptyHeader>
-                            <EmptyMedia variant="icon">
-                                <Truck />
-                            </EmptyMedia>
-                            <EmptyTitle>{t('No matches found')}</EmptyTitle>
-                            <EmptyDescription>
-                                {t('Try a different name or city.')}
-                            </EmptyDescription>
-                        </EmptyHeader>
-                    </Empty>
                 ) : (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                        {filteredAccounts.map((account) => (
+                        {accounts.map((account) => (
                             <CourierCard
                                 key={account.id}
                                 account={account}
