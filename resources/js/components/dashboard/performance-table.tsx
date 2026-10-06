@@ -50,12 +50,7 @@ export type RateTargets = {
 };
 
 type SortKey =
-    | 'orders'
-    | 'confirmed'
-    | 'confirmationRate'
-    | 'delivered'
-    | 'deliveryRate'
-    | 'avgDeliveryDays';
+    'orders' | 'confirmationRate' | 'deliveryRate' | 'avgDeliveryDays';
 
 /**
  * Rate tinted relative to its business target — the same definition of
@@ -64,13 +59,25 @@ type SortKey =
  * below = destructive with a down glyph; the near-miss band in between
  * stays quiet. Glyph + sr-only text carry the meaning without color.
  */
-function RateCell({ value, target }: { value: number | null; target: number }) {
+function RateCell({
+    value,
+    target,
+    count,
+}: {
+    value: number | null;
+    target: number;
+    /** The count behind the rate, shown beside it. */
+    count: number;
+}) {
     const { t } = useTranslation();
 
     if (value === null) {
         return (
-            <TableCell className="text-right text-muted-foreground">
-                —
+            <TableCell className="text-right font-semibold tabular-nums">
+                {formatNumber(count)}
+                <span className="ml-2 font-normal text-muted-foreground">
+                    —
+                </span>
             </TableCell>
         );
     }
@@ -80,9 +87,10 @@ function RateCell({ value, target }: { value: number | null; target: number }) {
 
     return (
         <TableCell className="text-right font-semibold tabular-nums">
+            {formatNumber(count)}
             <span
                 className={cn(
-                    'inline-flex items-center justify-end gap-0.5',
+                    'ml-2 inline-flex items-center justify-end gap-0.5',
                     above && 'text-success',
                     wellBelow && 'text-destructive',
                 )}
@@ -161,17 +169,6 @@ function RowsTable({
 }) {
     const { t } = useTranslation();
 
-    // "Confirmed" and "Delivered" are already translated as one order's
-    // status. As column heads they count many orders, which other
-    // languages word differently, so they get their own entries and fall
-    // back to the plain English word when there is none.
-    const countLabel = (label: string): string => {
-        const key = `${label} (count)`;
-        const translated = t(key);
-
-        return translated === key ? label : translated;
-    };
-
     const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({
         key: 'orders',
         desc: true,
@@ -209,29 +206,15 @@ function RowsTable({
                         onSort={toggleSort}
                     />
                     {!hideConfirmation && (
-                        <>
-                            <SortableHead
-                                label={countLabel('Confirmed')}
-                                column="confirmed"
-                                sort={sort}
-                                onSort={toggleSort}
-                            />
-                            <SortableHead
-                                label={t('Confirmation %')}
-                                column="confirmationRate"
-                                sort={sort}
-                                onSort={toggleSort}
-                            />
-                        </>
+                        <SortableHead
+                            label={t('Confirmation')}
+                            column="confirmationRate"
+                            sort={sort}
+                            onSort={toggleSort}
+                        />
                     )}
                     <SortableHead
-                        label={countLabel('Delivered')}
-                        column="delivered"
-                        sort={sort}
-                        onSort={toggleSort}
-                    />
-                    <SortableHead
-                        label={t('Delivery %')}
+                        label={t('Delivery')}
                         column="deliveryRate"
                         sort={sort}
                         onSort={toggleSort}
@@ -272,22 +255,16 @@ function RowsTable({
                             {formatNumber(row.orders)}
                         </TableCell>
                         {!hideConfirmation && (
-                            <>
-                                <TableCell className="text-right font-semibold tabular-nums">
-                                    {formatNumber(row.confirmed)}
-                                </TableCell>
-                                <RateCell
-                                    value={row.confirmationRate}
-                                    target={targets.confirmation}
-                                />
-                            </>
+                            <RateCell
+                                value={row.confirmationRate}
+                                target={targets.confirmation}
+                                count={row.confirmed}
+                            />
                         )}
-                        <TableCell className="text-right font-semibold tabular-nums">
-                            {formatNumber(row.delivered)}
-                        </TableCell>
                         <RateCell
                             value={row.deliveryRate}
                             target={targets.delivery}
+                            count={row.delivered}
                         />
                         {hideConfirmation && (
                             <TableCell className="text-right font-semibold tabular-nums">
