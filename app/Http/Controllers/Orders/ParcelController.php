@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Orders;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Concerns\BuildsTableQuery;
 use App\Http\Controllers\Concerns\ScopesAgentAccess;
 use App\Http\Controllers\Controller;
@@ -37,7 +38,17 @@ class ParcelController extends Controller
         $user = $request->user();
         $businessId = $user->business_id;
 
-        $query = $this->applyOrderAssignmentScope(Order::query(), $user)
+        // A confirmation agent sees the parcels of their own orders. A
+        // fulfilment agent is never assigned orders, so for them the list
+        // is the business's parcels, narrowed by their store grants.
+        $query = $user->role === UserRole::FULFILMENT_AGENT
+            ? Order::query()->when(
+                $this->scopedStoreIds($user),
+                fn ($query, array $storeIds) => $query->whereIn('store_id', $storeIds),
+            )
+            : $this->applyOrderAssignmentScope(Order::query(), $user);
+
+        $query = $query
             ->with(['deliveryAccount.courier:id,name,slug'])
             ->where('business_id', $businessId)
             ->whereNotNull('courier_tracking_number')

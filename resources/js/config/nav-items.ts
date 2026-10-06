@@ -135,6 +135,11 @@ const FULFILMENT_NAV_ITEMS: NavItem[] = [
         icon: ScanLine,
     },
     {
+        title: 'Parcels',
+        href: parcelsIndex(),
+        icon: PackageSearch,
+    },
+    {
         title: 'Commissions',
         href: commissionEntriesIndex(),
         icon: Wallet,

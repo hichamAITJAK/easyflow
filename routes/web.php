@@ -209,7 +209,9 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
         });
     });
 
-    Route::prefix('parcels')->name('parcels.')->middleware('can:use-operations-app')->group(function () {
+    // No use-operations-app gate: fulfilment agents track parcels too.
+    // The controller scopes what each role sees.
+    Route::prefix('parcels')->name('parcels.')->group(function () {
         Route::get('/', [ParcelController::class, 'index'])->name('index');
     });
 

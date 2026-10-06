@@ -1,8 +1,12 @@
 <?php
 
 use App\Enums\Courier;
+use App\Enums\UserRole;
+use App\Models\AgentScope;
 use App\Models\DeliveryAccount;
 use App\Models\DeliveryCourrier;
+use App\Models\EcommercePlatform;
+use App\Models\Store;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -35,4 +39,42 @@ test('the parcels table receives the courier name and the account label', functi
             ->where('parcels.data.0.delivery_account.courier.name', 'Sendit')
             ->where('parcels.data.0.delivery_account.label', 'Casablanca contract')
         );
+});
+
+test('a fulfilment agent sees the business parcels, narrowed by store grants', function () {
+    $admin = makeBusinessUser();
+    $agent = makeBusinessUser([
+        'role' => UserRole::FULFILMENT_AGENT,
+        'business_id' => $admin->business_id,
+    ]);
+
+    makeOrder($admin->business_id, ['courier_tracking_number' => 'TRK-A']);
+    makeOrder($admin->business_id, ['courier_tracking_number' => 'TRK-B']);
+    makeOrder($admin->business_id, []); // not shipped: not a parcel
+
+    // Never assigned any order, yet the list is not empty for them.
+    $this->actingAs($agent)
+        ->get(route('parcels.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->has('parcels.data', 2)->etc());
+
+    // A store grant narrows the list to that store's parcels.
+    $platform = EcommercePlatform::create(['name' => 'Shopify', 'slug' => 'shopify']);
+    $store = Store::create([
+        'business_id' => $admin->business_id,
+        'platform_id' => $platform->id,
+        'name' => 'Main',
+        'slug' => 'main',
+        'connection_status' => 'connected',
+    ]);
+    makeOrder($admin->business_id, ['store_id' => $store->id, 'courier_tracking_number' => 'TRK-C']);
+    AgentScope::create([
+        'business_id' => $admin->business_id,
+        'user_id' => $agent->id,
+        'store_id' => $store->id,
+    ]);
+
+    $this->actingAs($agent)
+        ->get(route('parcels.index'))
+        ->assertInertia(fn ($page) => $page->has('parcels.data', 1)->etc());
 });
