@@ -1,5 +1,4 @@
 import {
-    BarChart3,
     Calculator,
     LayoutGrid,
     Package,
@@ -26,7 +25,6 @@ import { index as ordersIndex } from '@/routes/orders';
 import { index as parcelsIndex } from '@/routes/parcels';
 import { index as productsIndex } from '@/routes/products';
 import { index as profitCalculatorIndex } from '@/routes/profit-calculator';
-import { index as reportsIndex } from '@/routes/reports';
 import { index as settlementsIndex } from '@/routes/settlements';
 import { index as storesIndex } from '@/routes/stores';
 import { index as usersIndex } from '@/routes/users';
@@ -88,11 +86,14 @@ export const mainNavItems: NavItem[] = [
         href: deliveryCouriersIndex(),
         icon: Truck,
     },
-    {
-        title: 'Reports',
-        href: reportsIndex(),
-        icon: BarChart3,
-    },
+    // Reports is hidden from the nav for now, not removed: the route and
+    // page still work at /reports. Restore this entry (and the two
+    // imports) to bring the link back.
+    // {
+    //     title: 'Reports',
+    //     href: reportsIndex(),
+    //     icon: BarChart3,
+    // },
     {
         title: 'Profit Calculator',
         href: profitCalculatorIndex(),
