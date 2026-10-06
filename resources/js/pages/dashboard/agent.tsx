@@ -45,6 +45,17 @@ export default function AgentDashboard({
 }: Props) {
     const { t } = useTranslation();
 
+    // "Confirmed" and the like are already translated as one order's
+    // status. These tiles count many orders, which other languages word
+    // differently, so they get their own entries and fall back to the
+    // plain English word when there is none.
+    const countLabel = (label: string): string => {
+        const key = `${label} (count)`;
+        const translated = t(key);
+
+        return translated === key ? label : translated;
+    };
+
     return (
         <>
             <Head title={t('Dashboard')} />
@@ -58,24 +69,27 @@ export default function AgentDashboard({
                     {/* Assigned carries no share: it is the denominator
                         the others are measured against, so "100%" would
                         be noise. */}
-                    <StatTile label={t('Assigned')} value={totals.assigned} />
                     <StatTile
-                        label={t('Confirmed')}
+                        label={countLabel('Assigned')}
+                        value={totals.assigned}
+                    />
+                    <StatTile
+                        label={countLabel('Confirmed')}
                         value={totals.confirmed}
-                        caption="of assigned"
+                        caption={t('of assigned')}
                         rate={tileRates.confirmed}
                     />
                     <StatTile
-                        label={t('Delivered')}
+                        label={countLabel('Delivered')}
                         value={totals.delivered}
-                        caption="of shipped"
+                        caption={t('of shipped')}
                         rate={tileRates.delivered}
                         accent="success"
                     />
                     <StatTile
-                        label={t('Cancelled')}
+                        label={countLabel('Cancelled')}
                         value={totals.cancelled}
-                        caption="of assigned"
+                        caption={t('of assigned')}
                         rate={tileRates.cancelled}
                         accent="destructive"
                     />

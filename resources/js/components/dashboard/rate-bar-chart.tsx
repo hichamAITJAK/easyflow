@@ -1,5 +1,12 @@
 import type { ReactNode } from 'react';
-import { Bar, BarChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from 'recharts';
+import {
+    Bar,
+    BarChart,
+    CartesianGrid,
+    ReferenceLine,
+    XAxis,
+    YAxis,
+} from 'recharts';
 import {
     ChartRangeSelect,
     useChartRange,
@@ -109,7 +116,8 @@ export function RateBarChart({
     });
 
     const hasData = chartData.some((row) =>
-        series.some((entry) => row[entry.key] !== null), );
+        series.some((entry) => row[entry.key] !== null),
+    );
 
     return (
         <Card className="pt-0 shadow-none">
@@ -124,11 +132,13 @@ export function RateBarChart({
                 {total !== undefined && (
                     <div className="grid gap-0.5 sm:text-right">
                         <span className="text-2xl font-semibold tabular-nums">
-                            {total === null ? '—' : `${total}%`}
+                            {total === null ? '—' : `${Math.round(total)}%`}
                         </span>
                         <span className="text-xs text-muted-foreground">
                             {totalPeriodDays
-                                ? t('Last :days days', { days: totalPeriodDays })
+                                ? t('Last :days days', {
+                                      days: totalPeriodDays,
+                                  })
                                 : t('Full period')}
                         </span>
                     </div>
@@ -196,7 +206,7 @@ export function RateBarChart({
                                     strokeDasharray="4 3"
                                     strokeOpacity={0.6}
                                     label={{
-                                        value: `Target ${target}%`,
+                                        value: t('Target :target%', { target }),
                                         position: 'insideTopRight',
                                         className:
                                             'fill-muted-foreground text-[10px]',
