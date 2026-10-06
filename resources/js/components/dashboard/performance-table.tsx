@@ -73,7 +73,7 @@ function RateCell({
 
     if (value === null) {
         return (
-            <TableCell className="text-right font-semibold tabular-nums">
+            <TableCell className="text-center font-semibold tabular-nums">
                 {formatNumber(count)}
                 <span className="ml-2 font-normal text-muted-foreground">
                     —
@@ -86,11 +86,11 @@ function RateCell({
     const wellBelow = value < target * 0.9;
 
     return (
-        <TableCell className="text-right font-semibold tabular-nums">
+        <TableCell className="text-center font-semibold tabular-nums">
             {formatNumber(count)}
             <span
                 className={cn(
-                    'ml-2 inline-flex items-center justify-end gap-0.5',
+                    'ml-2 inline-flex items-center gap-0.5',
                     above && 'text-success',
                     wellBelow && 'text-destructive',
                 )}
@@ -127,11 +127,11 @@ function SortableHead({
     const SortIcon = active ? (sort.desc ? ArrowDown : ArrowUp) : ArrowUpDown;
 
     return (
-        <TableHead className="text-right">
+        <TableHead className="text-center">
             <Button
                 variant="ghost"
                 size="sm"
-                className="-mr-2.5 gap-1"
+                className="gap-1"
                 onClick={() => onSort(column)}
                 aria-label={
                     t('Sort by :label', { label }) +
@@ -195,7 +195,7 @@ function RowsTable({
     });
 
     return (
-        <Table>
+        <Table className="[&_td:last-child]:pr-6 [&_th:last-child]:pr-6">
             <TableHeader>
                 <TableRow>
                     <TableHead>{t('Name')}</TableHead>
@@ -251,7 +251,7 @@ function RowsTable({
                                 </span>
                             </span>
                         </TableCell>
-                        <TableCell className="text-right font-semibold tabular-nums">
+                        <TableCell className="text-center font-semibold tabular-nums">
                             {formatNumber(row.orders)}
                         </TableCell>
                         {!hideConfirmation && (
@@ -267,7 +267,7 @@ function RowsTable({
                             count={row.delivered}
                         />
                         {hideConfirmation && (
-                            <TableCell className="text-right font-semibold tabular-nums">
+                            <TableCell className="text-center font-semibold tabular-nums">
                                 {row.avgDeliveryDays !== undefined
                                     ? `${row.avgDeliveryDays.toFixed(1)}d`
                                     : '—'}
