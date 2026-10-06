@@ -114,7 +114,9 @@ export const navItemRoles: Partial<Record<string, UserRole[]>> = {
     Parcels: ['super_admin', 'admin', 'confirmation_agent'],
     Products: ['super_admin', 'admin', 'confirmation_agent'],
     Customers: ['super_admin', 'admin', 'confirmation_agent'],
-    Blacklist: ['super_admin', 'admin', 'confirmation_agent'],
+    // Hidden from the admin sidebar only; the page still works for them at
+    // /customers/blacklist. Add 'admin' back to restore the link.
+    Blacklist: ['confirmation_agent'],
     Commissions: ['super_admin', 'admin', 'confirmation_agent'],
     Team: ['super_admin', 'admin'],
     Stores: ['super_admin', 'admin'],
