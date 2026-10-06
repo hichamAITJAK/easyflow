@@ -544,7 +544,7 @@ export function OrderFormDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-4xl">
+            <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-h-[85vh] sm:max-w-4xl">
                 <DialogHeader>
                     <DialogTitle>
                         {isEditing ? t('Edit order') : t('Add order')}
@@ -557,7 +557,7 @@ export function OrderFormDialog({
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
                         <div className="grid gap-2">
                             <Label htmlFor="customer_name">
                                 {t('Customer name')}
@@ -606,7 +606,7 @@ export function OrderFormDialog({
                         <InputError message={errors.customer_address} />
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid gap-4 sm:grid-cols-3">
                         <div className="grid gap-2">
                             <Label htmlFor="customer_city">{t('City')}</Label>
                             <Input
@@ -735,8 +735,8 @@ export function OrderFormDialog({
                                     key={item.key}
                                     className="space-y-2 rounded-md border p-3"
                                 >
-                                    <div className="flex items-end gap-2">
-                                        <div className="grid flex-1 gap-2">
+                                    <div className="flex flex-wrap items-end gap-2">
+                                        <div className="grid w-full gap-2 sm:w-auto sm:flex-1">
                                             <Label>{t('Product')}</Label>
                                             <Popover
                                                 open={
@@ -852,7 +852,7 @@ export function OrderFormDialog({
                                             no single quantity to show here. */}
                                         {!hasVariants && (
                                             <>
-                                                <div className="grid w-20 gap-2">
+                                                <div className="grid min-w-0 flex-1 gap-2 sm:w-20 sm:flex-none">
                                                     <Label>{t('Qty')}</Label>
                                                     <Input
                                                         type="number"
@@ -883,7 +883,7 @@ export function OrderFormDialog({
                                                     />
                                                 </div>
 
-                                                <div className="grid w-28 gap-2">
+                                                <div className="grid min-w-0 flex-1 gap-2 sm:w-28 sm:flex-none">
                                                     <Label>
                                                         {t('Unit price')}
                                                     </Label>
@@ -940,9 +940,9 @@ export function OrderFormDialog({
                                                 return (
                                                     <div
                                                         key={line.key}
-                                                        className="flex items-end gap-2"
+                                                        className="flex flex-wrap items-end gap-2"
                                                     >
-                                                        <div className="grid flex-1 gap-2">
+                                                        <div className="grid w-full gap-2 sm:w-auto sm:flex-1">
                                                             <Label>
                                                                 {t('Variant')}
                                                             </Label>
@@ -1035,7 +1035,7 @@ export function OrderFormDialog({
                                                             </Select>
                                                         </div>
 
-                                                        <div className="grid w-20 gap-2">
+                                                        <div className="grid min-w-0 flex-1 gap-2 sm:w-20 sm:flex-none">
                                                             <Label>
                                                                 {t('Qty')}
                                                             </Label>
@@ -1077,7 +1077,7 @@ export function OrderFormDialog({
                                                             />
                                                         </div>
 
-                                                        <div className="grid w-28 gap-2">
+                                                        <div className="grid min-w-0 flex-1 gap-2 sm:w-28 sm:flex-none">
                                                             <Label>
                                                                 {t(
                                                                     'Unit price',
