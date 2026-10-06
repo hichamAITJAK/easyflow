@@ -63,9 +63,14 @@ class OrderService
      * this stays a straight persist rather than a silent recompute that
      * could surprise an agent who deliberately overrode the total.
      *
-     * @param  array{source_platform?: string|null, customer_name: string, customer_phone: string, customer_address: string, customer_city?: string|null, total_amount: float, notes?: string|null, items?: array<int, array{product_id?: int|null, product_variant_id?: int|null, product_name: string, quantity: int, unit_price: float}>}  $data
+     * assigned_agent_id, when given, hands the order to that agent before
+     * OrderCreated fires, so the load-based auto-assign listener leaves it
+     * alone (an agent typing in an order they took on the phone owns it).
+     * $actor is who performed that assignment for the audit log.
+     *
+     * @param  array{assigned_agent_id?: int|null, source_platform?: string|null, customer_name: string, customer_phone: string, customer_address: string, customer_city?: string|null, total_amount: float, notes?: string|null, items?: array<int, array{product_id?: int|null, product_variant_id?: int|null, product_name: string, quantity: int, unit_price: float}>}  $data
      */
-    public function createManualOrder(int $businessId, array $data): Order
+    public function createManualOrder(int $businessId, array $data, ?User $actor = null): Order
     {
         $customerPhone = PhoneNumber::format($data['customer_phone']) ?? $data['customer_phone'];
 
@@ -110,6 +115,10 @@ class OrderService
                 'quantity' => $item['quantity'],
                 'unit_price' => $item['unit_price'],
             ]);
+        }
+
+        if (! empty($data['assigned_agent_id'])) {
+            $this->assign($order, (int) $data['assigned_agent_id'], $actor);
         }
 
         OrderCreated::dispatch($order);

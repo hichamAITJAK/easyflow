@@ -189,6 +189,10 @@ class OrderController extends Controller
         $user = $request->user();
 
         $this->orders->createManualOrder($user->business_id, [
+            // A confirmation agent who keys in an order is the one who
+            // took it (phone, WhatsApp…), so it is theirs from the start
+            // rather than going through load-based auto-assignment.
+            'assigned_agent_id' => $user->role === UserRole::CONFIRMATION_AGENT ? $user->id : null,
             'source_platform' => $validated['source_platform'] ?? null,
             'customer_name' => $validated['customer_name'],
             'customer_phone' => $validated['customer_phone'],
@@ -203,7 +207,7 @@ class OrderController extends Controller
                 'quantity' => (int) $item['quantity'],
                 'unit_price' => (float) $item['unit_price'],
             ], $validated['items'] ?? []),
-        ]);
+        ], $user);
 
         // PostHog: Track manual order creation
         $this->posthog->capture((string) $user->id, 'order_created', [
