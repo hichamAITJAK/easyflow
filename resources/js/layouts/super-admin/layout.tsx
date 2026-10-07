@@ -14,9 +14,6 @@ import {
     SidebarFooter,
     SidebarHeader,
     SidebarInset,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
     SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { useTranslation } from '@/hooks/use-translation';
@@ -52,37 +49,26 @@ const navItems: NavItem[] = [
 ];
 
 function SuperAdminSidebar() {
-    const { t } = useTranslation();
-
     return (
-        <Sidebar collapsible="icon" variant="sidebar">
-            <SidebarHeader>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <Link href={businessesIndex()} prefetch>
-                                <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-                                    <AppLogoIcon className="size-5 fill-current" />
-                                </div>
-                                <div className="grid flex-1 text-left leading-tight">
-                                    <span className="truncate text-sm font-semibold tracking-tight">
-                                        EasyFlow
-                                    </span>
-                                    <span className="truncate font-mono text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
-                                        {t('Platform')}
-                                    </span>
-                                </div>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
+        <Sidebar
+            collapsible="icon"
+            className="border-r border-border [&_[data-sidebar=sidebar]]:bg-background"
+        >
+            <SidebarHeader className="flex h-16 shrink-0 items-center justify-center p-0">
+                <Link
+                    href={businessesIndex()}
+                    prefetch
+                    className="flex items-center justify-center rounded-lg"
+                >
+                    <AppLogoIcon className="size-12 shrink-0 rounded-lg group-data-[collapsible=icon]:size-9 motion-safe:animate-logo-spin" />
+                </Link>
             </SidebarHeader>
 
-            <SidebarContent>
+            <SidebarContent className="pb-4">
                 <NavMain items={navItems} />
             </SidebarContent>
 
-            <SidebarFooter>
+            <SidebarFooter className="border-t border-border p-2.5">
                 <NavUser />
             </SidebarFooter>
         </Sidebar>
@@ -103,8 +89,8 @@ export default function SuperAdminLayout({ children }: PropsWithChildren) {
         <AppShell variant="sidebar" className="font-sora text-sm font-medium">
             <SuperAdminSidebar />
             <SidebarInset className="overflow-x-hidden">
-                <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border/50 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4">
-                    <SidebarTrigger className="-ml-1" />
+                <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-background px-4">
+                    <SidebarTrigger className="size-7" />
 
                     <Badge
                         variant="outline"
@@ -114,7 +100,7 @@ export default function SuperAdminLayout({ children }: PropsWithChildren) {
                         {t('Super Admin')}
                     </Badge>
 
-                    <div className="ml-auto flex items-center">
+                    <div className="ml-auto flex items-center gap-1">
                         <LanguageDropdown />
                         <AppearanceDropdown />
                     </div>
