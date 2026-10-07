@@ -27,13 +27,14 @@ export function AppSidebar() {
             collapsible="icon"
             className="border-r border-border [&_[data-sidebar=sidebar]]:bg-background"
         >
-            <SidebarHeader className="flex h-14 shrink-0 items-center justify-center p-0">
+            <SidebarHeader className="flex h-16 shrink-0 items-center justify-center p-0">
                 <Link
                     href={dashboard()}
                     prefetch
-                    className="flex size-9 items-center justify-center rounded-lg"
+                    className="flex items-center justify-center rounded-lg"
                 >
-                    <AppLogoIcon className="size-9 shrink-0 rounded-lg motion-safe:animate-logo-spin" />
+                    {/* Shrinks to fit the icon rail when collapsed. */}
+                    <AppLogoIcon className="size-12 shrink-0 rounded-lg group-data-[collapsible=icon]:size-9 motion-safe:animate-logo-spin" />
                 </Link>
             </SidebarHeader>
 
