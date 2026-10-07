@@ -162,7 +162,7 @@ function DeltaBadge({
             className={cn(
                 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold',
                 good
-                    ? 'bg-[#209D72]/10 text-[#157A57]'
+                    ? 'bg-[#16A08E]/10 text-[#0C7D6F]'
                     : 'bg-[#D92D20]/10 text-[#B3281D]',
             )}
         >
@@ -263,7 +263,7 @@ function AlertsStrip({ alerts }: { alerts: AlertItem[] }) {
                     className={cn(
                         'flex items-center gap-3 rounded-lg border px-4 py-3',
                         a.severity === 'warning'
-                            ? 'border-[#DA8E16]/30 bg-[#DA8E16]/8'
+                            ? 'border-[#EFA22C]/30 bg-[#EFA22C]/8'
                             : 'border-[#D92D20]/30 bg-[#D92D20]/8',
                     )}
                 >
@@ -278,7 +278,7 @@ function AlertsStrip({ alerts }: { alerts: AlertItem[] }) {
                         className={cn(
                             'shrink-0 text-sm font-semibold hover:underline',
                             a.severity === 'warning'
-                                ? 'text-[#A96A05]'
+                                ? 'text-[#A87110]'
                                 : 'text-[#B3281D]',
                         )}
                     >
@@ -378,7 +378,7 @@ function KpiRow({ kpis }: { kpis: KpiBlock }) {
                                 .map((ini, i) => (
                                     <span
                                         key={`${ini}-${i}`}
-                                        className="flex size-7 items-center justify-center rounded-full bg-[#DA8E16]/15 text-[10px] font-semibold text-[#A96A05] ring-2 ring-card"
+                                        className="flex size-7 items-center justify-center rounded-full bg-[#EFA22C]/15 text-[10px] font-semibold text-[#A87110] ring-2 ring-card"
                                     >
                                         {ini}
                                     </span>
@@ -735,7 +735,7 @@ function FinanceRow({
                     </p>
                     <div className="my-auto grid grid-cols-2 py-8">
                         <div className="flex flex-col items-center gap-3 text-center">
-                            <span className="flex size-12 items-center justify-center rounded-xl bg-[#DA8E16]/12">
+                            <span className="flex size-12 items-center justify-center rounded-xl bg-[#EFA22C]/12">
                                 <CircleDollarSign
                                     className="size-5"
                                     style={{ color: C.amberText }}
@@ -754,7 +754,7 @@ function FinanceRow({
                             </div>
                         </div>
                         <div className="flex flex-col items-center gap-3 border-l border-border text-center">
-                            <span className="flex size-12 items-center justify-center rounded-xl bg-[#209D72]/12">
+                            <span className="flex size-12 items-center justify-center rounded-xl bg-[#16A08E]/12">
                                 <Wallet
                                     className="size-5"
                                     style={{ color: C.greenText }}
@@ -843,7 +843,7 @@ function FinanceRow({
                             const col =
                                 {
                                     ready_to_ship: C.amber,
-                                    shipped: C.blue,
+                                    shipped: C.petrol,
                                     delivered: C.green,
                                     returned: C.red,
                                 }[s.key] ?? C.gray;

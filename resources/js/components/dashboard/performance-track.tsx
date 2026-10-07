@@ -69,26 +69,27 @@ export interface PerformanceTrackData {
 /* ════════════════════════ DESIGN TOKENS ════════════════════════ */
 // Semantic colours per the handoff — never repainted.
 export const C = {
-    blue: '#4A72E8',
-    purple: '#A4539A',
-    green: '#209D72',
-    greenText: '#157A57',
-    amber: '#DA8E16',
-    amberText: '#A96A05',
+    blue: '#16A08E',
+    petrol: '#468FA5',
+    purple: '#F2602F',
+    green: '#16A08E',
+    greenText: '#0C7D6F',
+    amber: '#EFA22C',
+    amberText: '#A87110',
     red: '#D92D20',
     redText: '#B3281D',
     gray: '#A1A1AA',
 };
 export const statusColor: Record<Status, string> = {
     Excellent: C.green,
-    Good: C.blue,
+    Good: C.petrol,
     Average: C.amber,
     Low: C.red,
 };
 export const badgeCls: Record<string, string> = {
-    [C.green]: 'bg-[#209D72]/10 text-[#157A57]',
-    [C.blue]: 'bg-[#4A72E8]/10 text-[#3558B8]',
-    [C.amber]: 'bg-[#DA8E16]/12 text-[#A96A05]',
+    [C.green]: 'bg-[#16A08E]/10 text-[#0C7D6F]',
+    [C.petrol]: 'bg-[#468FA5]/10 text-[#2E7389]',
+    [C.amber]: 'bg-[#EFA22C]/12 text-[#A87110]',
     [C.red]: 'bg-[#D92D20]/10 text-[#B3281D]',
 };
 
@@ -385,10 +386,14 @@ export function PerformanceTrack({
                                         onMouseLeave={hide}
                                     >
                                         <i
-                                            className="absolute bottom-0 w-full rounded-t-[4px] transition-opacity hover:opacity-75"
+                                            className={cn(
+                                                'absolute bottom-0 w-full rounded-t-[4px] transition-colors',
+                                                b.value === max
+                                                    ? 'bg-[#16A08E] hover:opacity-90'
+                                                    : 'bg-[#A6DAD0] hover:bg-[#5FBFAF]',
+                                            )}
                                             style={{
                                                 height: `${(b.value / max) * 100}%`,
-                                                background: C.blue,
                                             }}
                                         />
                                     </span>
