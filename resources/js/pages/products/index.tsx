@@ -17,6 +17,7 @@ import { DataTableViewOptions } from '@/components/data-table/data-table-view-op
 import Heading from '@/components/heading';
 import { ProductDeleteDialog } from '@/components/products/product-delete-dialog';
 import { ProductPreviewDialog } from '@/components/products/product-preview-dialog';
+import { ProductStockDialog } from '@/components/products/product-stock-dialog';
 import { StoreSyncCommand } from '@/components/stores/store-sync-command';
 import { Button } from '@/components/ui/button';
 import {
@@ -76,6 +77,9 @@ export default function ProductsIndex({
 
     const { auth } = usePage<PageProps>().props;
     const canManage = ADMIN_ROLES.includes(auth.user.role);
+    const canEditStock = canManage || auth.user.role === 'fulfilment_agent';
+    const [stockOpen, setStockOpen] = useState(false);
+    const [stockProduct, setStockProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(false);
     const [syncOpen, setSyncOpen] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
@@ -153,6 +157,11 @@ export default function ProductsIndex({
         setDeleteOpen(true);
     };
 
+    const openStock = (product: Product) => {
+        setStockProduct(product);
+        setStockOpen(true);
+    };
+
     const columns = useMemo(
         () =>
             createColumns({
@@ -162,9 +171,11 @@ export default function ProductsIndex({
                 onEdit: openEdit,
                 onPreview: openPreview,
                 onDelete: openDelete,
+                onEditStock: openStock,
+                canEditStock,
                 canManage,
             }),
-        [filters, canManage],
+        [filters, canManage, canEditStock],
     );
 
     const table = useReactTable({
@@ -359,6 +370,12 @@ export default function ProductsIndex({
                 open={previewOpen}
                 onOpenChange={setPreviewOpen}
                 product={previewProduct}
+            />
+
+            <ProductStockDialog
+                open={stockOpen}
+                onOpenChange={setStockOpen}
+                product={stockProduct}
             />
 
             <ProductDeleteDialog

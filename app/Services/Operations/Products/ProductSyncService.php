@@ -127,9 +127,15 @@ class ProductSyncService
             $variant->fill([
                 'business_id' => $store->business_id,
                 'price' => $data['price'] ?? null,
-                'inventory_quantity' => $data['inventory_quantity'] ?? null,
                 'is_available' => $data['available'] ?? true,
             ]);
+
+            // Stock counted in EasyFlow's warehouse wins over the platform's
+            // figure once someone has edited it here (see
+            // ProductInventoryController); until then the platform seeds it.
+            if (! $product->stock_managed_locally) {
+                $variant->inventory_quantity = $data['inventory_quantity'] ?? null;
+            }
 
             // sku is synced-immune, mirroring the product-level sku the
             // product upsert above already omits: it is the local

@@ -34,7 +34,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['business_id', 'store_id', 'external_product_id', 'name', 'sku', 'description', 'description_html', 'price', 'inventory_quantity', 'public_url', 'thumbnail', 'tags', 'status', 'is_active', 'is_test'])]
+#[Fillable(['business_id', 'store_id', 'external_product_id', 'name', 'sku', 'description', 'description_html', 'price', 'inventory_quantity', 'stock_managed_locally', 'public_url', 'thumbnail', 'tags', 'status', 'is_active', 'is_test'])]
 #[ScopedBy([BusinessScope::class])]
 class Product extends Model
 {
@@ -46,6 +46,7 @@ class Product extends Model
         return [
             'price' => 'decimal:2',
             'inventory_quantity' => 'integer',
+            'stock_managed_locally' => 'boolean',
             'tags' => 'array',
             'status' => 'boolean',
             'is_active' => 'boolean',

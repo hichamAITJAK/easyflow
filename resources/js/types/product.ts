@@ -12,6 +12,8 @@ export type Product = {
     inventory_quantity: number | null;
     /** Sum of this product's variants' inventory_quantity, when it has any. */
     variants_sum_inventory_quantity: number | null;
+    /** True once stock was edited in EasyFlow; the platform sync then leaves it alone. */
+    stock_managed_locally: boolean;
     public_url: string | null;
     /** The first gallery image (position 0); kept in sync by ProductImageWriter. */
     thumbnail: string | null;

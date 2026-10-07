@@ -13,6 +13,7 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\Orders\ParcelController;
 use App\Http\Controllers\Products\ProductController;
+use App\Http\Controllers\Products\ProductInventoryController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Settlements\CourierSettlementController;
 use App\Http\Controllers\Stores\LightfunnelsConnectionController;
@@ -215,12 +216,19 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
         Route::get('/', [ParcelController::class, 'index'])->name('index');
     });
 
-    Route::prefix('products')->name('products.')->middleware('can:use-operations-app')->group(function () {
+    // No use-operations-app gate: fulfilment agents read the catalogue
+    // too, to keep stock counts right. The controller scopes what each
+    // role sees.
+    Route::prefix('products')->name('products.')->group(function () {
         // Read-only: agents see the catalogue, scoped to their AgentScope
         // grants by the controller. Everything that writes sits behind
-        // `manage-products` below.
+        // `manage-products` / `manage-inventory` below.
         Route::get('/', [ProductController::class, 'index'])->name('index');
         Route::get('/{product}/variants', [ProductController::class, 'variants'])->name('variants');
+
+        Route::patch('/{product}/inventory', [ProductInventoryController::class, 'update'])
+            ->middleware('can:manage-inventory')
+            ->name('inventory');
 
         Route::middleware('can:manage-products')->group(function () {
             Route::get('/create', [ProductController::class, 'create'])->name('create');

@@ -140,6 +140,11 @@ const FULFILMENT_NAV_ITEMS: NavItem[] = [
         icon: PackageSearch,
     },
     {
+        title: 'Products',
+        href: productsIndex(),
+        icon: Package,
+    },
+    {
         title: 'Commissions',
         href: commissionEntriesIndex(),
         icon: Wallet,

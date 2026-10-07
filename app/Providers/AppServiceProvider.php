@@ -162,6 +162,14 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('manage-platform', fn (User $user): bool => $user->role === UserRole::SUPER_ADMIN);
 
+        // Stock counts are warehouse facts, so the fulfilment agent who
+        // handles the shelves can correct them, as can the admin.
+        Gate::define('manage-inventory', fn (User $user): bool => in_array(
+            $user->role,
+            [UserRole::SUPER_ADMIN, UserRole::ADMIN, UserRole::FULFILMENT_AGENT],
+            true,
+        ));
+
         // The scan-driven fulfilment workspace (UC-16/UC-17). Admins get it
         // too so they can cover the warehouse or verify a scan without
         // borrowing an agent's account.

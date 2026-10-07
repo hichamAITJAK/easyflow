@@ -4,6 +4,7 @@ import {
     Eye,
     FlaskConical,
     MoreHorizontal,
+    Boxes,
     Package,
     Pencil,
     Trash2,
@@ -37,6 +38,8 @@ export function createColumns({
     onEdit,
     onPreview,
     onDelete,
+    onEditStock,
+    canEditStock,
     canManage,
 }: {
     t: Translator;
@@ -45,6 +48,8 @@ export function createColumns({
     onEdit: (product: Product) => void;
     onPreview: (product: Product) => void;
     onDelete: (product: Product) => void;
+    onEditStock: (product: Product) => void;
+    canEditStock: boolean;
     /** False for agents, whose catalogue access is read-only. */
     canManage: boolean;
 }): ColumnDef<Product>[] {
@@ -177,6 +182,14 @@ export function createColumns({
                                 <Eye />
                                 {t('Preview')}
                             </DropdownMenuItem>
+                            {canEditStock && (
+                                <DropdownMenuItem
+                                    onSelect={() => onEditStock(product)}
+                                >
+                                    <Boxes />
+                                    {t('Edit stock')}
+                                </DropdownMenuItem>
+                            )}
                             {canManage && (
                                 <>
                                     <DropdownMenuItem
