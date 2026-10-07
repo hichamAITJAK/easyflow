@@ -179,13 +179,21 @@ class YouCanService implements EcomPlatformInterface
     /**
      * List products for this store via the YouCan API, fetching every page.
      *
+     * `include=variants` is required: without it YouCan's /products only
+     * carries `has_variants` / `variants_count` / `variant_options`, never
+     * the variant rows themselves, so every product would sync with no
+     * variants.
+     *
      * @return YouCanProductDTO[]
      */
     public function loadProducts(): array
     {
         $pages = $this->fetchAllPages(
             fn (int $page) => $this->execute(
-                fn () => $this->client()->products()->listProducts(['page' => $page])
+                fn () => $this->client()->products()->listProducts([
+                    'page' => $page,
+                    'include' => 'variants',
+                ])
             )
         );
 
