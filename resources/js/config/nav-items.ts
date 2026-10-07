@@ -62,26 +62,31 @@ export const mainNavItems: NavItem[] = [
     // },
     {
         title: 'Team',
+        group: 'Team',
         href: usersIndex(),
         icon: Users,
     },
     {
         title: 'Commissions',
+        group: 'Team',
         href: commissionEntriesIndex(),
         icon: Wallet,
     },
     {
         title: 'Settlements',
+        group: 'Finance',
         href: settlementsIndex(),
         icon: ScaleIcon,
     },
     {
         title: 'Stores',
+        group: 'Setup',
         href: storesIndex(),
         icon: Store,
     },
     {
         title: 'Delivery Couriers',
+        group: 'Setup',
         href: deliveryCouriersIndex(),
         icon: Truck,
     },
@@ -95,6 +100,7 @@ export const mainNavItems: NavItem[] = [
     // },
     {
         title: 'Profit Calculator',
+        group: 'Finance',
         href: profitCalculatorIndex(),
         icon: Calculator,
     },

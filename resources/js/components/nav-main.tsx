@@ -9,7 +9,10 @@ import {
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useTranslation } from '@/hooks/use-translation';
 import { toUrl } from '@/lib/utils';
-import type { NavItem } from '@/types';
+import type { NavGroup, NavItem } from '@/types';
+
+/** Section order in the sidebar. */
+const GROUPS: NavGroup[] = ['Platform', 'Team', 'Finance', 'Setup'];
 
 export function NavMain({ items = [] }: { items: NavItem[] }) {
     const { t } = useTranslation();
@@ -47,27 +50,51 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
         });
     };
 
+    const sections = GROUPS.map((group) => ({
+        group,
+        items: items.filter((item) => (item.group ?? 'Platform') === group),
+    })).filter((section) => section.items.length > 0);
+
     return (
-        <SidebarGroup className="px-2 py-0">
-            <SidebarGroupLabel>{t('Platform')}</SidebarGroupLabel>
-            <SidebarMenu>
-                {items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                            asChild
-                            isActive={isActive(item)}
-                            tooltip={{ children: t(item.title) }}
-                            closeMobileOnClick
-                            className="data-[active=true]:bg-muted"
-                        >
-                            <Link href={item.href} prefetch>
-                                {item.icon && <item.icon />}
-                                <span>{t(item.title)}</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                ))}
-            </SidebarMenu>
-        </SidebarGroup>
+        <>
+            {sections.map((section, index) => (
+                <SidebarGroup
+                    key={section.group}
+                    className={index === 0 ? 'px-2.5 pt-2 pb-0' : 'px-2.5 py-0'}
+                >
+                    <SidebarGroupLabel
+                        className={
+                            index === 0
+                                ? 'h-auto px-2 pt-1 pb-1.5 text-xs font-medium text-muted-foreground'
+                                : 'h-auto px-2 pt-5 pb-1.5 text-xs font-medium text-muted-foreground'
+                        }
+                    >
+                        {t(section.group)}
+                    </SidebarGroupLabel>
+                    <SidebarMenu className="gap-0.5">
+                        {section.items.map((item) => (
+                            <SidebarMenuItem key={item.title}>
+                                <SidebarMenuButton
+                                    asChild
+                                    isActive={isActive(item)}
+                                    tooltip={{ children: t(item.title) }}
+                                    closeMobileOnClick
+                                    className="h-9 gap-2.5 rounded-md px-2.5 font-medium text-foreground/75 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 hover:bg-accent hover:text-accent-foreground data-[active=true]:bg-primary data-[active=true]:font-medium data-[active=true]:text-primary-foreground data-[active=true]:hover:bg-primary data-[active=true]:hover:text-primary-foreground"
+                                >
+                                    <Link href={item.href} prefetch>
+                                        {item.icon && (
+                                            <item.icon className="size-4 shrink-0" />
+                                        )}
+                                        <span className="truncate">
+                                            {t(item.title)}
+                                        </span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
+                    </SidebarMenu>
+                </SidebarGroup>
+            ))}
+        </>
     );
 }

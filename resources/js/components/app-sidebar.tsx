@@ -1,7 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { HelpCircle, Settings } from 'lucide-react';
-import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
+import AppLogoIcon from '@/components/app-logo-icon';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -9,51 +7,41 @@ import {
     SidebarContent,
     SidebarFooter,
     SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { getVisibleNavItems } from '@/config/nav-items';
 import { dashboard } from '@/routes';
-import type { NavItem, PageProps } from '@/types';
+import type { PageProps } from '@/types';
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Settings',
-        href: '#',
-        icon: Settings,
-    },
-    {
-        title: 'Help Center',
-        href: '#',
-        icon: HelpCircle,
-    },
-];
-
+/*
+  The shell sidebar per the approved dashboard reference: the mark alone
+  at the top (slowly turning), links in four titled sections with the
+  current one filled plum, the signed-in user at the foot. Collapses to
+  icons on desktop, slides in as a drawer on mobile.
+*/
 export function AppSidebar() {
     const { auth } = usePage<PageProps>().props;
     const visibleNavItems = getVisibleNavItems(auth.user?.role);
 
     return (
-        <Sidebar collapsible="icon" variant="inset">
-            <SidebarHeader>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
-                                <AppLogo />
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
+        <Sidebar
+            collapsible="icon"
+            className="border-r border-border [&_[data-sidebar=sidebar]]:bg-background"
+        >
+            <SidebarHeader className="flex h-14 shrink-0 items-center justify-center p-0">
+                <Link
+                    href={dashboard()}
+                    prefetch
+                    className="flex size-9 items-center justify-center rounded-lg"
+                >
+                    <AppLogoIcon className="size-9 shrink-0 rounded-lg motion-safe:animate-logo-spin" />
+                </Link>
             </SidebarHeader>
 
-            <SidebarContent>
+            <SidebarContent className="pb-4">
                 <NavMain items={visibleNavItems} />
             </SidebarContent>
 
-            <SidebarFooter>
-                {/* <NavFooter items={footerNavItems} className="mt-auto" /> */}
+            <SidebarFooter className="border-t border-border p-2.5">
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

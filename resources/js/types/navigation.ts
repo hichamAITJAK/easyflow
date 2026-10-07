@@ -6,9 +6,13 @@ export type BreadcrumbItem = {
     href: NonNullable<InertiaLinkProps['href']>;
 };
 
+export type NavGroup = 'Platform' | 'Team' | 'Finance' | 'Setup';
+
 export type NavItem = {
     title: string;
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon | null;
     isActive?: boolean;
+    /** Sidebar section the link sits under; defaults to Platform. */
+    group?: NavGroup;
 };
