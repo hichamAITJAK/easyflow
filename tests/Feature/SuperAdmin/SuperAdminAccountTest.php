@@ -49,6 +49,6 @@ it('lets a super admin log in and reach the platform panel with no businesses at
     ]);
 
     $this->assertAuthenticatedAs($superAdmin);
-    $this->get(route('super-admin.home'))->assertRedirect(route('super-admin.businesses.index'));
+    $this->get(route('super-admin.home'))->assertRedirect(route('super-admin.dashboard'));
     $this->get(route('super-admin.businesses.index'))->assertOk();
 });

@@ -1,5 +1,11 @@
 import { Link } from '@inertiajs/react';
-import { Building2, ShieldCheck, Store, Truck } from 'lucide-react';
+import {
+    Building2,
+    LayoutDashboard,
+    ShieldCheck,
+    Store,
+    Truck,
+} from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { AppShell } from '@/components/app-shell';
@@ -17,12 +23,18 @@ import {
     SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { useTranslation } from '@/hooks/use-translation';
+import { dashboard } from '@/routes/super-admin';
 import { index as businessesIndex } from '@/routes/super-admin/businesses';
 import { index as couriersIndex } from '@/routes/super-admin/couriers';
 import { index as platformsIndex } from '@/routes/super-admin/platforms';
 import type { NavItem } from '@/types';
 
 const navItems: NavItem[] = [
+    {
+        title: 'Dashboard',
+        href: dashboard(),
+        icon: LayoutDashboard,
+    },
     {
         title: 'Businesses',
         href: businessesIndex(),
@@ -56,7 +68,7 @@ function SuperAdminSidebar() {
         >
             <SidebarHeader className="flex h-16 shrink-0 items-center justify-center p-0">
                 <Link
-                    href={businessesIndex()}
+                    href={dashboard()}
                     prefetch
                     className="flex items-center justify-center rounded-lg"
                 >

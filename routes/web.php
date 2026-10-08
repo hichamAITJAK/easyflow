@@ -25,6 +25,7 @@ use App\Http\Controllers\Stores\WooCommerceConnectionController;
 use App\Http\Controllers\Stores\YouCanConnectionController;
 use App\Http\Controllers\SuperAdmin\BusinessController as SuperAdminBusinessController;
 use App\Http\Controllers\SuperAdmin\CourierController;
+use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\PlatformController;
 use App\Http\Controllers\SuperAdmin\QueueController;
 use App\Http\Controllers\Tools\ProfitCalculatorController;
@@ -51,8 +52,10 @@ Route::middleware('guest')->group(function () {
 // every other role (owner/admin/agents), and never linked from tenant nav.
 Route::prefix('super-admin')->name('super-admin.')->middleware(['auth', 'verified', 'can:manage-platform'])->group(function () {
     Route::get('/', function () {
-        return to_route('super-admin.businesses.index');
+        return to_route('super-admin.dashboard');
     })->name('home');
+
+    Route::get('/dashboard', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
 
     Route::prefix('businesses')->name('businesses.')->group(function () {
         Route::get('/', [SuperAdminBusinessController::class, 'index'])->name('index');
