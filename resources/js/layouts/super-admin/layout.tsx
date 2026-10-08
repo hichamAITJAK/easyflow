@@ -23,6 +23,7 @@ import {
     SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { useTranslation } from '@/hooks/use-translation';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes/super-admin';
 import { index as businessesIndex } from '@/routes/super-admin/businesses';
 import { index as couriersIndex } from '@/routes/super-admin/couriers';
@@ -93,7 +94,13 @@ function SuperAdminSidebar() {
  * business's workspace: no tenant nav items, and the header carries a
  * "Platform" marker instead of a workspace identity.
  */
-export default function SuperAdminLayout({ children }: PropsWithChildren) {
+export default function SuperAdminLayout({
+    children,
+    fullWidth = false,
+}: PropsWithChildren<{
+    /** Dashboards span the whole screen; forms and tables stay readable at 6xl. */
+    fullWidth?: boolean;
+}>) {
     const { t } = useTranslation();
 
     return (
@@ -118,7 +125,12 @@ export default function SuperAdminLayout({ children }: PropsWithChildren) {
                     </div>
                 </header>
 
-                <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-6">
+                <main
+                    className={cn(
+                        'mx-auto w-full flex-1 px-4 py-8 md:px-6',
+                        !fullWidth && 'max-w-6xl',
+                    )}
+                >
                     {children}
                 </main>
             </SidebarInset>

@@ -2,10 +2,9 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import {
     DEFAULT_PERIOD,
-    PeriodFilter
-    
+    PeriodFilter,
 } from '@/components/dashboard/dashboard-filters';
-import type {DashboardFilterValues} from '@/components/dashboard/dashboard-filters';
+import type { DashboardFilterValues } from '@/components/dashboard/dashboard-filters';
 import { useChartTip } from '@/components/dashboard/performance-track';
 import { DataTableResetFiltersButton } from '@/components/data-table/data-table-reset-filters-button';
 import { Label } from '@/components/ui/label';
@@ -977,7 +976,7 @@ export default function SuperAdminDashboard(props: Props) {
     }, []);
 
     return (
-        <SuperAdminLayout>
+        <SuperAdminLayout fullWidth>
             <Head title={t('Dashboard')} />
 
             <div className="flex flex-wrap items-end justify-between gap-6 pb-6">
