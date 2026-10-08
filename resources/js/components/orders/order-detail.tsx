@@ -11,11 +11,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { assign } from '@/actions/App/Http/Controllers/Orders/OrderController';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
-import {
-    Alert,
-    AlertDescription,
-    AlertTitle,
-} from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -76,7 +72,7 @@ function TotalAmount({ value }: { value: string }) {
             <span className="text-sm font-medium text-muted-foreground">
                 {t('Total')}
             </span>
-            <span className="text-2xl font-semibold tabular-nums tracking-tight">
+            <span className="text-2xl font-semibold tracking-tight tabular-nums">
                 {Number(value).toFixed(2)}{' '}
                 <span className="text-sm font-normal text-muted-foreground">
                     MAD
@@ -258,8 +254,7 @@ export function OrderDetail({
     onAgentAssigned?: () => void;
     /**
      * Same facts either way — only emphasis differs. The `queue` variant
-     * drops what the calling agent can't act on (store/platform metadata)
-     * and the contact buttons the pane's own action rail already owns at a
+     * drops the contact buttons the pane's own action rail already owns at a
      * full 44px, so the same two actions don't appear twice at two sizes.
      */
     variant?: 'admin' | 'queue';
@@ -282,7 +277,7 @@ export function OrderDetail({
                     variant="outline"
                     className={cn(
                         confirmationStatusColors[order.confirmation_status],
-                        'animate-in fade-in zoom-in-95 duration-300',
+                        'animate-in duration-300 zoom-in-95 fade-in',
                     )}
                 >
                     {t(confirmationStatusLabels[order.confirmation_status])}
@@ -293,13 +288,15 @@ export function OrderDetail({
                         variant="outline"
                         className={cn(
                             deliveryStatusColors[order.delivery_status],
-                            'animate-in fade-in zoom-in-95 duration-300',
+                            'animate-in duration-300 zoom-in-95 fade-in',
                         )}
                     >
                         {t(deliveryStatusLabels[order.delivery_status])}
                     </Badge>
                 )}
-                {order.is_test && <Badge variant="secondary">{t('Test')}</Badge>}
+                {order.is_test && (
+                    <Badge variant="secondary">{t('Test')}</Badge>
+                )}
                 {order.is_duplicate_flagged && (
                     <Badge
                         variant="outline"
@@ -312,15 +309,13 @@ export function OrderDetail({
                     <Badge variant="destructive">{t('Blacklisted')}</Badge>
                 )}
 
-                {/* Where the order came from. Shown in both variants: the
-                    store/platform line below is admin-only, so without this
-                    an agent had no way to tell a WhatsApp lead from a Shopify
-                    order — which changes how the call opens. */}
+                {/* Where the order came from — a WhatsApp lead and a Shopify
+                    order open the call differently. */}
                 <Badge variant="outline" className="font-normal">
                     {t(orderSourceLabel(order.source_platform))}
                 </Badge>
 
-                {!isQueue && order.store?.name && (
+                {order.store?.name && (
                     <span className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
                         <span>{order.store.name}</span>
                         {/* The platform name is dropped when the source badge
@@ -348,7 +343,7 @@ export function OrderDetail({
                     </AlertDescription>
                 </Alert>
             )}
-            
+
             <TotalAmount value={order.total_amount} />
 
             <ItemGroup>
@@ -400,7 +395,9 @@ export function OrderDetail({
                                                 href={`https://wa.me/${whatsappNumber}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                aria-label={t('Message on WhatsApp')}
+                                                aria-label={t(
+                                                    'Message on WhatsApp',
+                                                )}
                                             >
                                                 <WhatsAppIcon className="text-[#25D366]" />
                                             </a>
@@ -474,7 +471,9 @@ export function OrderDetail({
                                                 )}
                                             </ItemTitle>
                                             <ItemDescription>
-                                                {t('Qty :quantity', { quantity: item.quantity })}
+                                                {t('Qty :quantity', {
+                                                    quantity: item.quantity,
+                                                })}
                                                 {item.sku_snapshot &&
                                                     ` · ${t('SKU')} ${item.sku_snapshot}`}
                                             </ItemDescription>
@@ -538,7 +537,9 @@ export function OrderDetail({
                             </EmptyMedia>
                             <EmptyTitle>{t('Not shipped yet')}</EmptyTitle>
                             <EmptyDescription>
-                                {t('This order is confirmed but has no parcel with a courier.')}
+                                {t(
+                                    'This order is confirmed but has no parcel with a courier.',
+                                )}
                             </EmptyDescription>
                         </EmptyHeader>
                         <EmptyContent>
@@ -554,29 +555,30 @@ export function OrderDetail({
                     </Empty>
                 )}
 
-            {(order.cancellation_reason_code ||
-                order.return_reason_code) && (
-                    <Alert variant="destructive">
-                        <AlertCircle />
-                        <AlertTitle>
-                            {order.cancellation_reason_code
-                                ? t('Cancellation reason')
-                                : t('Return reason')}
-                        </AlertTitle>
-                        <AlertDescription>
-                            {order.cancellation_reason_code
-                                ? cancellationReasonLabels[
-                                order.cancellation_reason_code
-                                ]
-                                : order.return_reason_code &&
-                                t(returnReasonLabels[order.return_reason_code])}
-                        </AlertDescription>
-                    </Alert>
-                )}
+            {(order.cancellation_reason_code || order.return_reason_code) && (
+                <Alert variant="destructive">
+                    <AlertCircle />
+                    <AlertTitle>
+                        {order.cancellation_reason_code
+                            ? t('Cancellation reason')
+                            : t('Return reason')}
+                    </AlertTitle>
+                    <AlertDescription>
+                        {order.cancellation_reason_code
+                            ? cancellationReasonLabels[
+                                  order.cancellation_reason_code
+                              ]
+                            : order.return_reason_code &&
+                              t(returnReasonLabels[order.return_reason_code])}
+                    </AlertDescription>
+                </Alert>
+            )}
 
             {showHistory && (
                 <div>
-                    <div className="mb-2 text-sm font-medium">{t('History')}</div>
+                    <div className="mb-2 text-sm font-medium">
+                        {t('History')}
+                    </div>
                     {events.length === 0 ? (
                         <p className="py-4 text-center text-sm text-muted-foreground">
                             {t('No status changes recorded yet.')}
@@ -587,10 +589,7 @@ export function OrderDetail({
                                 const isCurrent = index === events.length - 1;
 
                                 return (
-                                    <li
-                                        key={event.id}
-                                        className="flex gap-3"
-                                    >
+                                    <li key={event.id} className="flex gap-3">
                                         <div className="flex flex-col items-center">
                                             <span
                                                 className={cn(
