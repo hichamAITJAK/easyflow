@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -170,6 +171,36 @@ class BusinessController extends Controller
                 BusinessStatus::SUSPENDED => __('Business suspended. Everyone at this business has been signed out.'),
                 BusinessStatus::CANCELLED => __('Business cancelled. Everyone at this business has been signed out.'),
             },
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Set a new password for one of the business's users. The platform
+     * owner is the only one who can rescue a locked-out business admin,
+     * since nobody inside the tenant outranks them. The user's mobile
+     * tokens are revoked too: a reset usually means the old credentials
+     * are no longer trusted.
+     */
+    public function resetUserPassword(Request $request, Business $business, User $user): RedirectResponse
+    {
+        abort_unless($user->business_id === $business->id, 404);
+
+        $data = $request->validate([
+            'password' => ['required', 'string', Password::default(), 'confirmed'],
+        ]);
+
+        DB::transaction(function () use ($user, $data) {
+            $user->forceFill(['password' => Hash::make($data['password'])])->save();
+            PersonalAccessToken::where('tokenable_type', User::class)
+                ->where('tokenable_id', $user->id)
+                ->delete();
+        });
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Password reset for :name.', ['name' => $user->name]),
         ]);
 
         return back();

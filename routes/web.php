@@ -65,6 +65,7 @@ Route::prefix('super-admin')->name('super-admin.')->middleware(['auth', 'verifie
         Route::get('/{business}/edit', [SuperAdminBusinessController::class, 'edit'])->name('edit');
         Route::patch('/{business}', [SuperAdminBusinessController::class, 'update'])->name('update');
         Route::patch('/{business}/status', [SuperAdminBusinessController::class, 'updateStatus'])->name('status');
+        Route::patch('/{business}/users/{user}/password', [SuperAdminBusinessController::class, 'resetUserPassword'])->name('users.password');
     });
 
     // E-commerce platforms and delivery couriers are edit-only: their slugs

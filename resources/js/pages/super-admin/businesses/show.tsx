@@ -1,9 +1,17 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Ban, PauseCircle, Pencil, PlayCircle } from 'lucide-react';
+import {
+    ArrowLeft,
+    Ban,
+    KeyRound,
+    PauseCircle,
+    Pencil,
+    PlayCircle,
+} from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
 import { BusinessStatusDialog } from '@/components/super-admin/business-status-dialog';
 import type { BusinessStatusIntent } from '@/components/super-admin/business-status-dialog';
+import { ResetPasswordDialog } from '@/components/super-admin/reset-password-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -82,6 +90,7 @@ export default function SuperAdminBusinessesShow({
 
     const [statusIntent, setStatusIntent] =
         useState<BusinessStatusIntent | null>(null);
+    const [resetUser, setResetUser] = useState<User | null>(null);
 
     return (
         <SuperAdminLayout>
@@ -208,8 +217,11 @@ export default function SuperAdminBusinessesShow({
                                         </TableHead>
                                         <TableHead>{t('Role')}</TableHead>
                                         <TableHead>{t('Status')}</TableHead>
-                                        <TableHead className="pr-6">
-                                            {t('Last login')}
+                                        <TableHead>{t('Last login')}</TableHead>
+                                        <TableHead className="w-0 pr-6">
+                                            <span className="sr-only">
+                                                {t('Actions')}
+                                            </span>
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -235,12 +247,25 @@ export default function SuperAdminBusinessesShow({
                                             <TableCell className="capitalize">
                                                 {t(user.status)}
                                             </TableCell>
-                                            <TableCell className="pr-6 text-muted-foreground">
+                                            <TableCell className="text-muted-foreground">
                                                 {user.last_login_at
                                                     ? formatDateTime(
                                                           user.last_login_at,
                                                       )
                                                     : t('Never')}
+                                            </TableCell>
+                                            <TableCell className="pr-6">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        setResetUser(user)
+                                                    }
+                                                >
+                                                    <KeyRound />
+                                                    {t('Reset password')}
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -325,6 +350,12 @@ export default function SuperAdminBusinessesShow({
                 onOpenChange={(open) => !open && setStatusIntent(null)}
                 business={business}
                 intent={statusIntent ?? 'suspend'}
+            />
+            <ResetPasswordDialog
+                open={resetUser !== null}
+                onOpenChange={(open) => !open && setResetUser(null)}
+                businessId={business.id}
+                user={resetUser}
             />
         </SuperAdminLayout>
     );
