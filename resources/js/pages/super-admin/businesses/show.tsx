@@ -240,7 +240,7 @@ export default function SuperAdminBusinessesShow({
                                                     ? formatDateTime(
                                                           user.last_login_at,
                                                       )
-                                                    : 'Never'}
+                                                    : t('Never')}
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -309,7 +309,7 @@ export default function SuperAdminBusinessesShow({
                                                     ? formatDateTime(
                                                           store.last_synced_at,
                                                       )
-                                                    : 'Never'}
+                                                    : t('Never')}
                                             </TableCell>
                                         </TableRow>
                                     ))}

@@ -25,6 +25,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { GetInitialsFn } from '@/hooks/use-initials';
+import { formatDateTime } from '@/lib/format';
 import type { Translator } from '@/lib/i18n';
 import { formatMoroccoPhoneForWhatsApp } from '@/lib/phone';
 import type { User } from '@/types';
@@ -142,6 +143,22 @@ export function createColumns({
                     </Badge>
                 );
             },
+        },
+        {
+            accessorKey: 'last_login_at',
+            header: ({ column }) => (
+                <DataTableColumnHeader
+                    column={column}
+                    title={t('Last login')}
+                />
+            ),
+            cell: ({ row }) => (
+                <span className="text-sm text-muted-foreground">
+                    {row.original.last_login_at
+                        ? formatDateTime(row.original.last_login_at)
+                        : t('Never')}
+                </span>
+            ),
         },
         {
             id: 'compensation',
