@@ -94,6 +94,7 @@ export default function UsersCreate({
                     />
                 ) : (
                     <FulfilmentAgentForm
+                        stores={stores}
                         avatarOptions={avatarOptions}
                         onSuccess={() => router.get(usersIndex())}
                         onCancel={() => router.get(usersIndex())}

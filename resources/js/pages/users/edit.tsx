@@ -74,6 +74,7 @@ export default function UsersEdit({
                     />
                 ) : (
                     <FulfilmentAgentForm
+                        stores={stores}
                         user={user}
                         avatarOptions={avatarOptions}
                         onSuccess={() => router.get(usersIndex())}

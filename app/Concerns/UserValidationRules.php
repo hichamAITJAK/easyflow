@@ -198,9 +198,13 @@ trait UserValidationRules
      *
      * @return array<string, array<int, ValidationRule|Enum|array<mixed>|string>>
      */
-    protected function fulfilmentAgentRules(): array
+    protected function fulfilmentAgentRules(?int $businessId = null): array
     {
         return [
+            // Which stores' parcels and products this agent handles; empty
+            // means the whole business, same rule as confirmation agents.
+            'store_ids' => ['nullable', 'array'],
+            'store_ids.*' => [Rule::exists(Store::class, 'id')->where('business_id', $businessId)],
             'payment_mode' => ['required', Rule::enum(CommissionPaymentMode::class)],
             'salary_amount' => ['required_if:payment_mode,salary,salary_and_commission', 'nullable', 'numeric', 'min:0'],
             'salary_period' => ['required_if:payment_mode,salary,salary_and_commission', 'nullable', Rule::enum(SalaryPeriod::class)],

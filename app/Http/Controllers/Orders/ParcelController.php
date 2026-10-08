@@ -42,10 +42,7 @@ class ParcelController extends Controller
         // fulfilment agent is never assigned orders, so for them the list
         // is the business's parcels, narrowed by their store grants.
         $query = $user->role === UserRole::FULFILMENT_AGENT
-            ? Order::query()->when(
-                $this->scopedStoreIds($user),
-                fn ($query, array $storeIds) => $query->whereIn('store_id', $storeIds),
-            )
+            ? $this->applyFulfilmentStoreScope(Order::query(), $user)
             : $this->applyOrderAssignmentScope(Order::query(), $user);
 
         $query = $query

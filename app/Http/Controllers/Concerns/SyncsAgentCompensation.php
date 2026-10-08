@@ -26,6 +26,11 @@ trait SyncsAgentCompensation
         if ($user->role === UserRole::CONFIRMATION_AGENT) {
             $this->syncAgentScopes($user, $data['store_ids'] ?? [], $data['product_ids'] ?? []);
             $this->syncPerformanceTargets($user, $data['targets'] ?? []);
+        } elseif ($user->role === UserRole::FULFILMENT_AGENT) {
+            // Store grants only: a warehouse agent is scoped by shop, not
+            // by product, and has no confirmation targets.
+            $this->syncAgentScopes($user, $data['store_ids'] ?? [], []);
+            $user->performanceTargets()->delete();
         } else {
             $user->agentScopes()->delete();
             $user->performanceTargets()->delete();

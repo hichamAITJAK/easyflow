@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Mobile;
 
 use App\Enums\OrderDeliveryStatus;
+use App\Http\Controllers\Concerns\ScopesAgentAccess;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderStatusEvent;
@@ -41,6 +42,8 @@ use Log;
  */
 class FulfillmentController extends Controller
 {
+    use ScopesAgentAccess;
+
     public function __construct(private readonly OrderService $orders) {}
 
     /**
@@ -53,10 +56,10 @@ class FulfillmentController extends Controller
         $businessId = $request->user()->business_id;
 
         return response()->json([
-            'ready_to_prepare' => Order::where('business_id', $businessId)
+            'ready_to_prepare' => $this->applyFulfilmentStoreScope(Order::where('business_id', $businessId), $request->user())
                 ->where('delivery_status', OrderDeliveryStatus::AWAITING_PICKUP)
                 ->count(),
-            'returns_pending' => Order::where('business_id', $businessId)
+            'returns_pending' => $this->applyFulfilmentStoreScope(Order::where('business_id', $businessId), $request->user())
                 ->where('delivery_status', OrderDeliveryStatus::RETURNED_IN_TRANSIT)
                 ->count(),
         ]);
@@ -257,7 +260,9 @@ class FulfillmentController extends Controller
      */
     private function findOrder(Request $request, string $scannedValue): Order
     {
-        $order = Order::where('business_id', $request->user()->business_id)
+        // Store grants apply here too: a parcel from a shop this agent
+        // doesn't handle reads as "no order found" rather than leaking it.
+        $order = $this->applyFulfilmentStoreScope(Order::where('business_id', $request->user()->business_id), $request->user())
             ->where('courier_tracking_number', TrackingNumberExtractor::extract($scannedValue))
             ->first();
 

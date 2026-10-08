@@ -165,7 +165,7 @@ class OrderController extends Controller
         $user = $request->user();
 
         abort_unless($order->business_id === $user->business_id, 403);
-        abort_if($this->isScopedAgent($user) && $order->assigned_agent_id !== $user->id, 403);
+        abort_unless($this->canViewOrder($user, $order), 403);
 
         $order->load([
             'store.platform',

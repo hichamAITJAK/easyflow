@@ -35,7 +35,7 @@ class UpdateUserRequest extends FormRequest
             'password' => $this->optionalPasswordRules(),
             ...match ($this->input('role')) {
                 UserRole::CONFIRMATION_AGENT->value => $this->confirmationAgentRules((int) $this->user()->business_id),
-                UserRole::FULFILMENT_AGENT->value => $this->fulfilmentAgentRules(),
+                UserRole::FULFILMENT_AGENT->value => $this->fulfilmentAgentRules((int) $this->user()->business_id),
                 default => [],
             },
         ];

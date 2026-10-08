@@ -193,7 +193,12 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
             Route::delete('/bulk', [OrderController::class, 'bulkDestroy'])->name('bulk-destroy');
         });
 
-        Route::get('/{order}', [OrderController::class, 'show'])->name('show');
+        // Fulfilment agents open a parcel's history from the parcels page,
+        // so this one read is let through the use-operations-app gate; the
+        // controller scopes who sees which order.
+        Route::get('/{order}', [OrderController::class, 'show'])
+            ->withoutMiddleware('can:use-operations-app')
+            ->name('show');
         Route::patch('/{order}', [OrderController::class, 'update'])->name('update');
         Route::patch('/{order}/status', [OrderController::class, 'updateStatus'])->name('status');
         Route::post('/{order}/shipment', [OrderController::class, 'createShipment'])->name('shipment');

@@ -1,5 +1,5 @@
 import { Form } from '@inertiajs/react';
-import { IdCard, Wallet } from 'lucide-react';
+import { IdCard, Store as StoreIcon, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import UserController from '@/actions/App/Http/Controllers/Users/UserController';
 import { AvatarPanel } from '@/components/agent-form/avatar-panel';
@@ -14,18 +14,21 @@ import { SalaryFields } from '@/components/agent-form/salary-fields';
 import InputError from '@/components/input-error';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { MultiCombobox } from '@/components/ui/multi-combobox';
 import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
-import type { CommissionPaymentMode, SalaryPeriod, User } from '@/types';
+import type { CommissionPaymentMode, SalaryPeriod, Store, User } from '@/types';
 
 export function FulfilmentAgentForm({
     user,
+    stores = [],
     avatarOptions = [],
     onSuccess,
     onCancel,
     className,
 }: {
     user?: User | null;
+    stores?: Store[];
     avatarOptions?: string[];
     onSuccess?: () => void;
     onCancel?: () => void;
@@ -50,6 +53,23 @@ export function FulfilmentAgentForm({
         existingRule?.salary_period ?? 'monthly',
     );
     const [amount, setAmount] = useState(existingRule?.amount ?? '');
+
+    const [storeScope, setStoreScope] = useState<'all' | 'selected'>(
+        user?.agent_scopes?.some((scope) => scope.store_id !== null)
+            ? 'selected'
+            : 'all',
+    );
+    const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>(() =>
+        user?.agent_scopes
+            ? user.agent_scopes
+                  .filter((scope) => scope.store_id !== null)
+                  .map((scope) => String(scope.store_id))
+            : [],
+    );
+    const storeComboboxOptions = stores.map((store) => ({
+        value: String(store.id),
+        label: store.name,
+    }));
 
     // "Salary + per parcel" pays both halves, so each half shows whenever
     // the chosen mode includes it.
@@ -195,6 +215,71 @@ export function FulfilmentAgentForm({
                                             </span>
                                         </div>
                                         <InputError message={errors.amount} />
+                                    </div>
+                                )}
+                            </div>
+                        </FormSection>
+
+                        <FormSection
+                            icon={StoreIcon}
+                            title={t('Store Assignment Scope')}
+                            description={t(
+                                'Restrict which stores this fulfilment agent handles: their parcels, products and scans.',
+                            )}
+                            badge={
+                                storeScope === 'selected' && (
+                                    <SectionBadge>
+                                        {t('Scoped Access')}
+                                    </SectionBadge>
+                                )
+                            }
+                        >
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <ChoiceCard
+                                        accent="amber"
+                                        selected={storeScope === 'all'}
+                                        onSelect={() => setStoreScope('all')}
+                                        title={t('All Stores')}
+                                        description={t(
+                                            'Handles parcels from every current and future connected store.',
+                                        )}
+                                    />
+                                    <ChoiceCard
+                                        accent="amber"
+                                        selected={storeScope === 'selected'}
+                                        onSelect={() =>
+                                            setStoreScope('selected')
+                                        }
+                                        title={t('Specific Stores')}
+                                        description={t(
+                                            'Limit parcels, products and scans to specific stores only.',
+                                        )}
+                                    />
+                                </div>
+
+                                {storeScope === 'selected' && (
+                                    <div className="rounded-md border p-4">
+                                        <Label className="mb-2 block text-xs font-medium">
+                                            {t('Select Assigned Stores')}
+                                        </Label>
+                                        <MultiCombobox
+                                            options={storeComboboxOptions}
+                                            value={selectedStoreIds}
+                                            onChange={setSelectedStoreIds}
+                                            placeholder={t('Choose stores...')}
+                                        />
+                                        {selectedStoreIds.map((storeId) => (
+                                            <input
+                                                key={storeId}
+                                                type="hidden"
+                                                name="store_ids[]"
+                                                value={storeId}
+                                            />
+                                        ))}
+                                        <InputError
+                                            message={errors.store_ids}
+                                        />
                                     </div>
                                 )}
                             </div>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Concerns;
 
 use App\Enums\UserRole;
+use App\Models\Order;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -94,6 +95,47 @@ trait ScopesAgentAccess
                 $query->orWhereIn('id', $productIds);
             }
         });
+    }
+
+    /**
+     * Restrict an orders query to the stores granted to a fulfilment agent.
+     * No-ops for everyone else, and for a fulfilment agent with no store
+     * grants (whole-business access).
+     *
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
+     */
+    private function applyFulfilmentStoreScope(Builder $query, User $user): Builder
+    {
+        if ($user->role !== UserRole::FULFILMENT_AGENT) {
+            return $query;
+        }
+
+        $storeIds = $this->scopedStoreIds($user);
+
+        return $storeIds === null ? $query : $query->whereIn('store_id', $storeIds);
+    }
+
+    /**
+     * Whether this user may read one order: admins always, a confirmation
+     * agent their own assignments, a fulfilment agent anything in their
+     * granted stores.
+     */
+    private function canViewOrder(User $user, Order $order): bool
+    {
+        if (! $this->isScopedAgent($user)) {
+            return true;
+        }
+
+        if ($user->role === UserRole::FULFILMENT_AGENT) {
+            $storeIds = $this->scopedStoreIds($user);
+
+            return $storeIds === null || in_array($order->store_id, $storeIds, true);
+        }
+
+        return $order->assigned_agent_id === $user->id;
     }
 
     /**
