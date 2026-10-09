@@ -376,18 +376,17 @@ function PushSheet({
 
     const submit = () => {
         const target = update ? pushUpdate(item.id) : pushRequest(item.id);
-        const send = update ? router.put : router.post;
         setProcessing(true);
-        send(
-            target.url,
-            { drive_url: driveUrl, note },
-            {
-                preserveScroll: true,
-                onFinish: () => setProcessing(false),
-                onError: (e) => setErrors(e as Errors),
-                onSuccess: () => onOpenChange(false),
-            },
-        );
+        // Called through `router` (not a detached method reference): the
+        // Inertia router relies on `this`, so an unbound call never sends.
+        router.visit(target.url, {
+            method: update ? 'put' : 'post',
+            data: { drive_url: driveUrl, note },
+            preserveScroll: true,
+            onFinish: () => setProcessing(false),
+            onError: (e) => setErrors(e as Errors),
+            onSuccess: () => onOpenChange(false),
+        });
     };
 
     return (
