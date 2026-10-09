@@ -126,8 +126,9 @@ export default function UsersIndex({ users }: { users: User[] }) {
                 getInitials,
                 onEdit: handleEdit,
                 onDelete: setDeletingUser,
+                role: tab,
             }),
-        [getInitials],
+        [getInitials, tab],
     );
 
     const table = useReactTable({

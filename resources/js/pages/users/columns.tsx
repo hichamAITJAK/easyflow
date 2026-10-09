@@ -37,7 +37,36 @@ const statusBadgeClasses: Record<User['status'], string> = {
     disabled: 'bg-muted text-muted-foreground border-border',
 };
 
+/**
+ * Columns that only mean something for agents: a creatives editor has no
+ * pay rule, store scope or confirmation targets, so their table shows
+ * identity, status, last login and actions only.
+ */
+const AGENT_ONLY_COLUMNS = ['compensation', 'scope', 'targets'];
+
 export function createColumns({
+    t,
+    getInitials,
+    onEdit,
+    onDelete,
+    role,
+}: {
+    t: Translator;
+    getInitials: GetInitialsFn;
+    onEdit: (user: User) => void;
+    onDelete: (user: User) => void;
+    role?: User['role'];
+}): ColumnDef<User>[] {
+    const columns = allColumns({ t, getInitials, onEdit, onDelete });
+
+    return role === 'creatives_editor'
+        ? columns.filter(
+              (column) => !AGENT_ONLY_COLUMNS.includes(column.id ?? ''),
+          )
+        : columns;
+}
+
+function allColumns({
     t,
     getInitials,
     onEdit,
@@ -353,7 +382,11 @@ export function createColumns({
                                     className="cursor-pointer gap-2 font-medium"
                                 >
                                     <Pencil className="size-4 text-muted-foreground" />
-                                    <span>{t('Edit agent')}</span>
+                                    <span>
+                                        {user.role === 'creatives_editor'
+                                            ? t('Edit editor')
+                                            : t('Edit agent')}
+                                    </span>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onSelect={() =>
