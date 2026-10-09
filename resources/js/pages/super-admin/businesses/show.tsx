@@ -6,6 +6,7 @@ import {
     PauseCircle,
     Pencil,
     PlayCircle,
+    Truck,
 } from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
@@ -44,7 +45,13 @@ import {
     index as businessesIndex,
     status as businessStatus,
 } from '@/routes/super-admin/businesses';
-import type { Business, BusinessStatus, Store, User } from '@/types';
+import type {
+    Business,
+    BusinessStatus,
+    DeliveryAccount,
+    Store,
+    User,
+} from '@/types';
 
 const STATUS_STYLES: Record<BusinessStatus, string> = {
     active: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
@@ -81,10 +88,12 @@ export default function SuperAdminBusinessesShow({
     business,
     users,
     stores,
+    deliveryAccounts,
 }: {
     business: Business;
     users: User[];
     stores: Store[];
+    deliveryAccounts: DeliveryAccount[];
 }) {
     const { t } = useTranslation();
 
@@ -335,6 +344,108 @@ export default function SuperAdminBusinessesShow({
                                                           store.last_synced_at,
                                                       )
                                                     : t('Never')}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{t('Couriers')}</CardTitle>
+                        <CardDescription>
+                            {t('Delivery couriers connected by this business.')}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="px-0">
+                        {deliveryAccounts.length === 0 ? (
+                            <Empty className="border-none py-8">
+                                <EmptyHeader>
+                                    <EmptyMedia variant="icon">
+                                        <Ban />
+                                    </EmptyMedia>
+                                    <EmptyTitle>
+                                        {t('No couriers connected')}
+                                    </EmptyTitle>
+                                </EmptyHeader>
+                            </Empty>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="pl-6">
+                                            {t('Courier')}
+                                        </TableHead>
+                                        <TableHead>{t('Account')}</TableHead>
+                                        <TableHead>
+                                            {t('Pickup city')}
+                                        </TableHead>
+                                        <TableHead>{t('Status')}</TableHead>
+                                        <TableHead className="pr-6">
+                                            {t('Connected on')}
+                                        </TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {deliveryAccounts.map((account) => (
+                                        <TableRow key={account.id}>
+                                            <TableCell className="pl-6">
+                                                <div className="flex items-center gap-3">
+                                                    {account.courier?.logo ? (
+                                                        <img
+                                                            src={
+                                                                account.courier
+                                                                    .logo
+                                                            }
+                                                            alt=""
+                                                            className="size-8 shrink-0 rounded-full border border-border bg-white object-contain p-1"
+                                                        />
+                                                    ) : (
+                                                        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary">
+                                                            <Truck className="size-4" />
+                                                        </span>
+                                                    )}
+                                                    <span className="font-medium">
+                                                        {account.courier
+                                                            ?.name ?? '—'}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className="inline-flex items-center gap-2">
+                                                    {account.label}
+                                                    {account.is_default && (
+                                                        <Badge variant="secondary">
+                                                            {t('Default')}
+                                                        </Badge>
+                                                    )}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className="text-muted-foreground">
+                                                {account.collect_city?.name ??
+                                                    '—'}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={cn(
+                                                        'capitalize',
+                                                        account.status ===
+                                                            'active'
+                                                            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                                            : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+                                                    )}
+                                                >
+                                                    {t(account.status)}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="pr-6 text-muted-foreground">
+                                                {formatDateTime(
+                                                    account.created_at,
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     ))}

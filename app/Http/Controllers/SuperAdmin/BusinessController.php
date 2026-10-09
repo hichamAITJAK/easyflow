@@ -118,6 +118,13 @@ class BusinessController extends Controller
                 ->with('platform:id,name,slug')
                 ->orderBy('name')
                 ->get(['id', 'platform_id', 'name', 'domain', 'connection_status', 'last_synced_at']),
+            // Credentials stay hidden by the model; the panel only needs
+            // to know which couriers are wired up and whether they work.
+            'deliveryAccounts' => $business->deliveryAccounts()
+                ->with(['courier:id,name,slug,logo', 'collectCity:id,name'])
+                ->orderByDesc('is_default')
+                ->orderBy('label')
+                ->get(['id', 'courier_id', 'collect_city_id', 'label', 'is_default', 'status', 'created_at']),
         ]);
     }
 

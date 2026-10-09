@@ -3,6 +3,8 @@
 use App\Enums\BusinessStatus;
 use App\Enums\UserRole;
 use App\Models\Business;
+use App\Models\DeliveryAccount;
+use App\Models\DeliveryCourrier;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -11,6 +13,11 @@ uses(RefreshDatabase::class);
 it('shows a business detail page with its team and stores', function () {
     $business = Business::factory()->create(['name' => 'Atlas Trading']);
     User::factory()->count(2)->create(['business_id' => $business->id]);
+    $courier = DeliveryCourrier::create(['name' => 'Sendit', 'slug' => 'sendit']);
+    DeliveryAccount::create([
+        'business_id' => $business->id, 'courier_id' => $courier->id, 'label' => 'main',
+        'api_credentials' => '{}', 'status' => 'active',
+    ]);
 
     $this->actingAs(superAdmin())
         ->get(route('super-admin.businesses.show', $business))
@@ -20,6 +27,9 @@ it('shows a business detail page with its team and stores', function () {
             ->where('business.users_count', 2)
             ->has('users', 2)
             ->has('stores')
+            ->has('deliveryAccounts', 1)
+            ->where('deliveryAccounts.0.courier.name', 'Sendit')
+            ->missing('deliveryAccounts.0.api_credentials')
         );
 });
 
