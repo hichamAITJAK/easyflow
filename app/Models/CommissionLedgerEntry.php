@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $invoice_id
  * @property float $amount
  * @property int|null $performance_target_id
+ * @property int|null $content_request_id
  * @property string|null $description
  * @property Carbon|null $period_start
  * @property Carbon|null $period_end
@@ -28,7 +29,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $reversed_entry_id
  * @property Carbon|null $created_at
  */
-#[Fillable(['business_id', 'user_id', 'order_id', 'commission_rule_id', 'performance_target_id', 'invoice_id', 'amount', 'description', 'period_start', 'period_end', 'entry_type', 'reversed_entry_id'])]
+#[Fillable(['business_id', 'user_id', 'order_id', 'commission_rule_id', 'performance_target_id', 'content_request_id', 'invoice_id', 'amount', 'description', 'period_start', 'period_end', 'entry_type', 'reversed_entry_id'])]
 #[ScopedBy([BusinessScope::class])]
 class CommissionLedgerEntry extends Model
 {
@@ -70,6 +71,12 @@ class CommissionLedgerEntry extends Model
     public function commissionRule(): BelongsTo
     {
         return $this->belongsTo(CommissionRule::class, 'commission_rule_id');
+    }
+
+    /** The validated content request a creative pay row came from. @return BelongsTo<ContentRequest, $this> */
+    public function contentRequest(): BelongsTo
+    {
+        return $this->belongsTo(ContentRequest::class);
     }
 
     /** @return BelongsTo<Invoice, $this> */

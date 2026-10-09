@@ -699,7 +699,10 @@ export default function CommissionEntriesIndex({
                                                     <TableCell>
                                                         {entry.order
                                                             ?.reference ??
-                                                            `#${entry.order_id}`}
+                                                            entry.description ??
+                                                            (entry.order_id
+                                                                ? `#${entry.order_id}`
+                                                                : '—')}
                                                     </TableCell>
                                                     <TableCell>
                                                         {money(entry.amount)}

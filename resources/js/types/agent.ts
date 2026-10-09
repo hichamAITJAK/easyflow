@@ -86,7 +86,7 @@ export type CommissionLedgerEntry = {
     invoice_id: number | null;
     invoice?: Pick<Invoice, 'id' | 'invoice_number' | 'status'> | null;
     amount: string;
-    entry_type: 'earned' | 'reversal';
+    entry_type: 'earned' | 'reversal' | 'bonus' | 'creative';
     reversed_entry_id: number | null;
     created_at: string;
 };

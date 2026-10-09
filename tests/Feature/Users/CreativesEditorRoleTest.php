@@ -45,7 +45,7 @@ test('a creatives editor lands on Creatives and is kept out of operations', func
 
     $this->actingAs($editor)->get(route('dashboard'))->assertRedirect(route('creatives.index'));
     $this->actingAs($editor)->get(route('creatives.index'))->assertOk()
-        ->assertInertia(fn ($page) => $page->component('creatives/index'));
+        ->assertInertia(fn ($page) => $page->component('creatives/editor'));
 
     $this->actingAs($editor)->get(route('orders.index'))->assertForbidden();
     $this->actingAs($editor)->get(route('products.index'))->assertForbidden();

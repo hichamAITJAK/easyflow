@@ -50,6 +50,11 @@ export const mainNavItems: NavItem[] = [
         icon: Package,
     },
     {
+        title: 'Creatives',
+        href: creativesIndex(),
+        icon: Clapperboard,
+    },
+    {
         title: 'Customers',
         href: customersIndex(),
         icon: UsersRound,
@@ -100,12 +105,6 @@ export const mainNavItems: NavItem[] = [
     //     href: reportsIndex(),
     //     icon: BarChart3,
     // },
-    {
-        title: 'Creatives',
-        group: 'Team',
-        href: creativesIndex(),
-        icon: Clapperboard,
-    },
     {
         title: 'Profit Calculator',
         group: 'Finance',
@@ -172,6 +171,11 @@ const CREATIVES_EDITOR_NAV_ITEMS: NavItem[] = [
         title: 'Creatives',
         href: creativesIndex(),
         icon: Clapperboard,
+    },
+    {
+        title: 'Commissions',
+        href: commissionEntriesIndex(),
+        icon: Wallet,
     },
 ];
 

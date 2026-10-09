@@ -77,7 +77,7 @@ class CommissionEntryController extends Controller
 
         $agents = $isAdmin
             ? User::where('business_id', $user->business_id)
-                ->whereIn('role', [UserRole::CONFIRMATION_AGENT, UserRole::FULFILMENT_AGENT])
+                ->whereIn('role', [UserRole::CONFIRMATION_AGENT, UserRole::FULFILMENT_AGENT, UserRole::CREATIVES_EDITOR])
                 ->orderBy('name')
                 ->get(['id', 'name', 'avatar'])
             : collect([$user->only(['id', 'name', 'avatar'])]);

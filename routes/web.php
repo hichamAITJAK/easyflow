@@ -4,6 +4,9 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Auth\AccountStatusController;
 use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\Commissions\CommissionEntryController;
+use App\Http\Controllers\Creatives\ContentRequestController;
+use App\Http\Controllers\Creatives\CreativeController;
+use App\Http\Controllers\Creatives\CreativeProductController;
 use App\Http\Controllers\Customers\CustomerController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\DeliveryCouriers\DeliveryAccountController;
@@ -269,7 +272,7 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
         });
     });
 
-    Route::prefix('commission-entries')->name('commission-entries.')->middleware('can:use-logistics')->group(function () {
+    Route::prefix('commission-entries')->name('commission-entries.')->group(function () {
         Route::get('/', [CommissionEntryController::class, 'index'])->name('index');
         Route::post('/invoices', [CommissionEntryController::class, 'generateInvoice'])->name('invoices.store');
         Route::post('/invoices/from-filters', [CommissionEntryController::class, 'generateInvoicesFromFilters'])->name('invoices.from-filters');
@@ -292,10 +295,28 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
 
     Route::middleware('can:manage-users')->get('profit-calculator', [ProfitCalculatorController::class, 'index'])->name('profit-calculator.index');
 
-    // Creatives module (admins + creatives editors). The landing page is
-    // a placeholder until the briefs / review queue / commissions screens
-    // ship; it exists now so the editor role has somewhere to land.
-    Route::middleware('can:use-creatives')->get('creatives', fn () => Inertia::render('creatives/index'))->name('creatives.index');
+    // Creatives module: admins run products, the review queue and editor
+    // pay; creatives editors work their own requests. Admin writes sit
+    // behind manage-users; editor writes check ownership in the controller.
+    Route::prefix('creatives')->name('creatives.')->middleware('can:use-creatives')->group(function () {
+        Route::get('/', [CreativeController::class, 'index'])->name('index');
+
+        Route::middleware('can:manage-users')->group(function () {
+            Route::post('/products', [CreativeProductController::class, 'store'])->name('products.store');
+            Route::put('/products/{product}', [CreativeProductController::class, 'update'])->name('products.update');
+            Route::put('/products/{product}/status', [CreativeProductController::class, 'updateStatus'])->name('products.status');
+
+            Route::post('/requests', [ContentRequestController::class, 'store'])->name('requests.store');
+            Route::put('/requests/{contentRequest}', [ContentRequestController::class, 'update'])->name('requests.update');
+            Route::delete('/requests/{contentRequest}', [ContentRequestController::class, 'destroy'])->name('requests.destroy');
+            Route::post('/requests/{contentRequest}/edits', [ContentRequestController::class, 'edits'])->name('requests.edits');
+            Route::post('/requests/{contentRequest}/validate', [ContentRequestController::class, 'validateWork'])->name('requests.validate');
+        });
+
+        Route::post('/requests/{contentRequest}/push', [ContentRequestController::class, 'push'])->name('requests.push');
+        Route::put('/requests/{contentRequest}/push', [ContentRequestController::class, 'pushUpdate'])->name('requests.pushUpdate');
+        Route::post('/pushes', [ContentRequestController::class, 'selfPush'])->name('pushes.store');
+    });
 });
 
 require __DIR__.'/settings.php';
