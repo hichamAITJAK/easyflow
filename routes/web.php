@@ -311,6 +311,7 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
             Route::delete('/requests/{contentRequest}', [ContentRequestController::class, 'destroy'])->name('requests.destroy');
             Route::post('/requests/{contentRequest}/edits', [ContentRequestController::class, 'edits'])->name('requests.edits');
             Route::post('/requests/{contentRequest}/validate', [ContentRequestController::class, 'validateWork'])->name('requests.validate');
+            Route::put('/commissions/{entry}/pay', [ContentRequestController::class, 'pay'])->name('commissions.pay');
         });
 
         Route::post('/requests/{contentRequest}/push', [ContentRequestController::class, 'push'])->name('requests.push');

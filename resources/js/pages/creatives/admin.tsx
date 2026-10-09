@@ -31,6 +31,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { formatDate } from '@/lib/format';
 import { dashboard } from '@/routes';
 import { index as commissionsIndex } from '@/routes/commission-entries';
+import { pay as payCommission } from '@/routes/creatives/commissions';
 import type {
     AdminCreativesProps,
     CreativeProduct,
@@ -255,7 +256,10 @@ export default function CreativesAdmin({
                     </p>
                 </div>
 
-                <Tabs value={space} onValueChange={(v: string) => setSpace(v as Space)}>
+                <Tabs
+                    value={space}
+                    onValueChange={(v: string) => setSpace(v as Space)}
+                >
                     <TabsList className="h-auto flex-wrap justify-start rounded-lg bg-muted p-1">
                         {tab('test', t('For test products'))}
                         {tab('active', t('Active products'))}
@@ -531,6 +535,7 @@ export default function CreativesAdmin({
                                             <Th>{t('Validated')}</Th>
                                             <Th>{t('Commission')}</Th>
                                             <Th>{t('Status')}</Th>
+                                            <Th />
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -571,12 +576,34 @@ export default function CreativesAdmin({
                                                         </span>
                                                     )}
                                                 </td>
+                                                <td className="px-4 py-4 pr-6 text-right">
+                                                    {!c.paid && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() =>
+                                                                router.put(
+                                                                    payCommission(
+                                                                        c.id,
+                                                                    ).url,
+                                                                    {},
+                                                                    {
+                                                                        preserveScroll: true,
+                                                                    },
+                                                                )
+                                                            }
+                                                        >
+                                                            {t('Mark paid')}
+                                                        </Button>
+                                                    )}
+                                                </td>
                                             </tr>
                                         ))}
                                         {!commissions.rows.length && (
                                             <tr>
                                                 <td
-                                                    colSpan={5}
+                                                    colSpan={6}
                                                     className="px-6 py-10 text-center text-sm text-muted-foreground"
                                                 >
                                                     {t(

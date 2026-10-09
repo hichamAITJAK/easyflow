@@ -175,3 +175,31 @@ test('editors only see their own requests and self-push active products they are
     expect($active->fresh()->status)->toBe(CreativeProductStatus::INACTIVE);
     $this->actingAs($editor)->put(route('creatives.products.status', $active), ['status' => 'active'])->assertForbidden();
 });
+
+test('an admin marks a creative pay row paid from the Creatives tab', function () {
+    [$admin, $editor] = creativesSetup();
+    $product = CreativeProduct::create(['business_id' => $admin->business_id, 'name' => 'P', 'kind' => 'single', 'links' => ['https://x.ma/p'], 'status' => CreativeProductStatus::ACTIVE]);
+    $product->editors()->attach($editor->id, ['business_id' => $admin->business_id]);
+
+    $this->actingAs($editor)->post(route('creatives.pushes.store'), [
+        'product_id' => $product->id, 'items' => [['type' => 'static', 'count' => 2]], 'drive_url' => 'https://d.com/z',
+    ]);
+    $request = ContentRequest::withoutGlobalScopes()->firstOrFail();
+
+    // Edits may be requested with no points at all, like the preview allows.
+    $this->actingAs($admin)->post(route('creatives.requests.edits', $request), [])->assertSessionHasNoErrors();
+    $this->actingAs($editor)->post(route('creatives.requests.push', $request), ['drive_url' => 'https://d.com/z2']);
+
+    $this->actingAs($admin)->post(route('creatives.requests.validate', $request), ['amount_mad' => 80]);
+    $entry = CommissionLedgerEntry::withoutGlobalScopes()->where('content_request_id', $request->id)->firstOrFail();
+
+    $this->actingAs($admin)->put(route('creatives.commissions.pay', $entry))->assertSessionHasNoErrors();
+    $entry->refresh();
+    expect($entry->invoice?->status)->toBe('paid');
+
+    $this->actingAs($admin)->put(route('creatives.commissions.pay', $entry))->assertStatus(422);
+    $this->actingAs($editor)->put(route('creatives.commissions.pay', $entry))->assertForbidden();
+
+    $this->actingAs($admin)->get(route('creatives.index'))
+        ->assertInertia(fn ($page) => $page->where('commissions.rows.0.paid', true)->where('commissions.pending', 0)->etc());
+});

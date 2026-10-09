@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Creatives;
 use App\Enums\CreativeProductStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\CommissionLedgerEntry;
 use App\Models\ContentRequest;
 use App\Models\CreativeProduct;
 use App\Models\User;
 use App\Services\Creatives\ContentRequestService;
+use App\Services\Operations\Commissions\CommissionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -21,7 +23,10 @@ use InvalidArgumentException;
  */
 class ContentRequestController extends Controller
 {
-    public function __construct(private readonly ContentRequestService $requests) {}
+    public function __construct(
+        private readonly ContentRequestService $requests,
+        private readonly CommissionService $commissions,
+    ) {}
 
     /* ───────────── admin ───────────── */
 
@@ -74,11 +79,11 @@ class ContentRequestController extends Controller
     public function edits(Request $request, ContentRequest $contentRequest): RedirectResponse
     {
         $data = $request->validate([
-            'points' => ['required', 'array', 'min:1', 'max:50'],
+            'points' => ['nullable', 'array', 'max:50'],
             'points.*' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $updated = $this->requests->requestEdits($contentRequest, $data['points']);
+        $updated = $this->requests->requestEdits($contentRequest, $data['points'] ?? []);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Edits requested — back to the editor (v:rev).', ['rev' => $updated->rev])]);
 
@@ -98,6 +103,30 @@ class ContentRequestController extends Controller
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Work validated — :amount MAD added to the commissions.', ['amount' => number_format($data['amount_mad'])])]);
+
+        return back();
+    }
+
+    /**
+     * "Mark paid" on a creative pay row. Payment lives on invoices, so this
+     * wraps the row in a one-line invoice (unless it already has one) and
+     * marks that invoice paid — the same thing the Commissions page does
+     * in two steps.
+     */
+    public function pay(Request $request, CommissionLedgerEntry $entry): RedirectResponse
+    {
+        abort_unless($entry->business_id === $request->user()->business_id && $entry->entry_type === 'creative', 404);
+
+        $invoice = $entry->invoice ?? $this->commissions->generateInvoice($entry->business_id, $entry->user_id, [$entry->id]);
+
+        abort_if($invoice->status === 'paid', 422, __('Already paid.'));
+
+        $this->commissions->markInvoicePaid($invoice);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Paid — :amount MAD to :name.', [
+            'amount' => number_format((float) $entry->amount),
+            'name' => $entry->user?->name ?? __('the editor'),
+        ])]);
 
         return back();
     }

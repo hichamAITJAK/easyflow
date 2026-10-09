@@ -15,6 +15,7 @@ import { UserMenuContent } from '@/components/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/use-translation';
+import { cn } from '@/lib/utils';
 import type { PageProps } from '@/types';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -46,7 +47,14 @@ export function NavUser() {
                             className="group h-auto gap-2.5 rounded-md p-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 hover:bg-accent data-[state=open]:bg-accent"
                             data-test="sidebar-menu-button"
                         >
-                            <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary text-xs font-semibold text-secondary-foreground">
+                            <span
+                                className={cn(
+                                    'flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg text-xs font-semibold',
+                                    auth.user.role === 'creatives_editor'
+                                        ? 'bg-[#468FA5]/15 text-[#2E7389]'
+                                        : 'bg-secondary text-secondary-foreground',
+                                )}
+                            >
                                 {auth.user.avatar ? (
                                     <img
                                         src={auth.user.avatar}
