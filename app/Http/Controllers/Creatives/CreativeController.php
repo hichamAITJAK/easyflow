@@ -118,8 +118,19 @@ class CreativeController extends Controller
         $entries = CommissionLedgerEntry::where('business_id', $editor->business_id)
             ->where('user_id', $editor->id)
             ->where('entry_type', 'creative')
-            ->with('invoice:id,status')
+            ->with(['invoice:id,status', 'contentRequest:id,creative_product_id', 'contentRequest.product:id,name'])
+            ->latest('created_at')
             ->get();
+
+        $monthStart = Carbon::now()->startOfMonth();
+        $isPaid = fn (CommissionLedgerEntry $e) => $e->invoice?->status === 'paid';
+        $thisMonth = fn (CommissionLedgerEntry $e) => Carbon::parse($e->created_at)->greaterThanOrEqualTo($monthStart);
+
+        // The editor's screen names the person who reviews their work.
+        $admin = User::where('business_id', $editor->business_id)
+            ->where('role', UserRole::ADMIN)
+            ->orderBy('id')
+            ->value('name');
 
         return Inertia::render('creatives/editor', [
             'products' => $products->map(fn (CreativeProduct $p) => [
@@ -133,9 +144,19 @@ class CreativeController extends Controller
             ])->values(),
             'requests' => $requests->map(fn (ContentRequest $r) => $this->requestPayload($r))->values(),
             'commissions' => [
-                'pending' => (int) round((float) $entries->reject(fn ($e) => $e->invoice?->status === 'paid')->sum('amount')),
-                'paid' => (int) round((float) $entries->filter(fn ($e) => $e->invoice?->status === 'paid')->sum('amount')),
+                'rows' => $entries->map(fn (CommissionLedgerEntry $e) => [
+                    'id' => $e->id,
+                    'product' => $e->contentRequest?->product?->name ?? '—',
+                    'label' => $e->description,
+                    'validated_at' => Carbon::parse($e->created_at)->toIso8601String(),
+                    'amount' => (int) round((float) $e->amount),
+                    'paid' => $isPaid($e),
+                ])->values(),
+                'pending' => (int) round((float) $entries->reject($isPaid)->sum('amount')),
+                'paidThisMonth' => (int) round((float) $entries->filter($isPaid)->filter($thisMonth)->sum('amount')),
+                'countThisMonth' => $entries->filter($thisMonth)->count(),
             ],
+            'admin' => $admin ?? __('your admin'),
         ]);
     }
 
