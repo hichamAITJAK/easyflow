@@ -42,6 +42,7 @@ const roleLabels: Record<UserRole, string> = {
     admin: 'Admin',
     confirmation_agent: 'Confirmation Agent',
     fulfilment_agent: 'Fulfilment Agent',
+    creatives_editor: 'Creatives Editor',
 };
 
 const statusClasses: Record<UserStatus, string> = {

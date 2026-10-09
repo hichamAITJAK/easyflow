@@ -8,4 +8,7 @@ enum UserRole: string
     case ADMIN = 'admin';
     case CONFIRMATION_AGENT = 'confirmation_agent';
     case FULFILMENT_AGENT = 'fulfilment_agent';
+
+    /** Produces ad creatives for the Creatives module; no orders, no warehouse. */
+    case CREATIVES_EDITOR = 'creatives_editor';
 }

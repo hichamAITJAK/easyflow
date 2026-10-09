@@ -50,6 +50,12 @@ class TwoFactorLoginResponse implements TwoFactorLoginResponseContract
             return redirect()->route('fulfillment.index');
         }
 
+        if ($user->role === UserRole::CREATIVES_EDITOR) {
+            $request->session()->forget('url.intended');
+
+            return redirect()->route('creatives.index');
+        }
+
         return redirect()->intended(Fortify::redirects('login'));
     }
 

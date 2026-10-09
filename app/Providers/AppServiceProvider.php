@@ -189,7 +189,24 @@ class AppServiceProvider extends ServiceProvider
         // to assignments they never receive, so without this they would get
         // an empty list rather than a refusal, which reads as a bug. They
         // keep their own commission entries, which are gated separately.
-        Gate::define('use-operations-app', fn (User $user): bool => $user->role !== UserRole::FULFILMENT_AGENT);
+        Gate::define('use-operations-app', fn (User $user): bool => ! in_array(
+            $user->role,
+            [UserRole::FULFILMENT_AGENT, UserRole::CREATIVES_EDITOR],
+            true,
+        ));
+
+        // Parcels, the catalogue and agent commissions: every operations
+        // role, but not a creatives editor, whose work never touches them.
+        Gate::define('use-logistics', fn (User $user): bool => $user->role !== UserRole::CREATIVES_EDITOR);
+
+        // The Creatives module: briefs, content requests and editor pay.
+        // Admins run it, creatives editors work inside it, nobody else
+        // has a reason to open it.
+        Gate::define('use-creatives', fn (User $user): bool => in_array(
+            $user->role,
+            [UserRole::ADMIN, UserRole::CREATIVES_EDITOR],
+            true,
+        ));
     }
 
     /**

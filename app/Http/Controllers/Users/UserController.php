@@ -52,7 +52,7 @@ class UserController extends Controller
         $businessId = $request->user()->business_id;
         $role = $request->query('role', 'confirmation_agent');
 
-        if (! in_array($role, ['confirmation_agent', 'fulfilment_agent'])) {
+        if (! in_array($role, ['confirmation_agent', 'fulfilment_agent', 'creatives_editor'])) {
             $role = 'confirmation_agent';
         }
 

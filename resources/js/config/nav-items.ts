@@ -1,5 +1,6 @@
 import {
     Calculator,
+    Clapperboard,
     LayoutGrid,
     Package,
     PackageSearch,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 import { dashboard } from '@/routes';
 import { index as commissionEntriesIndex } from '@/routes/commission-entries';
+import { index as creativesIndex } from '@/routes/creatives';
 import { index as customersIndex } from '@/routes/customers';
 import { index as deliveryCouriersIndex } from '@/routes/delivery-couriers';
 import { index as fulfillmentIndex } from '@/routes/fulfillment';
@@ -99,6 +101,12 @@ export const mainNavItems: NavItem[] = [
     //     icon: BarChart3,
     // },
     {
+        title: 'Creatives',
+        group: 'Team',
+        href: creativesIndex(),
+        icon: Clapperboard,
+    },
+    {
         title: 'Profit Calculator',
         group: 'Finance',
         href: profitCalculatorIndex(),
@@ -121,6 +129,7 @@ export const navItemRoles: Partial<Record<string, UserRole[]>> = {
     Customers: ['super_admin', 'admin', 'confirmation_agent'],
     Commissions: ['super_admin', 'admin', 'confirmation_agent'],
     Team: ['super_admin', 'admin'],
+    Creatives: ['admin'],
     Stores: ['super_admin', 'admin'],
     'Delivery Couriers': ['super_admin', 'admin'],
     Settlements: ['super_admin', 'admin'],
@@ -157,9 +166,22 @@ const FULFILMENT_NAV_ITEMS: NavItem[] = [
     },
 ];
 
+/** A creatives editor lives in the Creatives module alone. */
+const CREATIVES_EDITOR_NAV_ITEMS: NavItem[] = [
+    {
+        title: 'Creatives',
+        href: creativesIndex(),
+        icon: Clapperboard,
+    },
+];
+
 export function getVisibleNavItems(role?: UserRole | null): NavItem[] {
     if (role === 'fulfilment_agent') {
         return FULFILMENT_NAV_ITEMS;
+    }
+
+    if (role === 'creatives_editor') {
+        return CREATIVES_EDITOR_NAV_ITEMS;
     }
 
     return mainNavItems.filter((item) => {

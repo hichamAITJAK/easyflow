@@ -4,7 +4,8 @@ export type UserRole =
     | 'super_admin'
     | 'admin'
     | 'confirmation_agent'
-    | 'fulfilment_agent';
+    | 'fulfilment_agent'
+    | 'creatives_editor';
 
 export type UserStatus = 'active' | 'invited' | 'disabled';
 

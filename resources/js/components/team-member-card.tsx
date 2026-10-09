@@ -19,6 +19,7 @@ const roleLabels: Record<User['role'], string> = {
     admin: 'Admin',
     confirmation_agent: 'Confirmation Agent',
     fulfilment_agent: 'Fulfilment Agent',
+    creatives_editor: 'Creatives Editor',
 };
 
 const roleBadgeClasses: Record<User['role'], string> = {
@@ -29,6 +30,8 @@ const roleBadgeClasses: Record<User['role'], string> = {
         'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
     fulfilment_agent:
         'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+    creatives_editor:
+        'bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300',
 };
 
 const statusBadgeClasses: Record<User['status'], string> = {

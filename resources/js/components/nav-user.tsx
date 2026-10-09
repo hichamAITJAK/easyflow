@@ -22,6 +22,7 @@ const ROLE_LABELS: Record<string, string> = {
     admin: 'Admin',
     confirmation_agent: 'Confirmation agent',
     fulfilment_agent: 'Fulfilment agent',
+    creatives_editor: 'Creatives editor',
 };
 
 export function NavUser() {

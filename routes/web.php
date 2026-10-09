@@ -32,6 +32,7 @@ use App\Http\Controllers\Tools\ProfitCalculatorController;
 use App\Http\Controllers\Users\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', fn () => redirect()->route('dashboard'))->name('home');
 
@@ -109,6 +110,7 @@ Route::middleware(['auth', 'verified'])->get('dashboard', function (Request $req
     return match ($request->user()->role) {
         UserRole::SUPER_ADMIN => redirect()->route('super-admin.home'),
         UserRole::FULFILMENT_AGENT => redirect()->route('fulfillment.index'),
+        UserRole::CREATIVES_EDITOR => redirect()->route('creatives.index'),
         default => $controller->index($request),
     };
 })->name('dashboard');
@@ -221,14 +223,14 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
 
     // No use-operations-app gate: fulfilment agents track parcels too.
     // The controller scopes what each role sees.
-    Route::prefix('parcels')->name('parcels.')->group(function () {
+    Route::prefix('parcels')->name('parcels.')->middleware('can:use-logistics')->group(function () {
         Route::get('/', [ParcelController::class, 'index'])->name('index');
     });
 
     // No use-operations-app gate: fulfilment agents read the catalogue
     // too, to keep stock counts right. The controller scopes what each
     // role sees.
-    Route::prefix('products')->name('products.')->group(function () {
+    Route::prefix('products')->name('products.')->middleware('can:use-logistics')->group(function () {
         // Read-only: agents see the catalogue, scoped to their AgentScope
         // grants by the controller. Everything that writes sits behind
         // `manage-products` / `manage-inventory` below.
@@ -267,7 +269,7 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
         });
     });
 
-    Route::prefix('commission-entries')->name('commission-entries.')->group(function () {
+    Route::prefix('commission-entries')->name('commission-entries.')->middleware('can:use-logistics')->group(function () {
         Route::get('/', [CommissionEntryController::class, 'index'])->name('index');
         Route::post('/invoices', [CommissionEntryController::class, 'generateInvoice'])->name('invoices.store');
         Route::post('/invoices/from-filters', [CommissionEntryController::class, 'generateInvoicesFromFilters'])->name('invoices.from-filters');
@@ -289,6 +291,11 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
     });
 
     Route::middleware('can:manage-users')->get('profit-calculator', [ProfitCalculatorController::class, 'index'])->name('profit-calculator.index');
+
+    // Creatives module (admins + creatives editors). The landing page is
+    // a placeholder until the briefs / review queue / commissions screens
+    // ship; it exists now so the editor role has somewhere to land.
+    Route::middleware('can:use-creatives')->get('creatives', fn () => Inertia::render('creatives/index'))->name('creatives.index');
 });
 
 require __DIR__.'/settings.php';

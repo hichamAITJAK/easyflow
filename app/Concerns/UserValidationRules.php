@@ -51,6 +51,7 @@ trait UserValidationRules
                 UserRole::ADMIN,
                 UserRole::CONFIRMATION_AGENT,
                 UserRole::FULFILMENT_AGENT,
+                UserRole::CREATIVES_EDITOR,
             ])],
             'status' => ['required', Rule::enum(UserStatus::class)],
             'avatar' => ['nullable', 'image', 'max:2048'],

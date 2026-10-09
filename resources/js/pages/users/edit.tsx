@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { ConfirmationAgentForm } from '@/components/confirmation-agent-form';
+import { CreativesEditorForm } from '@/components/creatives-editor-form';
 import { FulfilmentAgentForm } from '@/components/fulfilment-agent-form';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ export default function UsersEdit({
     const { t } = useTranslation();
 
     const isConfirmation = user.role === 'confirmation_agent';
+    const isEditor = user.role === 'creatives_editor';
 
     return (
         <>
@@ -51,13 +53,17 @@ export default function UsersEdit({
                             description={
                                 isConfirmation
                                     ? 'Update confirmation agent profile, pay structure, store/product scope, and daily targets.'
-                                    : 'Update fulfilment agent profile, pay rules, and warehouse status.'
+                                    : isEditor
+                                      ? 'Update the creatives editor profile and credentials.'
+                                      : 'Update fulfilment agent profile, pay rules, and warehouse status.'
                             }
                         />
                         <Badge variant="outline" className="mt-1 self-start">
                             {isConfirmation
                                 ? t('Confirmation Agent')
-                                : t('Fulfilment Agent')}
+                                : isEditor
+                                  ? t('Creatives Editor')
+                                  : t('Fulfilment Agent')}
                         </Badge>
                     </div>
                 </div>
@@ -69,6 +75,13 @@ export default function UsersEdit({
                         products={products}
                         avatarOptions={avatarOptions}
                         performanceDefaults={performanceDefaults}
+                        onSuccess={() => router.get(usersIndex())}
+                        onCancel={() => router.get(usersIndex())}
+                    />
+                ) : isEditor ? (
+                    <CreativesEditorForm
+                        user={user}
+                        avatarOptions={avatarOptions}
                         onSuccess={() => router.get(usersIndex())}
                         onCancel={() => router.get(usersIndex())}
                     />

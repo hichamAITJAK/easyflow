@@ -71,6 +71,11 @@ class UserFactory extends Factory
         return $this->state(['role' => UserRole::FULFILMENT_AGENT]);
     }
 
+    public function creativesEditor(): static
+    {
+        return $this->state(['role' => UserRole::CREATIVES_EDITOR]);
+    }
+
     // ─── Status states ─────────────────────────────────────────────────────────
 
     public function invited(): static

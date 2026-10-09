@@ -40,7 +40,7 @@ import {
 import type { User } from '@/types';
 import { createColumns } from './columns';
 
-type AgentTab = 'confirmation_agent' | 'fulfilment_agent';
+type AgentTab = 'confirmation_agent' | 'fulfilment_agent' | 'creatives_editor';
 
 const tabConfig: Record<
     AgentTab,
@@ -58,6 +58,18 @@ const tabConfig: Record<
         emptyDescription:
             'Add agents to prepare and scan parcels in the warehouse.',
     },
+    creatives_editor: {
+        label: 'Creatives editors',
+        emptyTitle: 'No creatives editors yet',
+        emptyDescription:
+            'Add editors to produce videos and statics for your products.',
+    },
+};
+
+const ADD_LABELS: Record<AgentTab, string> = {
+    confirmation_agent: 'Add confirmation agent',
+    fulfilment_agent: 'Add fulfilment agent',
+    creatives_editor: 'Add creatives editor',
 };
 
 export default function UsersIndex({ users }: { users: User[] }) {
@@ -83,6 +95,9 @@ export default function UsersIndex({ users }: { users: User[] }) {
             ),
             fulfilment_agent: users.filter(
                 (user) => user.role === 'fulfilment_agent',
+            ),
+            creatives_editor: users.filter(
+                (user) => user.role === 'creatives_editor',
             ),
         }),
         [users],
@@ -140,14 +155,12 @@ export default function UsersIndex({ users }: { users: User[] }) {
                     <Heading
                         title={t('Team')}
                         description={t(
-                            'Manage your confirmation and fulfilment agents.',
+                            'Manage your confirmation agents, fulfilment agents and creatives editors.',
                         )}
                     />
                     <Button onClick={handleCreate}>
                         <Plus />
-                        {tab === 'confirmation_agent'
-                            ? t('Add confirmation agent')
-                            : t('Add fulfilment agent')}
+                        {t(ADD_LABELS[tab])}
                     </Button>
                 </div>
 
@@ -174,77 +187,77 @@ export default function UsersIndex({ users }: { users: User[] }) {
                                 {usersByTab.fulfilment_agent.length}
                             </span>
                         </TabsTrigger>
+                        <TabsTrigger value="creatives_editor" className="gap-2">
+                            <span>{t('Creatives editors')}</span>
+                            <span className="rounded-full bg-muted-foreground/15 px-2 py-0.5 text-xs font-semibold">
+                                {usersByTab.creatives_editor.length}
+                            </span>
+                        </TabsTrigger>
                     </TabsList>
 
-                    {(['confirmation_agent', 'fulfilment_agent'] as const).map(
-                        (tabValue) => (
-                            <TabsContent
-                                key={tabValue}
-                                value={tabValue}
-                                className="space-y-6 pt-4"
-                            >
-                                {activeTabUsers.length === 0 ? (
-                                    <Empty className="border">
-                                        <EmptyHeader>
-                                            <EmptyMedia variant="icon">
-                                                <UsersIcon />
-                                            </EmptyMedia>
-                                            <EmptyTitle>
-                                                {t(config.emptyTitle)}
-                                            </EmptyTitle>
-                                            <EmptyDescription>
-                                                {t(config.emptyDescription)}
-                                            </EmptyDescription>
-                                        </EmptyHeader>
-                                        <EmptyContent>
-                                            <Button onClick={handleCreate}>
-                                                <Plus />
-                                                {tab === 'confirmation_agent'
-                                                    ? t(
-                                                          'Add confirmation agent',
-                                                      )
-                                                    : t('Add fulfilment agent')}
-                                            </Button>
-                                        </EmptyContent>
-                                    </Empty>
-                                ) : (
-                                    <DataTableCard>
-                                        <DataTableCardToolbar>
-                                            <Input
-                                                className="max-w-sm"
-                                                placeholder={t(
-                                                    'Search by name, email, or phone…',
-                                                )}
-                                                value={search}
-                                                onChange={(event) =>
-                                                    setSearch(
-                                                        event.target.value,
-                                                    )
-                                                }
-                                            />
-                                            <DataTableViewOptions
-                                                table={table}
-                                            />
-                                        </DataTableCardToolbar>
+                    {(
+                        [
+                            'confirmation_agent',
+                            'fulfilment_agent',
+                            'creatives_editor',
+                        ] as const
+                    ).map((tabValue) => (
+                        <TabsContent
+                            key={tabValue}
+                            value={tabValue}
+                            className="space-y-6 pt-4"
+                        >
+                            {activeTabUsers.length === 0 ? (
+                                <Empty className="border">
+                                    <EmptyHeader>
+                                        <EmptyMedia variant="icon">
+                                            <UsersIcon />
+                                        </EmptyMedia>
+                                        <EmptyTitle>
+                                            {t(config.emptyTitle)}
+                                        </EmptyTitle>
+                                        <EmptyDescription>
+                                            {t(config.emptyDescription)}
+                                        </EmptyDescription>
+                                    </EmptyHeader>
+                                    <EmptyContent>
+                                        <Button onClick={handleCreate}>
+                                            <Plus />
+                                            {t(ADD_LABELS[tab])}
+                                        </Button>
+                                    </EmptyContent>
+                                </Empty>
+                            ) : (
+                                <DataTableCard>
+                                    <DataTableCardToolbar>
+                                        <Input
+                                            className="max-w-sm"
+                                            placeholder={t(
+                                                'Search by name, email, or phone…',
+                                            )}
+                                            value={search}
+                                            onChange={(event) =>
+                                                setSearch(event.target.value)
+                                            }
+                                        />
+                                        <DataTableViewOptions table={table} />
+                                    </DataTableCardToolbar>
 
-                                        <DataTableCardTable>
-                                            <DataTable
-                                                table={table}
-                                                columnCount={columns.length}
-                                                emptyMessage="No matching team members found."
-                                            />
-                                        </DataTableCardTable>
+                                    <DataTableCardTable>
+                                        <DataTable
+                                            table={table}
+                                            columnCount={columns.length}
+                                            emptyMessage="No matching team members found."
+                                        />
+                                    </DataTableCardTable>
 
-                                        <DataTableCardFooter>
-                                            <DataTablePagination
-                                                table={table}
-                                            />
-                                        </DataTableCardFooter>
-                                    </DataTableCard>
-                                )}
-                            </TabsContent>
-                        ),
-                    )}
+                                    <DataTableCardFooter>
+                                        <DataTablePagination table={table} />
+                                    </DataTableCardFooter>
+                                </DataTableCard>
+                            )}
+                        </TabsContent>
+                    ))}
                 </Tabs>
             </div>
 

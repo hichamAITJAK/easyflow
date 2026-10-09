@@ -20,7 +20,12 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
+import {
+    Field,
+    FieldDescription,
+    FieldError,
+    FieldLabel,
+} from '@/components/ui/field';
 import {
     InputGroup,
     InputGroupAddon,
@@ -37,6 +42,7 @@ const roleLabel: Record<UserRole, string> = {
     admin: 'Owner / Manager',
     confirmation_agent: 'Confirmation Agent',
     fulfilment_agent: 'Fulfilment Agent',
+    creatives_editor: 'Creatives Editor',
 };
 
 const statusLabel: Record<UserStatus, string> = {
@@ -75,7 +81,9 @@ export default function Profile({
                 <Heading
                     variant="small"
                     title={t('Profile')}
-                    description={t('Update your photo, name, email, and phone number')}
+                    description={t(
+                        'Update your photo, name, email, and phone number',
+                    )}
                 />
 
                 <Form
@@ -121,7 +129,9 @@ export default function Profile({
                                         </Badge>
                                     </div>
                                     <FieldDescription className="-mt-2 max-w-sm">
-                                        {t('Role and account status are managed by your Owner or Manager from the team page.')}
+                                        {t(
+                                            'Role and account status are managed by your Owner or Manager from the team page.',
+                                        )}
                                     </FieldDescription>
                                 </CardContent>
                             </Card>
@@ -156,9 +166,7 @@ export default function Profile({
                                             />
                                         </InputGroup>
                                         <FieldError
-                                            errors={[
-                                                { message: errors.name },
-                                            ]}
+                                            errors={[{ message: errors.name }]}
                                         />
                                     </Field>
 
@@ -181,7 +189,9 @@ export default function Profile({
                                                     name="email"
                                                     required
                                                     autoComplete="username"
-                                                    placeholder={t('Email address')}
+                                                    placeholder={t(
+                                                        'Email address',
+                                                    )}
                                                 />
                                             </InputGroup>
                                             <FieldError
@@ -222,7 +232,9 @@ export default function Profile({
                                             <Alert variant="warning">
                                                 <UserIcon />
                                                 <AlertTitle>
-                                                    {t('Your email address is unverified')}
+                                                    {t(
+                                                        'Your email address is unverified',
+                                                    )}
                                                 </AlertTitle>
                                                 <AlertDescription>
                                                     <p>
@@ -239,7 +251,9 @@ export default function Profile({
                                                     {status ===
                                                         'verification-link-sent' && (
                                                         <p className="font-medium text-emerald-600 dark:text-emerald-400">
-                                                            {t('A new verification link has been sent to your email address.')}
+                                                            {t(
+                                                                'A new verification link has been sent to your email address.',
+                                                            )}
                                                         </p>
                                                     )}
                                                 </AlertDescription>

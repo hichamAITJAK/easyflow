@@ -55,6 +55,10 @@ class LoginResponse implements LoginResponseContract
             return redirect()->route('fulfillment.index');
         }
 
+        if ($user->role === UserRole::CREATIVES_EDITOR) {
+            return redirect()->route('creatives.index');
+        }
+
         return redirect()->intended(Fortify::redirects('login'));
     }
 }

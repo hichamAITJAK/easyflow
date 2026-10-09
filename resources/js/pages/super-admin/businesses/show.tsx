@@ -71,6 +71,7 @@ const ROLE_LABELS: Record<string, string> = {
     admin: 'Admin',
     confirmation_agent: 'Confirmation agent',
     fulfilment_agent: 'Fulfilment agent',
+    creatives_editor: 'Creatives editor',
 };
 
 function Stat({ label, value }: { label: string; value: number }) {

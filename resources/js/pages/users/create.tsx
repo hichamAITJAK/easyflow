@@ -1,7 +1,8 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, IdCard, Package } from 'lucide-react';
+import { ArrowLeft, Clapperboard, IdCard, Package } from 'lucide-react';
 import { useState } from 'react';
 import { ConfirmationAgentForm } from '@/components/confirmation-agent-form';
+import { CreativesEditorForm } from '@/components/creatives-editor-form';
 import { FulfilmentAgentForm } from '@/components/fulfilment-agent-form';
 import Heading from '@/components/heading';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,6 +12,8 @@ import { index as usersIndex } from '@/routes/users';
 import type { Product, Store } from '@/types';
 import type { PerformanceMetric, PerformanceTargetPeriod } from '@/types/agent';
 
+type TeamRole = 'confirmation_agent' | 'fulfilment_agent' | 'creatives_editor';
+
 export default function UsersCreate({
     role: initialRole,
     stores,
@@ -18,7 +21,7 @@ export default function UsersCreate({
     avatarOptions,
     performanceDefaults,
 }: {
-    role: 'confirmation_agent' | 'fulfilment_agent';
+    role: TeamRole;
     stores: Store[];
     products: Product[];
     avatarOptions: string[];
@@ -28,9 +31,7 @@ export default function UsersCreate({
 }) {
     const { t } = useTranslation();
 
-    const [role, setRole] = useState<'confirmation_agent' | 'fulfilment_agent'>(
-        initialRole,
-    );
+    const [role, setRole] = useState<TeamRole>(initialRole);
 
     return (
         <>
@@ -57,14 +58,9 @@ export default function UsersCreate({
 
                     <Tabs
                         value={role}
-                        onValueChange={(val) =>
-                            setRole(
-                                val as
-                                    'confirmation_agent' | 'fulfilment_agent',
-                            )
-                        }
+                        onValueChange={(val) => setRole(val as TeamRole)}
                     >
-                        <TabsList className="grid w-full grid-cols-2 sm:w-auto">
+                        <TabsList className="grid w-full grid-cols-3 sm:w-auto">
                             <TabsTrigger
                                 value="confirmation_agent"
                                 className="flex items-center gap-2 px-4"
@@ -79,6 +75,13 @@ export default function UsersCreate({
                                 <Package className="size-4" />
                                 <span>{t('Fulfilment Agent')}</span>
                             </TabsTrigger>
+                            <TabsTrigger
+                                value="creatives_editor"
+                                className="flex items-center gap-2 px-4"
+                            >
+                                <Clapperboard className="size-4" />
+                                <span>{t('Creatives Editor')}</span>
+                            </TabsTrigger>
                         </TabsList>
                     </Tabs>
                 </div>
@@ -92,9 +95,15 @@ export default function UsersCreate({
                         onSuccess={() => router.get(usersIndex())}
                         onCancel={() => router.get(usersIndex())}
                     />
-                ) : (
+                ) : role === 'fulfilment_agent' ? (
                     <FulfilmentAgentForm
                         stores={stores}
+                        avatarOptions={avatarOptions}
+                        onSuccess={() => router.get(usersIndex())}
+                        onCancel={() => router.get(usersIndex())}
+                    />
+                ) : (
+                    <CreativesEditorForm
                         avatarOptions={avatarOptions}
                         onSuccess={() => router.get(usersIndex())}
                         onCancel={() => router.get(usersIndex())}
