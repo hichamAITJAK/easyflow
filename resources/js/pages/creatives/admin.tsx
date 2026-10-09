@@ -229,7 +229,7 @@ export default function CreativesAdmin({
     const tab = (value: Space, label: string, badge?: number) => (
         <TabsTrigger
             value={value}
-            className="rounded-md px-4 py-1.5 text-sm font-medium data-[state=active]:bg-card data-[state=active]:shadow-xs"
+            className="h-auto flex-none rounded-md border-0 px-4 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs dark:data-[state=active]:border-0 dark:data-[state=active]:bg-card"
         >
             {label}
             {badge ? (
@@ -260,7 +260,7 @@ export default function CreativesAdmin({
                     value={space}
                     onValueChange={(v: string) => setSpace(v as Space)}
                 >
-                    <TabsList className="h-auto flex-wrap justify-start rounded-lg bg-muted p-1">
+                    <TabsList className="h-auto flex-wrap justify-start gap-0 rounded-lg border-0 bg-muted p-1">
                         {tab('test', t('For test products'))}
                         {tab('active', t('Active products'))}
                         {tab('queue', t('Review queue'), returnedCount)}
