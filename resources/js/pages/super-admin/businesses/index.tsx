@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { Building2, Plus } from 'lucide-react';
+import { Building2, Plus, Search } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { DataTable } from '@/components/data-table/data-table';
 import {
@@ -158,15 +158,18 @@ export default function SuperAdminBusinessesIndex({
                 <DataTableCard className="rounded-xl border border-border bg-card shadow-xs">
                     <DataTableCardToolbar>
                         <div className="flex flex-wrap items-center gap-2">
-                            <Input
-                                className="h-9 w-full max-w-sm rounded-md border-input bg-card text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20 sm:w-72"
-                                placeholder={t('Search by name or slug…')}
-                                value={search}
-                                onChange={(event) =>
-                                    setSearch(event.target.value)
-                                }
-                                aria-label={t('Search businesses')}
-                            />
+                            <div className="relative w-full max-w-sm sm:w-72">
+                                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    className="h-9 w-full rounded-md border-input bg-card pl-9 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20"
+                                    placeholder={t('Search by name or slug…')}
+                                    value={search}
+                                    onChange={(event) =>
+                                        setSearch(event.target.value)
+                                    }
+                                    aria-label={t('Search businesses')}
+                                />
+                            </div>
                             <Select
                                 value={draft.status ?? ANY_STATUS}
                                 onValueChange={(value) =>
@@ -220,7 +223,8 @@ export default function SuperAdminBusinessesIndex({
                         </div>
                     </DataTableCardToolbar>
 
-                    <DataTableCardTable>
+                    {/* Preview skin: plain header, roomier rows, 24px outer gutters. */}
+                    <DataTableCardTable className="[&_td]:px-4 [&_td]:py-4 [&_td:first-child]:pl-6 [&_td:last-child]:pr-6 [&_th]:h-auto [&_th]:px-4 [&_th]:py-3 [&_th:first-child]:pl-6 [&_th:last-child]:pr-6 [&_thead]:bg-transparent">
                         <DataTable
                             table={table}
                             columnCount={columns.length}
@@ -243,7 +247,10 @@ export default function SuperAdminBusinessesIndex({
                     </DataTableCardTable>
 
                     <DataTableCardFooter className="px-6 py-3 text-xs text-muted-foreground">
-                        <DataTablePaginationServer paginated={businesses} />
+                        <DataTablePaginationServer
+                            paginated={businesses}
+                            className="[&>span]:text-xs"
+                        />
                     </DataTableCardFooter>
                 </DataTableCard>
             </div>
