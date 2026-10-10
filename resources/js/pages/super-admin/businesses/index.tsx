@@ -135,7 +135,7 @@ export default function SuperAdminBusinessesIndex({
     };
 
     return (
-        <SuperAdminLayout>
+        <SuperAdminLayout fullWidth>
             <Head title={t('Businesses')} />
 
             <div className="space-y-6">
