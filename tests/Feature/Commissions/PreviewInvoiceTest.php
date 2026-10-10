@@ -102,3 +102,14 @@ test('guests cannot preview an invoice', function () {
     $this->getJson(route('commission-entries.invoices.show', $invoice))
         ->assertUnauthorized();
 });
+
+test('an agent or editor previews their own invoice', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $editor = makeBusinessUser(['role' => UserRole::CREATIVES_EDITOR, 'business_id' => $admin->business_id]);
+    $invoice = makePreviewInvoice($admin->business_id, $editor->id);
+
+    $this->actingAs($editor)
+        ->getJson(route('commission-entries.invoices.show', $invoice))
+        ->assertOk()
+        ->assertJsonPath('invoice_number', $invoice->invoice_number);
+});

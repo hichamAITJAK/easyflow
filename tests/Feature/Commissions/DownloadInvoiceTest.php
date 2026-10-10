@@ -75,3 +75,14 @@ test('a confirmation agent cannot download an invoice', function () {
         ->get(route('commission-entries.invoices.download', $invoice))
         ->assertForbidden();
 });
+
+test('an agent or editor downloads their own invoice', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $editor = makeBusinessUser(['role' => UserRole::CREATIVES_EDITOR, 'business_id' => $admin->business_id]);
+    $invoice = makeInvoiceWithEntries($admin->business_id, $editor->id);
+
+    $this->actingAs($editor)
+        ->get(route('commission-entries.invoices.download', $invoice))
+        ->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+});

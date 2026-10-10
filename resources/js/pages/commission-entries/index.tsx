@@ -885,11 +885,9 @@ export default function CommissionEntriesIndex({
                                             <TableHead>{t('Period')}</TableHead>
                                             <TableHead>{t('Total')}</TableHead>
                                             <TableHead>{t('Status')}</TableHead>
-                                            {isAdmin && (
-                                                <TableHead className="text-right">
-                                                    {t('Actions')}
-                                                </TableHead>
-                                            )}
+                                            <TableHead className="text-right">
+                                                {t('Actions')}
+                                            </TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -930,23 +928,19 @@ export default function CommissionEntriesIndex({
                                             invoiceRows.map((invoice) => (
                                                 <TableRow key={invoice.id}>
                                                     <TableCell>
-                                                        {isAdmin ? (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    setPreviewInvoiceId(
-                                                                        invoice.id,
-                                                                    )
-                                                                }
-                                                                className="rounded-sm font-medium underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
-                                                            >
-                                                                {
-                                                                    invoice.invoice_number
-                                                                }
-                                                            </button>
-                                                        ) : (
-                                                            invoice.invoice_number
-                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setPreviewInvoiceId(
+                                                                    invoice.id,
+                                                                )
+                                                            }
+                                                            className="rounded-sm font-medium underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+                                                        >
+                                                            {
+                                                                invoice.invoice_number
+                                                            }
+                                                        </button>
                                                     </TableCell>
                                                     {isAdmin && (
                                                         <TableCell>
@@ -1010,10 +1004,10 @@ export default function CommissionEntriesIndex({
                                                             {invoice.status}
                                                         </Badge>
                                                     </TableCell>
-                                                    {isAdmin && (
-                                                        <TableCell>
-                                                            <div className="flex items-center justify-end gap-2">
-                                                                {invoice.status !==
+                                                    <TableCell>
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            {isAdmin &&
+                                                                invoice.status !==
                                                                     'paid' && (
                                                                     <Button
                                                                         size="sm"
@@ -1032,61 +1026,57 @@ export default function CommissionEntriesIndex({
                                                                         )}
                                                                     </Button>
                                                                 )}
-                                                                {/* A real anchor, not
+                                                            {/* A real anchor, not
                                                             a router call — the
                                                             response is a file
                                                             download, so an
                                                             Inertia visit would
                                                             get a PDF body it
                                                             can't render. */}
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="ghost"
-                                                                    onClick={() =>
-                                                                        setPreviewInvoiceId(
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() =>
+                                                                    setPreviewInvoiceId(
+                                                                        invoice.id,
+                                                                    )
+                                                                }
+                                                                aria-label={t(
+                                                                    'Preview invoice :number',
+                                                                    {
+                                                                        number: invoice.invoice_number,
+                                                                    },
+                                                                )}
+                                                            >
+                                                                <Eye />
+                                                                {t('Preview')}
+                                                            </Button>
+                                                            <Button
+                                                                asChild
+                                                                size="sm"
+                                                                variant="ghost"
+                                                            >
+                                                                <a
+                                                                    href={
+                                                                        downloadInvoice(
                                                                             invoice.id,
-                                                                        )
+                                                                        ).url
                                                                     }
                                                                     aria-label={t(
-                                                                        'Preview invoice :number',
+                                                                        'Download invoice :number',
                                                                         {
                                                                             number: invoice.invoice_number,
                                                                         },
                                                                     )}
                                                                 >
-                                                                    <Eye />
+                                                                    <Download />
                                                                     {t(
-                                                                        'Preview',
+                                                                        'Download',
                                                                     )}
-                                                                </Button>
-                                                                <Button
-                                                                    asChild
-                                                                    size="sm"
-                                                                    variant="ghost"
-                                                                >
-                                                                    <a
-                                                                        href={
-                                                                            downloadInvoice(
-                                                                                invoice.id,
-                                                                            )
-                                                                                .url
-                                                                        }
-                                                                        aria-label={t(
-                                                                            'Download invoice :number',
-                                                                            {
-                                                                                number: invoice.invoice_number,
-                                                                            },
-                                                                        )}
-                                                                    >
-                                                                        <Download />
-                                                                        {t(
-                                                                            'Download',
-                                                                        )}
-                                                                    </a>
-                                                                </Button>
-                                                            </div>
-                                                        </TableCell>
-                                                    )}
+                                                                </a>
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
                                                 </TableRow>
                                             ))
                                         )}

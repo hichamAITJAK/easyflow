@@ -320,8 +320,7 @@ class CommissionEntryController extends Controller
      */
     public function downloadInvoice(Request $request, Invoice $invoice): HttpResponse
     {
-        abort_unless($request->user()->can('manage-users'), 403);
-        abort_unless($invoice->business_id === $request->user()->business_id, 403);
+        $this->authorizeInvoiceRead($request, $invoice);
 
         $invoice->load([
             'user:id,name,email',
@@ -350,8 +349,7 @@ class CommissionEntryController extends Controller
      */
     public function showInvoice(Request $request, Invoice $invoice): JsonResponse
     {
-        abort_unless($request->user()->can('manage-users'), 403);
-        abort_unless($invoice->business_id === $request->user()->business_id, 403);
+        $this->authorizeInvoiceRead($request, $invoice);
 
         $invoice->load([
             'user:id,name,email',
@@ -387,5 +385,18 @@ class CommissionEntryController extends Controller
                 'amount' => $entry->amount,
             ])->values(),
         ]);
+    }
+
+    /**
+     * Reading an invoice (preview, PDF) is for the admin or the person it
+     * was issued to: an agent or editor can always see their own pay
+     * statement, never someone else's.
+     */
+    private function authorizeInvoiceRead(Request $request, Invoice $invoice): void
+    {
+        $user = $request->user();
+
+        abort_unless($invoice->business_id === $user->business_id, 403);
+        abort_unless($user->can('manage-users') || $invoice->user_id === $user->id, 403);
     }
 }
