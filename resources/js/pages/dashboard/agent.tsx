@@ -4,8 +4,10 @@ import {
     ClipboardList,
     Clock,
     HandCoins,
+    Hourglass,
     PackageCheck,
     PhoneCall,
+    TrendingUp,
     Undo2,
 } from 'lucide-react';
 import type { ComponentType, PointerEvent, ReactNode } from 'react';
@@ -72,11 +74,16 @@ type Props = {
         delivery: number | null;
     };
     commissionEarned: number;
+    upsells: { count: number; rate: number | null };
+    /** Hour of day (0–23) with the most confirmations, null when none. */
+    bestConfirmHour: number | null;
 };
 
 /* Semantic colours from the preview — never repainted. */
 const TONE = {
     teal: 'bg-[#16A08E]/10 text-[#0C7D6F]',
+    petrol: 'bg-[#468FA5]/12 text-[#2E7389]',
+    plum: 'bg-secondary text-secondary-foreground',
     amber: 'bg-[#EFA22C]/12 text-[#A87110]',
     orange: 'bg-[#F2602F]/10 text-[#C24A1A]',
     red: 'bg-[#D92D20]/10 text-[#B3281D]',
@@ -91,6 +98,8 @@ export default function AgentDashboard({
     tileRates,
     rateTotals,
     commissionEarned,
+    upsells,
+    bestConfirmHour,
 }: Props) {
     const { t } = useTranslation();
     const { auth } = usePage<PageProps>().props;
@@ -132,7 +141,13 @@ export default function AgentDashboard({
             color: '#D92D20',
         },
         { label: t('Returned rate'), value: returnedPct, color: '#B3281D' },
+        { label: t('Upsell rate'), value: upsells.rate, color: '#49183C' },
     ];
+
+    const bestTime =
+        bestConfirmHour === null
+            ? '—'
+            : `${String(bestConfirmHour).padStart(2, '0')}h–${String((bestConfirmHour + 1) % 24).padStart(2, '0')}h`;
 
     return (
         <>
@@ -290,8 +305,14 @@ export default function AgentDashboard({
                         </div>
                     </div>
 
-                    {/* commissions */}
+                    {/* upsells · commissions · best time */}
                     <div className="mt-4 grid grid-cols-3 gap-3 lg:gap-4">
+                        <KpiCard
+                            icon={TrendingUp}
+                            tone={TONE.plum}
+                            value={n(upsells.count)}
+                            label={t('Upsells')}
+                        />
                         <KpiCard
                             icon={HandCoins}
                             tone={TONE.amber}
@@ -304,6 +325,13 @@ export default function AgentDashboard({
                                 </>
                             }
                             label={t('Commissions')}
+                            compact
+                        />
+                        <KpiCard
+                            icon={Hourglass}
+                            tone={TONE.petrol}
+                            value={bestTime}
+                            label={t('Best confirm time')}
                             compact
                         />
                     </div>

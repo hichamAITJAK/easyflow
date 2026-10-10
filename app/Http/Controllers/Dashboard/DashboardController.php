@@ -11,6 +11,7 @@ use App\Models\CourierSettlement;
 use App\Models\DailyStatsSummary;
 use App\Models\DeliveryAccount;
 use App\Models\Order;
+use App\Models\OrderStatusEvent;
 use App\Models\PerformanceTarget;
 use App\Models\Product;
 use App\Models\Store;
@@ -1031,6 +1032,13 @@ class DashboardController extends Controller
                 : null,
         ];
 
+        // Upsells and the best confirm hour come straight from orders and
+        // their status events: neither is rolled into the daily stats.
+        $upsells = Order::where('assigned_agent_id', $user->id)
+            ->where('upsell_amount', '>', 0)
+            ->whereBetween('created_at', [$since->copy()->startOfDay(), $until->copy()->endOfDay()])
+            ->count();
+
         return Inertia::render('dashboard/agent', [
             // The same Performance track the admin sees, pinned to this
             // agent: their own rows, no selector.
@@ -1059,7 +1067,38 @@ class DashboardController extends Controller
                 'delivery' => $deliveryTotal,
             ],
             'commissionEarned' => round((float) $rows->sum('commission_total'), 2),
+            'upsells' => [
+                'count' => $upsells,
+                'rate' => $totals['confirmed'] > 0
+                    ? round(($upsells / $totals['confirmed']) * 100, 1)
+                    : null,
+            ],
+            'bestConfirmHour' => $this->bestConfirmHour($user, $since, $until),
         ]);
+    }
+
+    /**
+     * The hour of day (0–23) in which this agent confirmed the most orders
+     * over the window, from the confirmation status events they made.
+     * Null when they confirmed nothing.
+     */
+    private function bestConfirmHour(User $user, Carbon $since, Carbon $until): ?int
+    {
+        $hour = OrderStatusEvent::query()->getConnection()->getDriverName() === 'sqlite'
+            ? "cast(strftime('%H', created_at) as integer)"
+            : 'HOUR(created_at)';
+
+        $row = OrderStatusEvent::where('business_id', $user->business_id)
+            ->where('changed_by_user_id', $user->id)
+            ->whereIn('to_status', [OrderConfirmationStatus::CONFIRMED->value, OrderConfirmationStatus::CONFIRMED_FOLLOWUP->value])
+            ->whereBetween('created_at', [$since->copy()->startOfDay(), $until->copy()->endOfDay()])
+            ->selectRaw("{$hour} as hour, count(*) as total")
+            ->groupByRaw($hour)
+            ->orderByDesc('total')
+            ->orderBy('hour')
+            ->first();
+
+        return $row === null ? null : (int) $row->hour;
     }
 
     /**

@@ -6,6 +6,8 @@ use App\Enums\PerformanceMetric;
 use App\Enums\PerformanceTargetPeriod;
 use App\Enums\UserRole;
 use App\Models\DailyStatsSummary;
+use App\Models\Order;
+use App\Models\OrderStatusEvent;
 use App\Models\PerformanceTarget;
 use App\Models\Product;
 use App\Models\User;
@@ -363,6 +365,8 @@ test('the agent dashboard renders every stat/chart prop with the right shape', f
             ->has('delivery')
         )
         ->has('commissionEarned')
+        ->has('upsells', fn ($upsells) => $upsells->has('count')->has('rate'))
+        ->has('bestConfirmHour')
         ->where('periodDays', 30)
         ->where('filters', ['period' => null, 'date_from' => null, 'date_to' => null])
         ->where('performance.view.type', 'agent')
@@ -630,4 +634,26 @@ test('an unusable custom range falls back to the default window', function () {
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('performance.daily', 30)->etc());
     }
+});
+
+test('the agent dashboard counts upsells and finds the best confirm hour', function () {
+    $agent = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT]);
+
+    $upsold = Order::factory()->create(['business_id' => $agent->business_id, 'assigned_agent_id' => $agent->id, 'upsell_amount' => 40]);
+    $plain = Order::factory()->create(['business_id' => $agent->business_id, 'assigned_agent_id' => $agent->id, 'upsell_amount' => null]);
+
+    foreach ([[$upsold, 19], [$plain, 19], [$upsold, 9]] as [$order, $hour]) {
+        OrderStatusEvent::forceCreate([
+            'business_id' => $agent->business_id,
+            'order_id' => $order->id,
+            'to_status' => OrderConfirmationStatus::CONFIRMED->value,
+            'changed_by_user_id' => $agent->id,
+            'created_at' => now()->setTime($hour, 15),
+        ]);
+    }
+
+    $this->actingAs($agent)->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('upsells.count', 1)
+            ->where('bestConfirmHour', 19));
 });
