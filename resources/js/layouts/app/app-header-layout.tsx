@@ -10,7 +10,9 @@ export default function AppHeaderLayout({
     return (
         <AppShell variant="header">
             <AppHeader breadcrumbs={breadcrumbs} />
-            <AppContent variant="header">{children}</AppContent>
+            <AppContent variant="header" className="pb-24 lg:pb-0">
+                {children}
+            </AppContent>
         </AppShell>
     );
 }
