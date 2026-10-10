@@ -8,6 +8,7 @@ use App\Http\Controllers\Concerns\StoresCatalogLogo;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SuperAdmin\UpdateCourierRequest;
 use App\Models\DeliveryCourrier;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -58,11 +59,21 @@ class CourierController extends Controller
                 'cities_count' => $courier->cities_count,
                 'delivery_accounts_count' => $courier->delivery_accounts_count,
                 'syncable' => in_array($courier->slug, self::SYNCABLE, true),
+                // The icon shipped with the repo for this slug, so a card
+                // always has a logo even when none was uploaded.
+                'default_logo' => $this->defaultLogo($courier->slug),
             ]);
 
         return Inertia::render('super-admin/couriers/index', [
             'couriers' => $couriers,
         ]);
+    }
+
+    private function defaultLogo(string $slug): ?string
+    {
+        $path = 'assets/images/'.strtolower($slug).'_icon.png';
+
+        return file_exists(public_path($path)) ? '/'.$path : null;
     }
 
     public function edit(DeliveryCourrier $courier): Response
@@ -98,11 +109,17 @@ class CourierController extends Controller
      * The courier's covered cities — the dropdown a tenant picks from when
      * creating a parcel, so it's worth being able to inspect and search.
      */
-    public function cities(Request $request, DeliveryCourrier $courier): Response
+    public function cities(Request $request, DeliveryCourrier $courier): Response|JsonResponse
     {
         $query = $courier->cities()->getQuery();
         $query = $this->applySearch($query, $request, ['name', 'arabic_name', 'external_courrier_id']);
         $query = $this->applySort($query, $request, ['name', 'external_courrier_id', 'updated_at'], default: 'name', defaultDirection: 'asc');
+
+        // The cities side sheet on the couriers list reads the same
+        // search/paging as JSON instead of navigating to this page.
+        if ($request->wantsJson() && ! $request->header('X-Inertia')) {
+            return response()->json($query->paginate($this->resolvePerPage($request))->withQueryString());
+        }
 
         return Inertia::render('super-admin/couriers/cities', [
             'courier' => [

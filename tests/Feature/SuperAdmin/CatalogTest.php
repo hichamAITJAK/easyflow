@@ -364,3 +364,20 @@ it('forbids non super admins from every catalog route', function () {
 
     expect($platform->fresh()->name)->not->toBe('x');
 });
+
+it('serves a courier\'s cities as JSON for the cities sheet', function () {
+    $courier = DeliveryCourrier::factory()->create(['slug' => Courier::SENDIT->value]);
+
+    DeleveryCourrierCity::factory()->create(['courrier_id' => $courier->id, 'name' => 'Casablanca']);
+    DeleveryCourrierCity::factory()->create(['courrier_id' => $courier->id, 'name' => 'Marrakech']);
+
+    $this->actingAs(superAdmin())
+        ->getJson(route('super-admin.couriers.cities', [$courier, 'search' => 'mar', 'per_page' => 100]))
+        ->assertOk()
+        ->assertJsonPath('total', 1)
+        ->assertJsonPath('data.0.name', 'Marrakech');
+
+    $this->actingAs(superAdmin())
+        ->get(route('super-admin.couriers.index'))
+        ->assertInertia(fn ($page) => $page->has('couriers.0.default_logo'));
+});

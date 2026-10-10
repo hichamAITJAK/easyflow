@@ -22,6 +22,8 @@ export type CatalogCourier = {
     delivery_accounts_count: number;
     /** Whether SyncCourierCitiesCommand has an API wired up for it. */
     syncable: boolean;
+    /** The repo-shipped icon for this slug, when one exists. */
+    default_logo?: string | null;
 };
 
 export type CourierCity = {
