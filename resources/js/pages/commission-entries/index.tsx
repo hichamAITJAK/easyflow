@@ -1,5 +1,15 @@
 import { Form, Head, router } from '@inertiajs/react';
-import { Download, Eye, Receipt } from 'lucide-react';
+import {
+    CircleDollarSign,
+    Clock,
+    Download,
+    Eye,
+    FileText,
+    Receipt,
+    Users,
+    Wallet,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import CommissionEntryController, {
     index as commissionEntriesIndex,
@@ -14,6 +24,7 @@ import {
     DataTableCardFooter,
     DataTableCardTable,
 } from '@/components/data-table/data-table-card';
+import { DataTableColumnHeaderServer } from '@/components/data-table/data-table-column-header-server';
 import { DataTablePaginationServer } from '@/components/data-table/data-table-pagination-server';
 import { DataTablePerPageSelect } from '@/components/data-table/data-table-per-page-select';
 import { DataTableResetFiltersButton } from '@/components/data-table/data-table-reset-filters-button';
@@ -62,6 +73,7 @@ import { useTableFilters } from '@/hooks/use-table-filters';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatDateRange, formatDateTime } from '@/lib/format';
 import { statusChipClass } from '@/lib/order-status';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import type {
     CommissionLedgerEntry,
@@ -87,7 +99,89 @@ type CommissionFilters = {
     invoice_status?: string;
     invoice_agent?: string;
     invoices_per_page?: string;
+    sort?: string;
+    direction?: string;
 };
+
+/** What earned an order entry, from the rule's trigger status. */
+const TRIGGER_LABELS: Record<string, string> = {
+    confirmed: 'Confirmation',
+    delivered: 'Delivery',
+    ready_for_pickup: 'Preparation',
+    submitted_to_courier: 'Shipping',
+};
+
+type EntryWithRule = CommissionLedgerEntry & {
+    commission_rule?: { id: number; trigger_status: string | null } | null;
+};
+
+/** "EF-10428 · Confirmation", "Posture Pro · Videos ×3", "Bonus · …". */
+function entryLabel(entry: EntryWithRule, t: (key: string) => string): string {
+    const reference =
+        entry.order?.reference ??
+        (entry.order_id ? `#${entry.order_id}` : null);
+    const what =
+        entry.description ??
+        (entry.entry_type === 'reversal'
+            ? t('Reversal')
+            : entry.commission_rule?.trigger_status
+              ? t(
+                    TRIGGER_LABELS[entry.commission_rule.trigger_status] ??
+                        entry.commission_rule.trigger_status,
+                )
+              : null);
+
+    return [reference, what].filter(Boolean).join(' · ') || '—';
+}
+
+/** A KPI card per the platform skin: coloured label, tinted icon, mono value. */
+function KpiCard({
+    label,
+    value,
+    unit,
+    icon: Icon,
+    color,
+    text,
+}: {
+    label: string;
+    value: string;
+    unit?: string;
+    icon: LucideIcon;
+    color: string;
+    text: string;
+}) {
+    return (
+        <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
+            <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-medium" style={{ color: text }}>
+                    {label}
+                </p>
+                <span
+                    className="flex size-8 shrink-0 items-center justify-center rounded-full"
+                    style={{ background: `${color}1a`, color: text }}
+                >
+                    <Icon className="size-[18px]" />
+                </span>
+            </div>
+            <p className="mt-3 leading-none">
+                <span className="font-mono text-[26px] font-semibold tabular-nums">
+                    {value}
+                </span>
+                {unit && (
+                    <span className="ml-1.5 text-xs font-medium text-muted-foreground">
+                        {unit}
+                    </span>
+                )}
+            </p>
+        </div>
+    );
+}
+
+const TAB_LIST =
+    'h-auto flex-wrap justify-start gap-0 rounded-lg border border-border bg-muted p-1';
+const TAB_TRIGGER =
+    'h-auto flex-none rounded-md border-0 px-4 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs';
+const FILTER_LABEL = 'text-sm font-medium text-foreground';
 
 const UNINVOICED = 'uninvoiced';
 
@@ -136,6 +230,33 @@ export default function CommissionEntriesIndex({
     const { t } = useTranslation();
 
     const getInitials = useInitials();
+
+    // Over every entry the filters match (not just this page): the
+    // per-agent totals are aggregated server-side across the whole set.
+    const totalsList = Object.values(totalsByAgent);
+    const summary = {
+        earned: totalsList.reduce((sum, row) => sum + row.earned, 0),
+        paid: totalsList.reduce((sum, row) => sum + row.paid, 0),
+        pending: totalsList.reduce((sum, row) => sum + row.pending, 0),
+        earningAgents: totalsList.filter((row) => row.earned > 0).length,
+    };
+    const amount = (value: number) =>
+        value.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+            useGrouping: false,
+        });
+
+    const sortHeader = (title: string, sortKey: string) => (
+        <DataTableColumnHeaderServer
+            title={title}
+            sortKey={sortKey}
+            currentSort={filters.sort}
+            currentDirection={filters.direction}
+            routeUrl={commissionEntriesIndex().url}
+            query={filters}
+        />
+    );
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [bulkOpen, setBulkOpen] = useState(false);
     const [bulkProcessing, setBulkProcessing] = useState(false);
@@ -277,104 +398,74 @@ export default function CommissionEntriesIndex({
                     title={t('Commissions')}
                     description={
                         isAdmin
-                            ? 'Track what each agent has earned, generate invoices, and mark them paid.'
+                            ? t(
+                                  'Track what each agent has earned, generate invoices, and mark them paid.',
+                              )
                             : t('Track what you have earned so far.')
                     }
                 />
 
-                {isAdmin && agents.length > 0 && (
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                        {agents.map((agent) => {
-                            const totals = totalsByAgent[agent.id] ?? {
-                                earned: 0,
-                                paid: 0,
-                                pending: 0,
-                            };
-
-                            return (
-                                <div
-                                    key={agent.id}
-                                    className="flex items-center gap-3 rounded-lg border p-4"
-                                >
-                                    <Avatar className="size-10">
-                                        <AvatarImage
-                                            src={agent.avatar ?? undefined}
-                                            alt={agent.name}
-                                        />
-                                        <AvatarFallback>
-                                            {getInitials(agent.name)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="grid flex-1 gap-0.5">
-                                        <span className="text-sm font-medium">
-                                            {agent.name}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                            {t(
-                                                'Earned :earned · Pending :pending',
-                                                {
-                                                    earned: money(
-                                                        totals.earned,
-                                                    ),
-                                                    pending: money(
-                                                        totals.pending,
-                                                    ),
-                                                },
-                                            )}
-                                        </span>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-
-                {!isAdmin &&
-                    (() => {
-                        const totals = Object.values(totalsByAgent)[0] ?? {
-                            earned: 0,
-                            paid: 0,
-                            pending: 0,
-                        };
-
-                        return (
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                                <div className="rounded-lg border p-4">
-                                    <span className="text-xs text-muted-foreground">
-                                        {t('Total earned')}
-                                    </span>
-                                    <p className="text-2xl font-semibold">
-                                        {money(totals.earned)}
-                                    </p>
-                                </div>
-                                <div className="rounded-lg border p-4">
-                                    <span className="text-xs text-muted-foreground">
-                                        {t('Paid')}
-                                    </span>
-                                    <p className="text-2xl font-semibold">
-                                        {money(totals.paid)}
-                                    </p>
-                                </div>
-                                <div className="rounded-lg border p-4">
-                                    <span className="text-xs text-muted-foreground">
-                                        {t('Pending payout')}
-                                    </span>
-                                    <p className="text-2xl font-semibold">
-                                        {money(totals.pending)}
-                                    </p>
-                                </div>
-                            </div>
-                        );
-                    })()}
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <KpiCard
+                        label={t('Total earned')}
+                        value={amount(summary.earned)}
+                        unit="MAD"
+                        icon={Wallet}
+                        color="#16A08E"
+                        text="#0C7D6F"
+                    />
+                    <KpiCard
+                        label={t('Pending payout')}
+                        value={amount(summary.pending)}
+                        unit="MAD"
+                        icon={Clock}
+                        color="#EFA22C"
+                        text="#A87110"
+                    />
+                    <KpiCard
+                        label={t('Awaiting invoice')}
+                        value={String(invoiceableCount)}
+                        unit={
+                            invoiceableCount === 1 ? t('entry') : t('entries')
+                        }
+                        icon={FileText}
+                        color="#468FA5"
+                        text="#2E7389"
+                    />
+                    {isAdmin ? (
+                        <KpiCard
+                            label={t('Agents earning')}
+                            value={String(summary.earningAgents)}
+                            unit={t('of :count', { count: agents.length })}
+                            icon={Users}
+                            color="#49183C"
+                            text="#49183C"
+                        />
+                    ) : (
+                        <KpiCard
+                            label={t('Paid')}
+                            value={amount(summary.paid)}
+                            unit="MAD"
+                            icon={CircleDollarSign}
+                            color="#49183C"
+                            text="#49183C"
+                        />
+                    )}
+                </div>
 
                 <Tabs defaultValue="entries">
-                    <TabsList>
-                        <TabsTrigger value="entries">
+                    <TabsList className={TAB_LIST}>
+                        <TabsTrigger value="entries" className={TAB_TRIGGER}>
                             {t('Entries')}
                         </TabsTrigger>
-                        <TabsTrigger value="invoices">
+                        <TabsTrigger value="invoices" className={TAB_TRIGGER}>
                             {t('Invoices')}
                         </TabsTrigger>
+                        {isAdmin && (
+                            <TabsTrigger value="agents" className={TAB_TRIGGER}>
+                                {t('By agent')}
+                            </TabsTrigger>
+                        )}
                     </TabsList>
 
                     <TabsContent value="entries" className="space-y-4 pt-4">
@@ -426,7 +517,7 @@ export default function CommissionEntriesIndex({
                             <DataTableCardFilters className="flex-wrap items-end">
                                 {isAdmin && (
                                     <div className="grid gap-1.5">
-                                        <Label className="text-xs font-semibold text-muted-foreground">
+                                        <Label className={FILTER_LABEL}>
                                             {t('Agent')}
                                         </Label>
                                         <Select
@@ -440,7 +531,7 @@ export default function CommissionEntriesIndex({
                                                 })
                                             }
                                         >
-                                            <SelectTrigger className="h-9 w-40">
+                                            <SelectTrigger className="h-10 w-44">
                                                 <SelectValue
                                                     placeholder={t(
                                                         'All agents',
@@ -468,7 +559,7 @@ export default function CommissionEntriesIndex({
                                     "Not invoiced" covers the ones with none,
                                     which is the set the bulk action bundles. */}
                                 <div className="grid gap-1.5">
-                                    <Label className="text-xs font-semibold text-muted-foreground">
+                                    <Label className={FILTER_LABEL}>
                                         {t('Status')}
                                     </Label>
                                     <Select
@@ -482,7 +573,7 @@ export default function CommissionEntriesIndex({
                                             })
                                         }
                                     >
-                                        <SelectTrigger className="h-9 w-40">
+                                        <SelectTrigger className="h-10 w-44">
                                             <SelectValue
                                                 placeholder={t('Any status')}
                                             />
@@ -509,7 +600,7 @@ export default function CommissionEntriesIndex({
                                 </div>
 
                                 <div className="grid gap-1.5">
-                                    <Label className="text-xs font-semibold text-muted-foreground">
+                                    <Label className={FILTER_LABEL}>
                                         {t('From')}
                                     </Label>
                                     <DatePicker
@@ -520,12 +611,12 @@ export default function CommissionEntriesIndex({
                                             })
                                         }
                                         placeholder={t('Any date')}
-                                        className="h-9 w-40"
+                                        className="h-10 w-44"
                                     />
                                 </div>
 
                                 <div className="grid gap-1.5">
-                                    <Label className="text-xs font-semibold text-muted-foreground">
+                                    <Label className={FILTER_LABEL}>
                                         {t('To')}
                                     </Label>
                                     <DatePicker
@@ -534,19 +625,19 @@ export default function CommissionEntriesIndex({
                                             updateFilters({ date_to: value })
                                         }
                                         placeholder={t('Any date')}
-                                        className="h-9 w-40"
+                                        className="h-10 w-44"
                                     />
                                 </div>
 
                                 <div className="grid gap-1.5">
-                                    <Label className="text-xs font-semibold text-muted-foreground">
+                                    <Label className={FILTER_LABEL}>
                                         {t('Min amount')}
                                     </Label>
                                     <Input
                                         type="number"
                                         inputMode="decimal"
                                         placeholder="0"
-                                        className="h-9 w-28"
+                                        className="h-10 w-44"
                                         value={draft.min_amount ?? ''}
                                         onChange={(e) =>
                                             updateFilters({
@@ -558,14 +649,14 @@ export default function CommissionEntriesIndex({
                                 </div>
 
                                 <div className="grid gap-1.5">
-                                    <Label className="text-xs font-semibold text-muted-foreground">
+                                    <Label className={FILTER_LABEL}>
                                         {t('Max amount')}
                                     </Label>
                                     <Input
                                         type="number"
                                         inputMode="decimal"
                                         placeholder={t('Any')}
-                                        className="h-9 w-28"
+                                        className="h-10 w-44"
                                         value={draft.max_amount ?? ''}
                                         onChange={(e) =>
                                             updateFilters({
@@ -590,12 +681,10 @@ export default function CommissionEntriesIndex({
                                 {isAdmin && invoiceableCount > 0 && (
                                     <Button
                                         type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        className="ml-auto"
+                                        className="ml-auto h-10 gap-2 px-4 font-semibold hover:opacity-90"
                                         onClick={() => setBulkOpen(true)}
                                     >
-                                        <Receipt />
+                                        <CircleDollarSign />
                                         {invoiceableCount === 1
                                             ? t(
                                                   'Invoice :count matching entry',
@@ -641,10 +730,18 @@ export default function CommissionEntriesIndex({
                                                 </TableHead>
                                             )}
                                             <TableHead>{t('Order')}</TableHead>
-                                            <TableHead>{t('Amount')}</TableHead>
+                                            <TableHead>
+                                                {sortHeader(
+                                                    t('Amount'),
+                                                    'amount',
+                                                )}
+                                            </TableHead>
                                             <TableHead>{t('Status')}</TableHead>
                                             <TableHead>
-                                                {t('Earned on')}
+                                                {sortHeader(
+                                                    t('Earned on'),
+                                                    'created_at',
+                                                )}
                                             </TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -695,26 +792,38 @@ export default function CommissionEntriesIndex({
                                                         </TableCell>
                                                     )}
                                                     {isAdmin && (
-                                                        <TableCell>
+                                                        <TableCell className="font-medium whitespace-nowrap">
                                                             {entry.user?.name}
                                                         </TableCell>
                                                     )}
-                                                    <TableCell>
-                                                        {entry.order
-                                                            ?.reference ??
-                                                            entry.description ??
-                                                            (entry.order_id
-                                                                ? `#${entry.order_id}`
-                                                                : '—')}
+                                                    <TableCell className="whitespace-nowrap">
+                                                        {entryLabel(
+                                                            entry as EntryWithRule,
+                                                            t,
+                                                        )}
                                                     </TableCell>
-                                                    <TableCell className="font-mono font-semibold tabular-nums">
-                                                        {money(entry.amount)}
+                                                    <TableCell className="whitespace-nowrap">
+                                                        <span className="font-mono font-semibold tabular-nums">
+                                                            {Number(
+                                                                entry.amount,
+                                                            ).toFixed(2)}
+                                                        </span>{' '}
+                                                        <span className="text-xs text-muted-foreground">
+                                                            MAD
+                                                        </span>
                                                     </TableCell>
                                                     <TableCell>
                                                         {entry.invoice ? (
                                                             <Badge
                                                                 variant="outline"
-                                                                className={`border-transparent ${invoiceStatusClasses[entry.invoice.status]}`}
+                                                                className={cn(
+                                                                    'border-transparent font-mono',
+                                                                    invoiceStatusClasses[
+                                                                        entry
+                                                                            .invoice
+                                                                            .status
+                                                                    ],
+                                                                )}
                                                             >
                                                                 {
                                                                     entry
@@ -733,7 +842,7 @@ export default function CommissionEntriesIndex({
                                                             </Badge>
                                                         )}
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell className="whitespace-nowrap text-muted-foreground">
                                                         {formatDateTime(
                                                             entry.created_at,
                                                         )}
@@ -767,7 +876,7 @@ export default function CommissionEntriesIndex({
                                 `status` here would re-scope both at once. */}
                             <DataTableCardFilters className="flex-wrap items-end">
                                 <div className="grid gap-1.5">
-                                    <Label className="text-xs font-semibold text-muted-foreground">
+                                    <Label className={FILTER_LABEL}>
                                         {t('Status')}
                                     </Label>
                                     <Select
@@ -780,7 +889,7 @@ export default function CommissionEntriesIndex({
                                             )
                                         }
                                     >
-                                        <SelectTrigger className="h-9 w-40">
+                                        <SelectTrigger className="h-10 w-44">
                                             <SelectValue
                                                 placeholder={t('Any status')}
                                             />
@@ -807,7 +916,7 @@ export default function CommissionEntriesIndex({
                                     this filter would be a no-op for them. */}
                                 {isAdmin && agents.length > 0 && (
                                     <div className="grid gap-1.5">
-                                        <Label className="text-xs font-semibold text-muted-foreground">
+                                        <Label className={FILTER_LABEL}>
                                             {t('Agent')}
                                         </Label>
                                         <Select
@@ -1108,6 +1217,117 @@ export default function CommissionEntriesIndex({
                             )}
                         </DataTableCard>
                     </TabsContent>
+                    {isAdmin && (
+                        <TabsContent value="agents" className="space-y-4 pt-4">
+                            <DataTableCard>
+                                <DataTableCardTable>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>
+                                                    {t('Agent')}
+                                                </TableHead>
+                                                <TableHead>
+                                                    {t('Earned')}
+                                                </TableHead>
+                                                <TableHead>
+                                                    {t('Paid')}
+                                                </TableHead>
+                                                <TableHead>
+                                                    {t('Pending payout')}
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {agents.map((agent) => {
+                                                const totals = totalsByAgent[
+                                                    agent.id
+                                                ] ?? {
+                                                    earned: 0,
+                                                    paid: 0,
+                                                    pending: 0,
+                                                };
+
+                                                return (
+                                                    <TableRow key={agent.id}>
+                                                        <TableCell>
+                                                            <div className="flex items-center gap-2.5">
+                                                                <Avatar className="size-7">
+                                                                    <AvatarImage
+                                                                        src={
+                                                                            agent.avatar ??
+                                                                            undefined
+                                                                        }
+                                                                        alt={
+                                                                            agent.name
+                                                                        }
+                                                                    />
+                                                                    <AvatarFallback className="bg-secondary text-[11px] font-semibold text-secondary-foreground">
+                                                                        {getInitials(
+                                                                            agent.name,
+                                                                        )}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <span className="font-medium whitespace-nowrap">
+                                                                    {agent.name}
+                                                                </span>
+                                                            </div>
+                                                        </TableCell>
+                                                        {(
+                                                            [
+                                                                [
+                                                                    totals.earned,
+                                                                    '',
+                                                                ],
+                                                                [
+                                                                    totals.paid,
+                                                                    'text-[#0C7D6F]',
+                                                                ],
+                                                                [
+                                                                    totals.pending,
+                                                                    totals.pending >
+                                                                    0
+                                                                        ? 'text-[#A87110]'
+                                                                        : '',
+                                                                ],
+                                                            ] as [
+                                                                number,
+                                                                string,
+                                                            ][]
+                                                        ).map(
+                                                            (
+                                                                [value, tone],
+                                                                i,
+                                                            ) => (
+                                                                <TableCell
+                                                                    key={i}
+                                                                    className="whitespace-nowrap"
+                                                                >
+                                                                    <span
+                                                                        className={cn(
+                                                                            'font-mono font-semibold tabular-nums',
+                                                                            tone,
+                                                                        )}
+                                                                    >
+                                                                        {amount(
+                                                                            value,
+                                                                        )}
+                                                                    </span>{' '}
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        MAD
+                                                                    </span>
+                                                                </TableCell>
+                                                            ),
+                                                        )}
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </DataTableCardTable>
+                            </DataTableCard>
+                        </TabsContent>
+                    )}
                 </Tabs>
             </div>
 

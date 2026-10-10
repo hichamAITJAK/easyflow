@@ -57,8 +57,9 @@ class CommissionEntryController extends Controller
         $applyFilters = fn ($query) => $this->applyEntryFilters($query, $request, $isAdmin);
 
         $entries = $applyFilters(CommissionLedgerEntry::query())
-            ->with(['user:id,name,avatar', 'order:id,reference', 'invoice:id,invoice_number,status'])
-            ->latest('commission_ledger_entries.created_at')
+            ->with(['user:id,name,avatar', 'order:id,reference', 'invoice:id,invoice_number,status', 'commissionRule:id,trigger_status'])
+            ->tap(fn ($query) => $this->applySort($query, $request, ['amount', 'created_at'], default: 'created_at'))
+            ->orderByDesc('commission_ledger_entries.id')
             ->paginate($this->resolvePerPage($request))
             ->withQueryString();
 
@@ -117,16 +118,16 @@ class CommissionEntryController extends Controller
         // filtered set, not the current page, because that is the scope the
         // bulk action operates on — showing a page-sized number next to an
         // action that invoices everything would understate what it does.
-        $invoiceableCount = $isAdmin
-            ? $applyFilters(CommissionLedgerEntry::query())
-                ->whereNull('commission_ledger_entries.invoice_id')
-                ->count()
-            : 0;
+        // Also shown to agents, as their "awaiting invoice" figure; the
+        // filters already scope a non-admin to their own entries.
+        $invoiceableCount = $applyFilters(CommissionLedgerEntry::query())
+            ->whereNull('commission_ledger_entries.invoice_id')
+            ->count();
 
         // One invoice is created per distinct agent, so the admin is told how
         // many documents they are about to produce, not just how many rows
         // get consumed.
-        $invoiceableAgentCount = $invoiceableCount > 0
+        $invoiceableAgentCount = $isAdmin && $invoiceableCount > 0
             ? $applyFilters(CommissionLedgerEntry::query())
                 ->whereNull('commission_ledger_entries.invoice_id')
                 ->distinct()
@@ -145,7 +146,7 @@ class CommissionEntryController extends Controller
             'agents' => $agents,
             'invoices' => $invoices,
             'isAdmin' => $isAdmin,
-            'filters' => $request->only(['per_page', 'agent_id', 'date_from', 'date_to', 'min_amount', 'max_amount', 'status', 'invoice_status', 'invoices_per_page']),
+            'filters' => $request->only(['per_page', 'agent_id', 'date_from', 'date_to', 'min_amount', 'max_amount', 'status', 'invoice_status', 'invoices_per_page', 'sort', 'direction']),
         ]);
     }
 
