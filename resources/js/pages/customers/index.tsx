@@ -15,6 +15,7 @@ import { DataTablePaginationServer } from '@/components/data-table/data-table-pa
 import { DataTablePerPageSelect } from '@/components/data-table/data-table-per-page-select';
 import { DataTableViewOptions } from '@/components/data-table/data-table-view-options';
 import Heading from '@/components/heading';
+import { PILL_TABS_LIST, PILL_TABS_TRIGGER } from '@/components/pill-tabs';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -137,6 +138,7 @@ export default function CustomersIndex({
             <div className="space-y-6 p-4">
                 <div className="flex items-start justify-between gap-4">
                     <Heading
+                        className="mb-0"
                         title={t('Customers')}
                         description={t(
                             'Everyone who has ever placed an order with your business.',
@@ -190,14 +192,17 @@ export default function CustomersIndex({
                 </div>
 
                 <Tabs value={tab} onValueChange={handleTabChange}>
-                    <TabsList>
-                        <TabsTrigger value="all">
+                    <TabsList className={PILL_TABS_LIST}>
+                        <TabsTrigger value="all" className={PILL_TABS_TRIGGER}>
                             {t('All customers')}
                         </TabsTrigger>
-                        <TabsTrigger value="best">
+                        <TabsTrigger value="best" className={PILL_TABS_TRIGGER}>
                             {t('Best clients')}
                         </TabsTrigger>
-                        <TabsTrigger value="blacklisted">
+                        <TabsTrigger
+                            value="blacklisted"
+                            className={PILL_TABS_TRIGGER}
+                        >
                             {t('Blacklisted')}
                         </TabsTrigger>
                     </TabsList>

@@ -5,6 +5,7 @@ import { ConfirmationAgentForm } from '@/components/confirmation-agent-form';
 import { CreativesEditorForm } from '@/components/creatives-editor-form';
 import { FulfilmentAgentForm } from '@/components/fulfilment-agent-form';
 import Heading from '@/components/heading';
+import { PILL_TABS_LIST, PILL_TABS_TRIGGER } from '@/components/pill-tabs';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes';
@@ -60,24 +61,24 @@ export default function UsersCreate({
                         value={role}
                         onValueChange={(val) => setRole(val as TeamRole)}
                     >
-                        <TabsList className="grid w-full grid-cols-3 sm:w-auto">
+                        <TabsList className={PILL_TABS_LIST}>
                             <TabsTrigger
                                 value="confirmation_agent"
-                                className="flex items-center gap-2 px-4"
+                                className={PILL_TABS_TRIGGER}
                             >
                                 <IdCard className="size-4" />
                                 <span>{t('Confirmation Agent')}</span>
                             </TabsTrigger>
                             <TabsTrigger
                                 value="fulfilment_agent"
-                                className="flex items-center gap-2 px-4"
+                                className={PILL_TABS_TRIGGER}
                             >
                                 <Package className="size-4" />
                                 <span>{t('Fulfilment Agent')}</span>
                             </TabsTrigger>
                             <TabsTrigger
                                 value="creatives_editor"
-                                className="flex items-center gap-2 px-4"
+                                className={PILL_TABS_TRIGGER}
                             >
                                 <Clapperboard className="size-4" />
                                 <span>{t('Creatives Editor')}</span>

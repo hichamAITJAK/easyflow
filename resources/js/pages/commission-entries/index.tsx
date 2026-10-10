@@ -506,6 +506,7 @@ export default function CommissionEntriesIndex({
 
             <div className="space-y-6 p-4">
                 <Heading
+                    className="mb-0"
                     title={t('Commissions')}
                     description={
                         isAdmin

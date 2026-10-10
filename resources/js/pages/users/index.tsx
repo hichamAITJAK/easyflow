@@ -18,6 +18,11 @@ import { DataTablePagination } from '@/components/data-table/data-table-paginati
 import { DataTableViewOptions } from '@/components/data-table/data-table-view-options';
 import { DeleteUserDialog } from '@/components/delete-user-dialog';
 import Heading from '@/components/heading';
+import {
+    PILL_TABS_COUNT,
+    PILL_TABS_LIST,
+    PILL_TABS_TRIGGER,
+} from '@/components/pill-tabs';
 import { Button } from '@/components/ui/button';
 import {
     Empty,
@@ -152,8 +157,9 @@ export default function UsersIndex({ users }: { users: User[] }) {
             <Head title={t('Team')} />
 
             <div className="space-y-6 p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-4">
                     <Heading
+                        className="mb-0"
                         title={t('Team')}
                         description={t(
                             'Manage your confirmation agents, fulfilment agents and creatives editors.',
@@ -172,25 +178,31 @@ export default function UsersIndex({ users }: { users: User[] }) {
                         setSearch('');
                     }}
                 >
-                    <TabsList>
+                    <TabsList className={PILL_TABS_LIST}>
                         <TabsTrigger
                             value="confirmation_agent"
-                            className="gap-2"
+                            className={PILL_TABS_TRIGGER}
                         >
                             <span>{t('Confirmation agents')}</span>
-                            <span className="rounded-full bg-muted-foreground/15 px-2 py-0.5 text-xs font-semibold">
+                            <span className={PILL_TABS_COUNT}>
                                 {usersByTab.confirmation_agent.length}
                             </span>
                         </TabsTrigger>
-                        <TabsTrigger value="fulfilment_agent" className="gap-2">
+                        <TabsTrigger
+                            value="fulfilment_agent"
+                            className={PILL_TABS_TRIGGER}
+                        >
                             <span>{t('Fulfilment agents')}</span>
-                            <span className="rounded-full bg-muted-foreground/15 px-2 py-0.5 text-xs font-semibold">
+                            <span className={PILL_TABS_COUNT}>
                                 {usersByTab.fulfilment_agent.length}
                             </span>
                         </TabsTrigger>
-                        <TabsTrigger value="creatives_editor" className="gap-2">
+                        <TabsTrigger
+                            value="creatives_editor"
+                            className={PILL_TABS_TRIGGER}
+                        >
                             <span>{t('Creatives editors')}</span>
-                            <span className="rounded-full bg-muted-foreground/15 px-2 py-0.5 text-xs font-semibold">
+                            <span className={PILL_TABS_COUNT}>
                                 {usersByTab.creatives_editor.length}
                             </span>
                         </TabsTrigger>

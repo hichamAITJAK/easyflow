@@ -15,6 +15,10 @@ export const PILL_TABS_LIST =
 export const PILL_TABS_TRIGGER =
     'h-auto flex-none gap-1.5 rounded-md border-0 px-3.5 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-xs dark:data-[state=active]:border-0 dark:data-[state=active]:bg-card';
 
+/** Neutral count next to a pill tab's label (e.g. team members). */
+export const PILL_TABS_COUNT =
+    'rounded-full bg-muted-foreground/12 px-1.5 py-0.5 font-mono text-[11px] leading-none font-semibold tabular-nums';
+
 /** Count bubble inside a pill tab (e.g. items waiting in a queue). */
 export const PILL_TABS_BADGE =
     'rounded-full bg-[#F2602F] px-1.5 py-0.5 text-[10px] leading-none font-bold text-white';

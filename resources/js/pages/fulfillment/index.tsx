@@ -5,11 +5,13 @@ import { toast } from 'sonner';
 import { ActivityList } from '@/components/fulfillment/activity-list';
 import { ParcelCard } from '@/components/fulfillment/parcel-card';
 import { ScannerView } from '@/components/fulfillment/scanner-view';
+import { PILL_TABS_LIST, PILL_TABS_TRIGGER } from '@/components/pill-tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslation } from '@/hooks/use-translation';
 import { useWakeLock } from '@/hooks/use-wake-lock';
 import { fulfillmentApi, FulfillmentApiError } from '@/lib/fulfillment-api';
+import { cn } from '@/lib/utils';
 import type {
     FulfillmentActivityEvent,
     FulfillmentScanResult,
@@ -174,12 +176,22 @@ export default function FulfillmentIndex({
                 </div>
 
                 <Tabs value={tab} onValueChange={handleTabChange}>
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="scan">
+                    <TabsList
+                        className={cn(
+                            PILL_TABS_LIST,
+                            'grid w-full max-w-none grid-cols-2',
+                        )}
+                    >
+                        <TabsTrigger value="scan" className={PILL_TABS_TRIGGER}>
                             <ScanLine className="size-4" />
                             {t('Scan')}
                         </TabsTrigger>
-                        <TabsTrigger value="activity">{t('Today')}</TabsTrigger>
+                        <TabsTrigger
+                            value="activity"
+                            className={PILL_TABS_TRIGGER}
+                        >
+                            {t('Today')}
+                        </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="scan" className="mt-4 space-y-4">
