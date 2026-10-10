@@ -514,8 +514,8 @@ agentLabel = agentObj.name;
                     })}
                 </div>
 
-                <DataTableCard className="rounded-xl border border-border bg-card shadow-xs">
-                    <DataTableCardToolbar className="flex-col items-stretch gap-2 p-4 sm:flex-row sm:items-center">
+                <DataTableCard>
+                    <DataTableCardToolbar className="flex-col items-stretch sm:flex-row sm:items-center">
                         <div className="flex flex-1 flex-wrap items-center gap-2.5">
                             <Label htmlFor="search" className="sr-only">
                                 {t('Search orders')}
@@ -850,7 +850,7 @@ agentLabel = agentObj.name;
                         </CollapsibleContent>
                     </Collapsible>
 
-                    <DataTableCardTable className="[&_td]:px-4 [&_td]:py-4 [&_td:first-child]:pl-6 [&_td:last-child]:pr-6 [&_th]:h-auto [&_th]:px-4 [&_th]:py-3 [&_th]:text-xs [&_th]:font-medium [&_th]:whitespace-nowrap [&_th]:text-muted-foreground [&_th:first-child]:pl-6 [&_th:last-child]:pr-6 [&_thead]:bg-transparent">
+                    <DataTableCardTable>
                         <DataTable
                             table={table}
                             columnCount={columns.length}
@@ -858,7 +858,7 @@ agentLabel = agentObj.name;
                         />
                     </DataTableCardTable>
 
-                    <DataTableCardFooter className="px-6 py-3 text-xs text-muted-foreground">
+                    <DataTableCardFooter>
                         <div className="flex w-full flex-wrap items-center justify-between gap-3">
                             <DataTablePerPageSelect
                                 routeUrl={ordersIndex().url}

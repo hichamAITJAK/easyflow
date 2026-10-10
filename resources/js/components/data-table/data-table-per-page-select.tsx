@@ -40,10 +40,13 @@ export function DataTablePerPageSelect({
                 )
             }
         >
-            <SelectTrigger size={size} className="w-20">
+            <SelectTrigger
+                size={size}
+                className="w-20 rounded-md bg-card font-mono text-sm shadow-xs hover:bg-accent"
+            >
                 <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-md border-border bg-popover shadow-md">
                 {OPTIONS.map((option) => (
                     <SelectItem key={option} value={String(option)}>
                         {option}

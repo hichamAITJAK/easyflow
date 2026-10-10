@@ -62,12 +62,6 @@ export function createColumns({
             currentDirection={filters.direction}
             routeUrl={routeUrl}
             query={filters}
-            className={cn(
-                'ml-0 h-8 px-0 text-xs font-medium hover:bg-transparent hover:text-foreground [&_svg]:size-3.5',
-                filters.sort === sortKey
-                    ? 'text-foreground [&_svg]:opacity-90'
-                    : 'text-muted-foreground [&_svg]:opacity-40',
-            )}
         />
     );
 

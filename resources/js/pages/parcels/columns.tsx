@@ -11,7 +11,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { formatDateTime } from '@/lib/format';
 import type { Translator } from '@/lib/i18n';
-import { deliveryStatusColors, deliveryStatusLabels } from '@/lib/order-status';
+import {
+    deliveryStatusColors,
+    deliveryStatusLabels,
+    statusChipClass,
+} from '@/lib/order-status';
+import { cn } from '@/lib/utils';
 import type { Order, ParcelFilters } from '@/types';
 
 function copyTrackingNumber(trackingNumber: string) {
@@ -70,9 +75,7 @@ export function createColumns({
                             variant="ghost"
                             size="icon"
                             className="size-6"
-                            onClick={() =>
-                                copyTrackingNumber(trackingNumber)
-                            }
+                            onClick={() => copyTrackingNumber(trackingNumber)}
                         >
                             <Copy className="size-3.5" />
                         </Button>
@@ -145,7 +148,10 @@ export function createColumns({
                 return status ? (
                     <Badge
                         variant="outline"
-                        className={deliveryStatusColors[status]}
+                        className={cn(
+                            deliveryStatusColors[status],
+                            statusChipClass,
+                        )}
                     >
                         {t(deliveryStatusLabels[status])}
                     </Badge>

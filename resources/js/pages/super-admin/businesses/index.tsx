@@ -155,7 +155,7 @@ export default function SuperAdminBusinessesIndex({
                     </Button>
                 </div>
 
-                <DataTableCard className="rounded-xl border border-border bg-card shadow-xs">
+                <DataTableCard>
                     <DataTableCardToolbar>
                         <div className="flex flex-wrap items-center gap-2">
                             <div className="relative w-full max-w-sm sm:w-72">
@@ -224,7 +224,7 @@ export default function SuperAdminBusinessesIndex({
                     </DataTableCardToolbar>
 
                     {/* Preview skin: plain header, roomier rows, 24px outer gutters. */}
-                    <DataTableCardTable className="[&_td]:px-4 [&_td]:py-4 [&_td:first-child]:pl-6 [&_td:last-child]:pr-6 [&_th]:h-auto [&_th]:px-4 [&_th]:py-3 [&_th:first-child]:pl-6 [&_th:last-child]:pr-6 [&_thead]:bg-transparent">
+                    <DataTableCardTable>
                         <DataTable
                             table={table}
                             columnCount={columns.length}
@@ -246,7 +246,7 @@ export default function SuperAdminBusinessesIndex({
                         />
                     </DataTableCardTable>
 
-                    <DataTableCardFooter className="px-6 py-3 text-xs text-muted-foreground">
+                    <DataTableCardFooter>
                         <DataTablePaginationServer
                             paginated={businesses}
                             className="[&>span]:text-xs"

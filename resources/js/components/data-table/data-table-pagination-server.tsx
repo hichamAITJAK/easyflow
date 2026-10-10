@@ -69,7 +69,7 @@ export function DataTablePaginationServer<TData>({
             {/* A single page states the plain count — "Showing 1 to 7 of 7"
                 is noise when the range is the whole set. */}
             {!linksOnly && (
-                <span className="truncate text-sm text-muted-foreground">
+                <span className="truncate text-xs text-muted-foreground">
                     {paginated.total === 0
                         ? t('No :many', { many })
                         : onOnePage
@@ -101,10 +101,10 @@ export function DataTablePaginationServer<TData>({
                                 aria-disabled={!previous.url}
                                 className={cn(
                                     buttonVariants({
-                                        variant: 'ghost',
+                                        variant: 'outline',
                                         size: 'default',
                                     }),
-                                    'gap-1 px-2.5 sm:pl-2.5',
+                                    'h-8 gap-1 rounded-md bg-card px-3 text-xs font-medium shadow-xs',
                                     !previous.url &&
                                         'pointer-events-none opacity-50',
                                 )}
@@ -137,6 +137,8 @@ export function DataTablePaginationServer<TData>({
                                                     : 'ghost',
                                                 size: 'icon',
                                             }),
+                                            'size-8 rounded-md font-mono text-xs',
+                                            link.active && 'bg-card shadow-xs',
                                         )}
                                         dangerouslySetInnerHTML={{
                                             __html: link.label,
@@ -155,10 +157,10 @@ export function DataTablePaginationServer<TData>({
                                 aria-disabled={!next.url}
                                 className={cn(
                                     buttonVariants({
-                                        variant: 'ghost',
+                                        variant: 'outline',
                                         size: 'default',
                                     }),
-                                    'gap-1 px-2.5 sm:pr-2.5',
+                                    'h-8 gap-1 rounded-md bg-card px-3 text-xs font-medium shadow-xs',
                                     !next.url &&
                                         'pointer-events-none opacity-50',
                                 )}

@@ -53,11 +53,17 @@ export function DataTable<TData>({
 
     return (
         <Table>
-            <TableHeader>
+            <TableHeader className="bg-transparent">
                 {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
+                    <TableRow
+                        key={headerGroup.id}
+                        className="hover:bg-transparent"
+                    >
                         {headerGroup.headers.map((header) => (
-                            <TableHead key={header.id}>
+                            <TableHead
+                                key={header.id}
+                                className="h-auto px-4 py-3 text-xs font-medium text-muted-foreground first:pl-6 last:pr-6"
+                            >
                                 {header.isPlaceholder
                                     ? null
                                     : flexRender(
@@ -87,7 +93,10 @@ export function DataTable<TData>({
                                     }
                                 >
                                     {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
+                                        <TableCell
+                                            key={cell.id}
+                                            className="px-4 py-4 first:pl-6 last:pr-6"
+                                        >
                                             {flexRender(
                                                 cell.column.columnDef.cell,
                                                 cell.getContext(),

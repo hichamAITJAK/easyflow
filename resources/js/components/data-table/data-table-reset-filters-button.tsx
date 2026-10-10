@@ -26,6 +26,7 @@ export function DataTableResetFiltersButton({
                     type="button"
                     variant="outline"
                     size="icon"
+                    className="size-9 rounded-md bg-card shadow-xs hover:bg-accent hover:text-accent-foreground"
                     onClick={onReset}
                     aria-label={t('Reset filters')}
                 >

@@ -61,6 +61,7 @@ import {
     isManualOrderSource,
     MANUALLY_SELECTABLE_CONFIRMATION_STATUSES,
     orderSourceLabel,
+    statusChipClass,
 } from '@/lib/order-status';
 import { formatMoroccoPhoneForWhatsApp } from '@/lib/phone';
 import { cn } from '@/lib/utils';
@@ -69,50 +70,6 @@ import type { Order, OrderFilters } from '@/types';
 export type AgentOption = { id: number; name: string; avatar: string | null };
 
 const UNASSIGNED = '__unassigned__';
-
-/* Platform status colours for this table's chips — same text, these hues.
-   Layered over the shared badge colours with cn(), so the later classes win. */
-const CHIP =
-    'inline-flex items-center rounded-full border-transparent px-2.5 py-1 text-xs font-semibold whitespace-nowrap';
-
-const MUSTARD = 'bg-[#EFA22C]/12 text-[#A87110]';
-const ORANGE = 'bg-[#F2602F]/10 text-[#C24A1A]';
-const PETROL = 'bg-[#468FA5]/12 text-[#2E7389]';
-const TEAL = 'bg-[#16A08E]/10 text-[#0C7D6F]';
-const RED = 'bg-[#D92D20]/10 text-[#B3281D]';
-const PLUM = 'bg-[#49183C]/10 text-[#49183C] dark:text-[#E4C8DC]';
-const MUTED = 'bg-muted text-muted-foreground';
-
-const CONFIRMATION_CHIPS: Record<string, string> = {
-    new: MUSTARD,
-    assigned: PLUM,
-    confirmed: ORANGE,
-    confirmed_followup: MUSTARD,
-    callback: MUSTARD,
-    fake: RED,
-    voicemail: MUSTARD,
-    no_answer: MUSTARD,
-    busy: MUSTARD,
-    whatsapp_sent: MUSTARD,
-    cancelled: RED,
-    submitted_to_courier: PETROL,
-    test_completed: MUTED,
-};
-
-const DELIVERY_CHIPS: Record<string, string> = {
-    awaiting_pickup: MUSTARD,
-    ready_for_pickup: MUSTARD,
-    in_transit: PETROL,
-    out_for_delivery: PETROL,
-    postponed: MUSTARD,
-    changed: MUSTARD,
-    delivery_attempt_failed: MUSTARD,
-    refused: RED,
-    delivered: TEAL,
-    returned_in_transit: RED,
-    return_received: RED,
-    cancelled_at_courier: RED,
-};
 
 /**
  * Persist a confirmation status change immediately (edit-in-place), instead
@@ -173,8 +130,7 @@ function ConfirmationStatusPopover({
                         variant="outline"
                         className={cn(
                             confirmationStatusColors[order.confirmation_status],
-                            CHIP,
-                            CONFIRMATION_CHIPS[order.confirmation_status],
+                            statusChipClass,
                             'transition-all',
                         )}
                     >
@@ -454,12 +410,6 @@ export function createColumns({
             currentDirection={filters.direction}
             routeUrl={routeUrl}
             query={filters}
-            className={cn(
-                'ml-0 h-8 px-0 text-xs font-medium hover:bg-transparent hover:text-foreground [&_svg]:size-3.5',
-                filters.sort === sortKey
-                    ? 'text-foreground [&_svg]:opacity-90'
-                    : 'text-muted-foreground [&_svg]:opacity-40',
-            )}
         />
     );
 
@@ -713,8 +663,7 @@ export function createColumns({
                             variant="outline"
                             className={cn(
                                 deliveryStatusColors[status],
-                                CHIP,
-                                DELIVERY_CHIPS[status],
+                                statusChipClass,
                             )}
                         >
                             {t(deliveryStatusLabels[status])}

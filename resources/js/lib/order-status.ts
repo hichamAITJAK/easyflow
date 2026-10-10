@@ -84,18 +84,28 @@ export const deliveryStatusVariants: Record<
  * kind of thing" read as the same color at a glance — 24 distinct hues
  * would be noise, not signal.
  */
+/*
+ * The platform's status palette, one hue per meaning: plum (with an agent),
+ * mustard (waiting / to retry), orange (confirmed), petrol (with the
+ * courier), teal (delivered), red (lost). Tints are the hue at ~10%.
+ */
 const badgeColors = {
-    neutral:
-        'border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300',
-    info: 'border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-400',
+    neutral: 'border-transparent bg-muted text-muted-foreground',
+    plum: 'border-transparent bg-[#49183C]/10 text-[#49183C] dark:bg-[#49183C]/40 dark:text-[#E4C8DC]',
     warning:
-        'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-400',
+        'border-transparent bg-[#EFA22C]/12 text-[#A87110] dark:text-[#F3B95C]',
+    orange: 'border-transparent bg-[#F2602F]/10 text-[#C24A1A] dark:text-[#F7875F]',
+    info: 'border-transparent bg-[#468FA5]/12 text-[#2E7389] dark:text-[#7DB5C7]',
     success:
-        'border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-400',
-    danger: 'border-red-200 bg-red-100 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400',
+        'border-transparent bg-[#16A08E]/10 text-[#0C7D6F] dark:text-[#4CC7B4]',
+    danger: 'border-transparent bg-[#D92D20]/10 text-[#B3281D] dark:text-[#F0766C]',
     returned:
-        'border-violet-200 bg-violet-100 text-violet-700 dark:border-violet-900/50 dark:bg-violet-950/40 dark:text-violet-400',
+        'border-transparent bg-[#D92D20]/10 text-[#B3281D] dark:text-[#F0766C]',
 } as const;
+
+/** Chip shape shared by every status badge in tables and detail views. */
+export const statusChipClass =
+    'rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap';
 
 /**
  * The queue's bucket chips read as one horizontal run, so they carry the
@@ -136,12 +146,14 @@ export const bucketDotColors: Record<OrderQueueBucket, string | null> = {
  * the only carrier here — every row still shows its full text label.
  */
 const dotColors = {
-    neutral: 'bg-slate-500 dark:bg-slate-400',
-    info: 'bg-blue-600 dark:bg-blue-500',
-    warning: 'bg-amber-600 dark:bg-amber-500',
-    success: 'bg-emerald-600 dark:bg-emerald-500',
-    danger: 'bg-red-600 dark:bg-red-500',
-    returned: 'bg-violet-600 dark:bg-violet-500',
+    neutral: 'bg-muted-foreground',
+    plum: 'bg-[#49183C] dark:bg-[#E4C8DC]',
+    info: 'bg-[#468FA5]',
+    warning: 'bg-[#EFA22C]',
+    orange: 'bg-[#F2602F]',
+    success: 'bg-[#16A08E]',
+    danger: 'bg-[#D92D20]',
+    returned: 'bg-[#D92D20]',
 } as const;
 
 /** Hues mirror `confirmationStatusColors` so a picker row and the badge it produces agree. */
@@ -149,41 +161,41 @@ export const confirmationStatusDotColors: Record<
     OrderConfirmationStatus,
     string
 > = {
-    new: dotColors.neutral,
-    assigned: dotColors.info,
-    confirmed: dotColors.success,
+    new: dotColors.warning,
+    assigned: dotColors.plum,
+    confirmed: dotColors.orange,
     confirmed_followup: dotColors.warning,
-    callback: dotColors.info,
+    callback: dotColors.warning,
     fake: dotColors.danger,
     voicemail: dotColors.warning,
     no_answer: dotColors.warning,
     busy: dotColors.warning,
-    whatsapp_sent: dotColors.info,
+    whatsapp_sent: dotColors.warning,
     cancelled: dotColors.danger,
-    submitted_to_courier: dotColors.success,
+    submitted_to_courier: dotColors.info,
     test_completed: dotColors.neutral,
 };
 
 export const confirmationStatusColors: Record<OrderConfirmationStatus, string> =
     {
-        new: badgeColors.neutral,
-        assigned: badgeColors.info,
-        confirmed: badgeColors.success,
+        new: badgeColors.warning,
+        assigned: badgeColors.plum,
+        confirmed: badgeColors.orange,
         confirmed_followup: badgeColors.warning,
-        callback: badgeColors.info,
+        callback: badgeColors.warning,
         fake: badgeColors.danger,
         voicemail: badgeColors.warning,
         no_answer: badgeColors.warning,
         busy: badgeColors.warning,
-        whatsapp_sent: badgeColors.info,
+        whatsapp_sent: badgeColors.warning,
         cancelled: badgeColors.danger,
-        submitted_to_courier: badgeColors.success,
+        submitted_to_courier: badgeColors.info,
         test_completed: badgeColors.neutral,
     };
 
 export const deliveryStatusColors: Record<OrderDeliveryStatus, string> = {
-    awaiting_pickup: badgeColors.info,
-    ready_for_pickup: badgeColors.info,
+    awaiting_pickup: badgeColors.warning,
+    ready_for_pickup: badgeColors.warning,
     in_transit: badgeColors.info,
     out_for_delivery: badgeColors.info,
     postponed: badgeColors.warning,

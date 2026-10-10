@@ -35,12 +35,19 @@ export function DataTableViewOptions<TData>({
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="ml-auto">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-auto h-9 gap-2 rounded-md bg-card px-3 text-sm font-medium shadow-xs hover:bg-accent hover:text-accent-foreground"
+                >
                     <Settings2 />
                     {t('View')}
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuContent
+                align="end"
+                className="w-44 rounded-md border-border bg-popover p-1 shadow-md"
+            >
                 <DropdownMenuLabel>{t('Toggle columns')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {columns.map((column) => (

@@ -19,7 +19,7 @@ export function DataTableCard({
     return (
         <Card
             className={cn(
-                'gap-0 divide-y divide-border py-0 shadow-sm',
+                'gap-0 divide-y divide-border rounded-xl border border-border bg-card py-0 shadow-xs ring-0 dark:ring-0',
                 className,
             )}
         >
@@ -57,7 +57,7 @@ export function DataTableCardToolbar({
     return (
         <div
             className={cn(
-                'flex flex-wrap items-center justify-between gap-2 p-(--card-spacing)',
+                'flex flex-wrap items-center justify-between gap-2 p-4',
                 className,
             )}
         >
@@ -84,7 +84,12 @@ export function DataTableCardFooter({
     className?: string;
 }) {
     return (
-        <CardFooter className={cn('justify-between', className)}>
+        <CardFooter
+            className={cn(
+                'justify-between px-6 py-3 text-xs text-muted-foreground',
+                className,
+            )}
+        >
             {children}
         </CardFooter>
     );
