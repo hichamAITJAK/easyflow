@@ -60,7 +60,7 @@ const MATCH_TOLERANCE_MAD = 1;
 
 /**
  * Difference = received − expected. Negative: the courier paid less
- * than it owes. Positive: it paid more.
+ * than it owes (red). Positive: it paid more (green).
  */
 function differenceClass(value: string | number | null): string {
     const diff = Number(value ?? 0);
@@ -71,7 +71,7 @@ function differenceClass(value: string | number | null): string {
 
     return diff < 0
         ? 'font-semibold text-[#B3281D]'
-        : 'font-semibold text-[#A87110]';
+        : 'font-semibold text-[#0C7D6F]';
 }
 
 function money(value: string | number | null): string {
