@@ -370,7 +370,7 @@ test('the agent dashboard renders every stat/chart prop with the right shape', f
             ->has('delivery')
         )
         ->has('commissionEarned')
-        ->has('upsells', fn ($upsells) => $upsells->has('count')->has('rate'))
+        ->has('upsells', fn ($upsells) => $upsells->has('count')->has('amountMad')->has('rate'))
         ->has('bestConfirmHour')
         ->where('periodDays', 30)
         ->where('filters', ['period' => null, 'date_from' => null, 'date_to' => null])
@@ -660,6 +660,7 @@ test('the agent dashboard counts upsells and finds the best confirm hour', funct
     $this->actingAs($agent)->get(route('dashboard'))
         ->assertInertia(fn ($page) => $page
             ->where('upsells.count', 1)
+            ->where('upsells.amountMad', 40)
             ->where('bestConfirmHour', 19));
 });
 
@@ -723,5 +724,27 @@ test('the settlement alert totals the shortfalls of disputed settlements in the 
     $this->actingAs($admin)->get(route('dashboard', ['period' => 'custom', 'date_from' => '2026-05-01', 'date_to' => '2026-05-31']))
         ->assertInertia(fn ($page) => $page
             ->where('alerts', fn ($alerts) => ! collect($alerts)->contains(fn ($a) => $a['kind'] === 'settlement_difference'))
+            ->etc());
+});
+
+test('the admin sees the upsells of an agent only once that agent is selected', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $agent = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT, 'business_id' => $admin->business_id]);
+
+    Order::factory()->create(['business_id' => $admin->business_id, 'assigned_agent_id' => $agent->id, 'upsell_amount' => 120]);
+    Order::factory()->create(['business_id' => $admin->business_id, 'assigned_agent_id' => $agent->id, 'upsell_amount' => 30.5]);
+    Order::factory()->create(['business_id' => $admin->business_id, 'assigned_agent_id' => $agent->id, 'upsell_amount' => -20]);
+
+    $this->actingAs($admin)->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('performance.view.type', 'team')
+            ->missing('performance.view.upsells')
+            ->etc());
+
+    $this->actingAs($admin)->get(route('dashboard', ['agent_id' => $agent->id]))
+        ->assertInertia(fn ($page) => $page
+            ->where('performance.view.type', 'agent')
+            ->where('performance.view.upsells.count', 2)
+            ->where('performance.view.upsells.amountMad', 150.5)
             ->etc());
 });

@@ -74,7 +74,7 @@ type Props = {
         delivery: number | null;
     };
     commissionEarned: number;
-    upsells: { count: number; rate: number | null };
+    upsells: { count: number; amountMad: number; rate: number | null };
     /** Hour of day (0–23) with the most confirmations, null when none. */
     bestConfirmHour: number | null;
 };
@@ -331,6 +331,11 @@ export default function AgentDashboard({
                             tone={TONE.plum}
                             value={n(upsells.count)}
                             label={t('Upsells')}
+                            hint={
+                                upsells.amountMad > 0
+                                    ? `+${n(Math.round(upsells.amountMad))} MAD`
+                                    : undefined
+                            }
                         />
                         <KpiCard
                             icon={HandCoins}
@@ -583,11 +588,14 @@ function KpiCard({
     tone,
     value,
     label,
+    hint,
 }: {
     icon: ComponentType<{ className?: string }>;
     tone: string;
     value: ReactNode;
     label: string;
+    /** A small second line under the label, e.g. an amount. */
+    hint?: string;
 }) {
     return (
         <div className="flex flex-col items-start rounded-2xl border border-border bg-card p-4 shadow-xs">
@@ -605,6 +613,11 @@ function KpiCard({
             <p className="mt-1.5 text-xs font-medium text-foreground">
                 {label}
             </p>
+            {hint && (
+                <p className="mt-0.5 font-mono text-xs font-semibold text-[#0C7D6F] tabular-nums">
+                    {hint}
+                </p>
+            )}
         </div>
     );
 }

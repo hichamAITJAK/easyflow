@@ -49,6 +49,8 @@ export type PerfView =
           confPct: number;
           delivPct: number;
           commissionsMad: number;
+          /** Orders this agent raised the total on, and by how much. */
+          upsells: { count: number; amountMad: number };
       };
 
 export interface PerformanceTrackData {
@@ -575,6 +577,23 @@ export function PerformanceTrack({
                                         />
                                     </div>
                                     <div className="mt-auto flex items-center justify-between border-t border-border pt-4">
+                                        <span className="text-sm text-muted-foreground">
+                                            {t('Upsells')}
+                                        </span>
+                                        <span className="text-sm tabular-nums">
+                                            <span className="font-semibold">
+                                                {n(v.upsells.count)}
+                                            </span>
+                                            <span className="text-muted-foreground">
+                                                {' · '}
+                                            </span>
+                                            <span className="font-semibold text-[#0C7D6F]">
+                                                +{money(v.upsells.amountMad)}{' '}
+                                                MAD
+                                            </span>
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between border-t border-border pt-4">
                                         <span className="text-sm text-muted-foreground">
                                             {t('Commissions earned')}
                                         </span>

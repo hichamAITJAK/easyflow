@@ -592,6 +592,9 @@ class DashboardController extends Controller
                 'confPct' => $confPct,
                 'delivPct' => $delivPct,
                 'commissionsMad' => round($commissions, 2),
+                // Only on the single-agent view: an upsell belongs to the
+                // agent who confirmed it, so a team total would mean little.
+                'upsells' => $this->upsellStats($businessId, $agent->id, $since, $until),
             ];
 
         return [
@@ -1073,10 +1076,8 @@ class DashboardController extends Controller
 
         // Upsells and the best confirm hour come straight from orders and
         // their status events: neither is rolled into the daily stats.
-        $upsells = Order::where('assigned_agent_id', $user->id)
-            ->where('upsell_amount', '>', 0)
-            ->whereBetween('created_at', [$since->copy()->startOfDay(), $until->copy()->endOfDay()])
-            ->count();
+        $upsellStats = $this->upsellStats($businessId, $user->id, $since, $until);
+        $upsells = $upsellStats['count'];
 
         return Inertia::render('dashboard/agent', [
             // The same Performance track the admin sees, pinned to this
@@ -1108,12 +1109,36 @@ class DashboardController extends Controller
             'commissionEarned' => round((float) $rows->sum('commission_total'), 2),
             'upsells' => [
                 'count' => $upsells,
+                'amountMad' => $upsellStats['amountMad'],
                 'rate' => $totals['confirmed'] > 0
                     ? round(($upsells / $totals['confirmed']) * 100, 1)
                     : null,
             ],
             'bestConfirmHour' => $this->bestConfirmHour($user, $since, $until),
         ]);
+    }
+
+    /**
+     * Orders assigned to an agent over the window whose total the agent
+     * raised (upsell_amount > 0), and by how much in all. Down-sells are
+     * not counted.
+     *
+     * @return array{count: int, amountMad: float}
+     */
+    private function upsellStats(?int $businessId, int $agentId, Carbon $since, Carbon $until): array
+    {
+        $row = Order::where('business_id', $businessId)
+            ->where('assigned_agent_id', $agentId)
+            ->where('upsell_amount', '>', 0)
+            ->whereBetween('created_at', [$since->copy()->startOfDay(), $until->copy()->endOfDay()])
+            ->toBase()
+            ->selectRaw('count(*) as total, coalesce(sum(upsell_amount), 0) as amount')
+            ->first();
+
+        return [
+            'count' => (int) ($row->total ?? 0),
+            'amountMad' => round((float) ($row->amount ?? 0), 2),
+        ];
     }
 
     /**
