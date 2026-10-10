@@ -596,6 +596,7 @@ class DashboardController extends Controller
                 // Only on the single-agent view: an upsell belongs to the
                 // agent who confirmed it, so a team total would mean little.
                 'upsells' => $this->upsellStats($businessId, $agent->id, $since, $until),
+                'backlog' => $this->agentBacklog($businessId, $agent->id),
             ];
 
         return [
@@ -1167,6 +1168,31 @@ class DashboardController extends Controller
             'amountMad' => round((float) ($row->amount ?? 0), 2),
             'basis' => $basis,
         ];
+    }
+
+    /**
+     * Orders sitting with this agent right now with no outcome yet: still
+     * to call (new / assigned) or being chased (callback, no answer, …).
+     * A live count, not the period's — the backlog is what is on their
+     * desk today, whatever window the dashboard shows.
+     *
+     * @return array{total: int, toCall: int, followUp: int}
+     */
+    private function agentBacklog(?int $businessId, int $agentId): array
+    {
+        $row = $this->inProgressQuery($businessId)
+            ->where('assigned_agent_id', $agentId)
+            ->toBase()
+            ->selectRaw(
+                'count(*) as total, coalesce(sum(case when confirmation_status in (?, ?) then 1 else 0 end), 0) as to_call',
+                [OrderConfirmationStatus::NEW->value, OrderConfirmationStatus::ASSIGNED->value],
+            )
+            ->first();
+
+        $total = (int) ($row->total ?? 0);
+        $toCall = (int) ($row->to_call ?? 0);
+
+        return ['total' => $total, 'toCall' => $toCall, 'followUp' => $total - $toCall];
     }
 
     /**

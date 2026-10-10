@@ -776,3 +776,27 @@ test('upsells follow the status the agent commission is paid on', function () {
             ->where('upsells.basis', 'delivered')
             ->etc());
 });
+
+test('the selected agent view counts their open orders not confirmed yet', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $agent = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT, 'business_id' => $admin->business_id]);
+    $other = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT, 'business_id' => $admin->business_id]);
+
+    $mine = ['business_id' => $admin->business_id, 'assigned_agent_id' => $agent->id];
+    Order::factory()->create([...$mine, 'confirmation_status' => OrderConfirmationStatus::ASSIGNED]);
+    Order::factory()->create([...$mine, 'confirmation_status' => OrderConfirmationStatus::CALLBACK]);
+    Order::factory()->create([...$mine, 'confirmation_status' => OrderConfirmationStatus::NO_ANSWER]);
+    Order::factory()->create([...$mine, 'confirmation_status' => OrderConfirmationStatus::CONFIRMED]);
+    Order::factory()->create([...$mine, 'confirmation_status' => OrderConfirmationStatus::ASSIGNED, 'is_test' => true]);
+    Order::factory()->create(['business_id' => $admin->business_id, 'assigned_agent_id' => $other->id, 'confirmation_status' => OrderConfirmationStatus::ASSIGNED]);
+
+    $this->actingAs($admin)->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page->missing('performance.view.backlog')->etc());
+
+    $this->actingAs($admin)->get(route('dashboard', ['agent_id' => $agent->id]))
+        ->assertInertia(fn ($page) => $page
+            ->where('performance.view.backlog.total', 3)
+            ->where('performance.view.backlog.toCall', 1)
+            ->where('performance.view.backlog.followUp', 2)
+            ->etc());
+});

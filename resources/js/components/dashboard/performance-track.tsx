@@ -49,6 +49,8 @@ export type PerfView =
           confPct: number;
           delivPct: number;
           commissionsMad: number;
+          /** Open orders with this agent right now (not the period's). */
+          backlog: { total: number; toCall: number; followUp: number };
           /** Orders this agent raised the total on, and by how much. */
           upsells: {
               count: number;
@@ -580,7 +582,41 @@ export function PerformanceTrack({
                                             goal={performance.goals.deliv}
                                         />
                                     </div>
-                                    <div className="mt-auto flex items-center justify-between border-t border-border pt-4">
+                                    <div className="mt-auto flex items-start justify-between gap-3 border-t border-border pt-4">
+                                        <div className="min-w-0">
+                                            <p className="text-sm text-muted-foreground">
+                                                {t('Not confirmed yet')}
+                                                <span className="text-xs">
+                                                    {' · '}
+                                                    {t('now')}
+                                                </span>
+                                            </p>
+                                            <p className="mt-0.5 text-xs text-muted-foreground">
+                                                {t(
+                                                    ':toCall to call · :followUp follow-up',
+                                                    {
+                                                        toCall: n(
+                                                            v.backlog.toCall,
+                                                        ),
+                                                        followUp: n(
+                                                            v.backlog.followUp,
+                                                        ),
+                                                    },
+                                                )}
+                                            </p>
+                                        </div>
+                                        <span
+                                            className={cn(
+                                                'font-mono text-lg leading-none font-semibold tabular-nums',
+                                                v.backlog.total > 0
+                                                    ? 'text-[#A87110] dark:text-[#F3B95C]'
+                                                    : 'text-muted-foreground',
+                                            )}
+                                        >
+                                            {n(v.backlog.total)}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between border-t border-border pt-4">
                                         <span className="text-sm text-muted-foreground">
                                             {t('Upsells')}
                                             <span className="text-xs">
