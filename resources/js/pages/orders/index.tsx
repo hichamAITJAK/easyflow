@@ -180,11 +180,12 @@ const METRIC_CARDS: {
         filterValue: 'new',
         label: 'New',
         icon: Clock,
-        hoverBorder: 'hover:border-amber-500/50',
-        selected: 'border-amber-500 bg-amber-500/10 shadow-sm ring-1 ring-amber-500',
-        labelClass: 'font-medium text-amber-700 dark:text-amber-400',
-        iconClass: 'size-4 text-amber-500',
-        valueClass: 'text-2xl font-bold',
+        hoverBorder: 'hover:bg-muted/30',
+        selected: 'border-[#EFA22C]/60 bg-[#EFA22C]/5 ring-1 ring-[#EFA22C]/60',
+        labelClass: 'text-sm font-medium text-[#A87110]',
+        iconClass: 'size-8 shrink-0 rounded-full bg-[#EFA22C]/10 p-[7px] text-[#A87110]',
+        valueClass:
+            'mt-3 font-mono text-[26px] leading-none font-semibold tabular-nums',
     },
     {
         key: 'confirmed',
@@ -192,11 +193,12 @@ const METRIC_CARDS: {
         filterValue: 'confirmed',
         label: 'Confirmed',
         icon: CheckCircle2,
-        hoverBorder: 'hover:border-emerald-500/50',
-        selected: 'border-emerald-500 bg-emerald-500/10 shadow-sm ring-1 ring-emerald-500',
-        labelClass: 'font-medium text-emerald-700 dark:text-emerald-400',
-        iconClass: 'size-4 text-emerald-500',
-        valueClass: 'text-2xl font-bold text-emerald-600 dark:text-emerald-500',
+        hoverBorder: 'hover:bg-muted/30',
+        selected: 'border-[#F2602F]/60 bg-[#F2602F]/5 ring-1 ring-[#F2602F]/60',
+        labelClass: 'text-sm font-medium text-[#C24A1A]',
+        iconClass: 'size-8 shrink-0 rounded-full bg-[#F2602F]/10 p-[7px] text-[#C24A1A]',
+        valueClass:
+            'mt-3 font-mono text-[26px] leading-none font-semibold tabular-nums',
     },
     {
         key: 'submitted_to_courier',
@@ -204,11 +206,12 @@ const METRIC_CARDS: {
         filterValue: 'submitted_to_courier',
         label: 'Submitted to courier',
         icon: PackageCheck,
-        hoverBorder: 'hover:border-violet-500/50',
-        selected: 'border-primary bg-primary/10 shadow-sm ring-1 ring-primary',
-        labelClass: 'font-medium text-violet-700 dark:text-violet-400',
-        iconClass: 'size-4 text-violet-500',
-        valueClass: 'text-2xl font-bold text-violet-600 dark:text-violet-500',
+        hoverBorder: 'hover:bg-muted/30',
+        selected: 'border-[#468FA5]/60 bg-[#468FA5]/5 ring-1 ring-[#468FA5]/60',
+        labelClass: 'text-sm font-medium text-[#2E7389]',
+        iconClass: 'size-8 shrink-0 rounded-full bg-[#468FA5]/10 p-[7px] text-[#2E7389]',
+        valueClass:
+            'mt-3 font-mono text-[26px] leading-none font-semibold tabular-nums',
     },
     {
         key: 'delivered',
@@ -216,11 +219,12 @@ const METRIC_CARDS: {
         filterValue: 'delivered',
         label: 'Delivered',
         icon: Truck,
-        hoverBorder: 'hover:border-blue-500/50',
-        selected: 'border-blue-500 bg-blue-500/10 shadow-sm ring-1 ring-blue-500',
-        labelClass: 'font-medium text-blue-700 dark:text-blue-400',
-        iconClass: 'size-4 text-blue-500',
-        valueClass: 'text-2xl font-bold text-blue-600 dark:text-blue-500',
+        hoverBorder: 'hover:bg-muted/30',
+        selected: 'border-[#16A08E]/60 bg-[#16A08E]/5 ring-1 ring-[#16A08E]/60',
+        labelClass: 'text-sm font-medium text-[#0C7D6F]',
+        iconClass: 'size-8 shrink-0 rounded-full bg-[#16A08E]/10 p-[7px] text-[#0C7D6F]',
+        valueClass:
+            'mt-3 font-mono text-[26px] leading-none font-semibold tabular-nums',
     },
     {
         key: 'cancelled',
@@ -228,11 +232,12 @@ const METRIC_CARDS: {
         filterValue: 'cancelled',
         label: 'Cancelled',
         icon: XCircle,
-        hoverBorder: 'hover:border-destructive/50',
-        selected: 'border-destructive bg-destructive/10 shadow-sm ring-1 ring-destructive',
-        labelClass: 'font-medium text-destructive',
-        iconClass: 'size-4 text-destructive',
-        valueClass: 'text-2xl font-bold text-destructive',
+        hoverBorder: 'hover:bg-muted/30',
+        selected: 'border-[#D92D20]/60 bg-[#D92D20]/5 ring-1 ring-[#D92D20]/60',
+        labelClass: 'text-sm font-medium text-[#B3281D]',
+        iconClass: 'size-8 shrink-0 rounded-full bg-[#D92D20]/10 p-[7px] text-[#B3281D]',
+        valueClass:
+            'mt-3 font-mono text-[26px] leading-none font-semibold tabular-nums',
     },
 ];
 
@@ -263,13 +268,13 @@ function OrderMetricCard({
                 }
             }}
             className={cn(
-                'cursor-pointer transition-all hover:shadow-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                'cursor-pointer gap-0 rounded-xl border border-border bg-card p-5 shadow-xs transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none',
                 metric.hoverBorder,
-                selected ? metric.selected : 'py-4 shadow-sm',
+                selected ? metric.selected : '',
             )}
         >
-            <CardHeader className="gap-1 px-4 py-3">
-                <div className="flex items-center justify-between">
+            <CardHeader className="gap-0 p-0">
+                <div className="flex items-start justify-between gap-2">
                     <CardDescription className={metric.labelClass}>
                         {t(metric.label)}
                     </CardDescription>
@@ -509,15 +514,15 @@ agentLabel = agentObj.name;
                     })}
                 </div>
 
-                <DataTableCard>
-                    <DataTableCardToolbar className="gap-4 flex-col sm:flex-row items-stretch sm:items-center">
+                <DataTableCard className="rounded-xl border border-border bg-card shadow-xs">
+                    <DataTableCardToolbar className="flex-col items-stretch gap-2 p-4 sm:flex-row sm:items-center">
                         <div className="flex flex-1 flex-wrap items-center gap-2.5">
                             <Label htmlFor="search" className="sr-only">
                                 {t('Search orders')}
                             </Label>
                             <Input
                                 id="search"
-                                className="w-full sm:max-w-xs h-9"
+                                className="h-9 w-full rounded-md border-input bg-card text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20 sm:w-80"
                                 placeholder={t('Search reference, tracking number, or exact phone…')}
                                 value={search}
                                 onChange={(event) =>
@@ -529,7 +534,7 @@ agentLabel = agentObj.name;
                                 size="sm"
                                 onClick={() => setFiltersOpen(!filtersOpen)}
                                 className={cn(
-                                    'h-9 gap-2 transition-all cursor-pointer',
+                                    'h-9 gap-2 rounded-md border-input bg-card px-3 text-sm font-medium shadow-xs hover:bg-accent hover:text-accent-foreground cursor-pointer',
                                     (filtersOpen || activeFiltersList.length > 0) &&
                                         'border-primary/60 bg-primary/5 font-medium text-primary shadow-2xs',
                                 )}
@@ -628,7 +633,7 @@ agentLabel = agentObj.name;
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="gap-1.5 px-2.5 sm:px-3"
+                                className="h-9 gap-2 rounded-md border-input bg-card px-3 text-sm font-medium shadow-xs hover:bg-accent hover:text-accent-foreground"
                                 onClick={() =>
                                     exportOrdersToCsv(
                                         orders.data,
@@ -638,7 +643,7 @@ agentLabel = agentObj.name;
                                 }
                                 title={t('Export current orders to CSV')}
                             >
-                                <Download className="size-3.5" />
+                                <Download className="size-4" />
                                 <span className="hidden sm:inline">
                                     {selectedOrderIds.length > 0
                                         ? t('Export selected')
@@ -648,7 +653,7 @@ agentLabel = agentObj.name;
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="gap-1.5 px-2.5 sm:px-3"
+                                className="h-9 gap-2 rounded-md border-input bg-card px-3 text-sm font-medium shadow-xs hover:bg-accent hover:text-accent-foreground"
                                 onClick={() => setSyncOpen(true)}
                                 disabled={loadingOrders}
                                 // The label is hidden below `sm`, leaving an
@@ -657,7 +662,9 @@ agentLabel = agentObj.name;
                             >
                                 <CloudDownload
                                     className={
-                                        loadingOrders ? 'animate-spin' : ''
+                                        loadingOrders
+                                            ? 'size-4 animate-spin'
+                                            : 'size-4'
                                     }
                                 />
                                 <span className="hidden sm:inline">
@@ -668,7 +675,7 @@ agentLabel = agentObj.name;
                             </Button>
                             <Button
                                 size="sm"
-                                className="px-2.5 sm:px-3"
+                                className="h-9 gap-2 rounded-md px-3 text-sm font-semibold hover:opacity-90"
                                 onClick={() => setFormOpen(true)}
                             >
                                 <Plus />
@@ -843,7 +850,7 @@ agentLabel = agentObj.name;
                         </CollapsibleContent>
                     </Collapsible>
 
-                    <DataTableCardTable>
+                    <DataTableCardTable className="[&_td]:px-4 [&_td]:py-4 [&_td:first-child]:pl-6 [&_td:last-child]:pr-6 [&_th]:h-auto [&_th]:px-4 [&_th]:py-3 [&_th]:text-xs [&_th]:font-medium [&_th]:whitespace-nowrap [&_th]:text-muted-foreground [&_th:first-child]:pl-6 [&_th:last-child]:pr-6 [&_thead]:bg-transparent">
                         <DataTable
                             table={table}
                             columnCount={columns.length}
@@ -851,8 +858,8 @@ agentLabel = agentObj.name;
                         />
                     </DataTableCardTable>
 
-                    <DataTableCardFooter>
-                        <div className="flex w-full flex-wrap items-center justify-between gap-4">
+                    <DataTableCardFooter className="px-6 py-3 text-xs text-muted-foreground">
+                        <div className="flex w-full flex-wrap items-center justify-between gap-3">
                             <DataTablePerPageSelect
                                 routeUrl={ordersIndex().url}
                                 query={filters}

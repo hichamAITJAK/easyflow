@@ -70,6 +70,50 @@ export type AgentOption = { id: number; name: string; avatar: string | null };
 
 const UNASSIGNED = '__unassigned__';
 
+/* Platform status colours for this table's chips — same text, these hues.
+   Layered over the shared badge colours with cn(), so the later classes win. */
+const CHIP =
+    'inline-flex items-center rounded-full border-transparent px-2.5 py-1 text-xs font-semibold whitespace-nowrap';
+
+const MUSTARD = 'bg-[#EFA22C]/12 text-[#A87110]';
+const ORANGE = 'bg-[#F2602F]/10 text-[#C24A1A]';
+const PETROL = 'bg-[#468FA5]/12 text-[#2E7389]';
+const TEAL = 'bg-[#16A08E]/10 text-[#0C7D6F]';
+const RED = 'bg-[#D92D20]/10 text-[#B3281D]';
+const PLUM = 'bg-[#49183C]/10 text-[#49183C] dark:text-[#E4C8DC]';
+const MUTED = 'bg-muted text-muted-foreground';
+
+const CONFIRMATION_CHIPS: Record<string, string> = {
+    new: MUSTARD,
+    assigned: PLUM,
+    confirmed: ORANGE,
+    confirmed_followup: MUSTARD,
+    callback: MUSTARD,
+    fake: RED,
+    voicemail: MUSTARD,
+    no_answer: MUSTARD,
+    busy: MUSTARD,
+    whatsapp_sent: MUSTARD,
+    cancelled: RED,
+    submitted_to_courier: PETROL,
+    test_completed: MUTED,
+};
+
+const DELIVERY_CHIPS: Record<string, string> = {
+    awaiting_pickup: MUSTARD,
+    ready_for_pickup: MUSTARD,
+    in_transit: PETROL,
+    out_for_delivery: PETROL,
+    postponed: MUSTARD,
+    changed: MUSTARD,
+    delivery_attempt_failed: MUSTARD,
+    refused: RED,
+    delivered: TEAL,
+    returned_in_transit: RED,
+    return_received: RED,
+    cancelled_at_courier: RED,
+};
+
 /**
  * Persist a confirmation status change immediately (edit-in-place), instead
  * of routing through a separate dialog — confirmation is the highest-touch
@@ -127,7 +171,12 @@ function ConfirmationStatusPopover({
                 >
                     <Badge
                         variant="outline"
-                        className={`${confirmationStatusColors[order.confirmation_status]} transition-all`}
+                        className={cn(
+                            confirmationStatusColors[order.confirmation_status],
+                            CHIP,
+                            CONFIRMATION_CHIPS[order.confirmation_status],
+                            'transition-all',
+                        )}
                     >
                         {updating && (
                             <Loader2 className="mr-1 size-3 animate-spin" />
@@ -137,7 +186,7 @@ function ConfirmationStatusPopover({
                 </Button>
             </PopoverTrigger>
             <PopoverContent
-                className="w-44 p-1"
+                className="w-44 rounded-md border-border bg-popover p-1 shadow-md"
                 align="start"
                 onClick={(event) => event.stopPropagation()}
             >
@@ -157,7 +206,7 @@ function ConfirmationStatusPopover({
                                 );
                                 setOpen(false);
                             }}
-                            className="w-full justify-start px-2 font-normal aria-selected:bg-accent"
+                            className="h-auto w-full justify-start rounded-sm px-2 py-1.5 text-sm font-normal hover:bg-accent aria-selected:bg-accent"
                             aria-selected={value === order.confirmation_status}
                         >
                             {label}
@@ -189,9 +238,9 @@ function CopyShippingDetailsButton({ order }: { order: Order }) {
             }}
             title={t('Copy shipping details')}
             aria-label={t('Copy shipping details')}
-            className="ml-1.5 text-muted-foreground"
+            className="ml-0.5 size-5 text-muted-foreground hover:text-foreground [&_svg]:size-3.5"
         >
-            {copied ? <Check className="text-emerald-500" /> : <Copy />}
+            {copied ? <Check className="text-[#0C7D6F]" /> : <Copy />}
         </Button>
     );
 }
@@ -230,11 +279,11 @@ function CopyableValue({
             }}
             title={`Copy ${label.toLowerCase()}`}
             aria-label={`Copy ${label.toLowerCase()}: ${value}`}
-            className="group/copy h-auto gap-1.5 p-0 font-mono text-sm text-foreground no-underline hover:no-underline"
+            className="group/copy h-auto gap-1.5 p-0 font-mono text-sm font-medium text-foreground no-underline hover:no-underline"
         >
             <span>{value}</span>
             {copied ? (
-                <Check className="size-3.5 shrink-0 text-emerald-500" />
+                <Check className="size-3.5 shrink-0 text-[#0C7D6F]" />
             ) : (
                 <Copy className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/copy:opacity-100" />
             )}
@@ -322,7 +371,7 @@ function AgentCell({
         >
             <SelectTrigger
                 size="sm"
-                className="w-auto border-none bg-transparent shadow-none disabled:opacity-70 [&_svg]:opacity-60"
+                className="h-auto w-auto gap-2 rounded-md border-none bg-transparent px-1.5 py-1 text-sm shadow-none hover:bg-accent disabled:opacity-70 [&_svg]:opacity-60"
             >
                 {updating ? (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -331,16 +380,16 @@ function AgentCell({
                     </div>
                 ) : agent ? (
                     <div className="flex items-center gap-2">
-                        <Avatar className="size-6">
+                        <Avatar className="size-7">
                             <AvatarImage
                                 src={agent.avatar ?? undefined}
                                 alt={agent.name}
                             />
-                            <AvatarFallback className="text-xs">
+                            <AvatarFallback className="bg-secondary text-[11px] font-semibold text-secondary-foreground">
                                 {getInitials(agent.name)}
                             </AvatarFallback>
                         </Avatar>
-                        <span>{agent.name}</span>
+                        <span className="truncate">{agent.name}</span>
                         <UpsellArrow amount={order.upsell_amount} />
                     </div>
                 ) : (
@@ -405,6 +454,12 @@ export function createColumns({
             currentDirection={filters.direction}
             routeUrl={routeUrl}
             query={filters}
+            className={cn(
+                'ml-0 h-8 px-0 text-xs font-medium hover:bg-transparent hover:text-foreground [&_svg]:size-3.5',
+                filters.sort === sortKey
+                    ? 'text-foreground [&_svg]:opacity-90'
+                    : 'text-muted-foreground [&_svg]:opacity-40',
+            )}
         />
     );
 
@@ -490,12 +545,14 @@ export function createColumns({
                 return (
                     <div className="grid gap-0.5">
                         <div className="flex items-center gap-1.5">
-                            <span className="font-medium">{customer_name}</span>
+                            <span className="font-medium whitespace-nowrap">
+                                {customer_name}
+                            </span>
                             <CopyShippingDetailsButton order={order} />
                             {order.is_duplicate_flagged && (
                                 <Badge
                                     variant="outline"
-                                    className="shrink-0 border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                    className="shrink-0 rounded-full border-transparent bg-[#EFA22C]/12 px-2 font-semibold text-[#A87110]"
                                     title={t(
                                         'Matches a recent order from the same phone number',
                                     )}
@@ -507,7 +564,7 @@ export function createColumns({
                             {order.is_blacklist_flagged && (
                                 <Badge
                                     variant="destructive"
-                                    className="shrink-0"
+                                    className="shrink-0 rounded-full border-transparent bg-[#D92D20]/10 px-2 font-semibold text-[#B3281D]"
                                     title={t(
                                         'Customer phone number is on the blacklist',
                                     )}
@@ -526,19 +583,19 @@ export function createColumns({
                                         onClick={(event) =>
                                             event.stopPropagation()
                                         }
-                                        className="h-auto w-fit p-0 text-sm text-muted-foreground hover:text-foreground"
+                                        className="h-auto w-fit p-0 font-mono text-xs text-muted-foreground no-underline hover:text-foreground"
                                     >
                                         {customer_phone}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent
-                                    className="w-44 p-1"
+                                    className="w-44 rounded-md border-border bg-popover p-1 shadow-md"
                                     onClick={(event) => event.stopPropagation()}
                                 >
                                     <Button
                                         asChild
                                         variant="ghost"
-                                        className="w-full justify-start gap-2 px-2 font-normal text-blue-600 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400"
+                                        className="h-auto w-full justify-start gap-2 rounded-sm px-2 py-1.5 text-sm font-normal text-[#2E7389] hover:bg-accent hover:text-[#2E7389]"
                                     >
                                         <a href={`tel:${digits}`}>
                                             <Phone />
@@ -549,7 +606,7 @@ export function createColumns({
                                         <Button
                                             asChild
                                             variant="ghost"
-                                            className="w-full justify-start gap-2 px-2 font-normal text-green-600 hover:text-green-600 dark:text-green-400 dark:hover:text-green-400"
+                                            className="h-auto w-full justify-start gap-2 rounded-sm px-2 py-1.5 text-sm font-normal text-[#0C7D6F] hover:bg-accent hover:text-[#0C7D6F]"
                                         >
                                             <a
                                                 href={`https://wa.me/${whatsappNumber}`}
@@ -572,7 +629,7 @@ export function createColumns({
                                                 'Phone number copied to clipboard!',
                                             );
                                         }}
-                                        className="w-full justify-start gap-2 px-2 font-normal text-muted-foreground"
+                                        className="h-auto w-full justify-start gap-2 rounded-sm px-2 py-1.5 text-sm font-normal text-muted-foreground hover:bg-accent"
                                     >
                                         <Copy />
                                         {t('Copy')}
@@ -580,7 +637,7 @@ export function createColumns({
                                 </PopoverContent>
                             </Popover>
                         ) : (
-                            <span className="text-sm text-muted-foreground">
+                            <span className="font-mono text-xs text-muted-foreground">
                                 {customer_phone}
                             </span>
                         )}
@@ -592,7 +649,7 @@ export function createColumns({
             accessorKey: 'total_amount',
             header: () => sortHeader(t('Price'), 'total_amount'),
             cell: ({ row }) => (
-                <span className="font-semibold">
+                <span className="font-mono text-sm font-semibold whitespace-nowrap tabular-nums">
                     {row.original.total_amount}
                 </span>
             ),
@@ -617,7 +674,7 @@ export function createColumns({
 
                 return (
                     <div className="grid gap-0.5">
-                        <span className="truncate text-sm">
+                        <span className="truncate text-sm font-medium whitespace-nowrap">
                             {order.store?.name ??
                                 t(orderSourceLabel(order.source_platform))}
                         </span>
@@ -654,7 +711,11 @@ export function createColumns({
                     return (
                         <Badge
                             variant="outline"
-                            className={deliveryStatusColors[status]}
+                            className={cn(
+                                deliveryStatusColors[status],
+                                CHIP,
+                                DELIVERY_CHIPS[status],
+                            )}
                         >
                             {t(deliveryStatusLabels[status])}
                         </Badge>
@@ -670,7 +731,7 @@ export function createColumns({
                                 event.stopPropagation();
                                 onCreateShipment(order);
                             }}
-                            className="h-auto gap-1.5 p-0 text-sm text-muted-foreground hover:text-foreground"
+                            className="h-8 gap-2 rounded-md border border-input bg-card px-2.5 text-xs font-medium text-foreground no-underline shadow-xs hover:bg-accent hover:text-accent-foreground hover:no-underline [&_svg]:size-4"
                         >
                             <Truck />
                             {t('Create shipment')}
@@ -702,12 +763,16 @@ export function createColumns({
                             <Button
                                 variant="ghost"
                                 size="icon"
+                                className="size-8 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                                 aria-label={t('Order actions')}
                             >
                                 <MoreHorizontal />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent
+                            align="end"
+                            className="w-44 rounded-md border-border bg-popover p-1 shadow-md"
+                        >
                             <OrderRowActionItems
                                 actions={actions}
                                 Item={DropdownMenuItem}
