@@ -1,11 +1,14 @@
 import { Form, Head, router } from '@inertiajs/react';
 import {
+    ArrowDown,
+    ArrowUp,
+    ChevronsUpDown,
     CircleDollarSign,
     Clock,
-    Download,
     Eye,
     FileText,
     Receipt,
+    Search,
     Users,
     Wallet,
 } from 'lucide-react';
@@ -13,11 +16,12 @@ import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import CommissionEntryController, {
     index as commissionEntriesIndex,
-    downloadInvoice,
     generateInvoicesFromFilters,
-    markInvoicePaid,
 } from '@/actions/App/Http/Controllers/Commissions/CommissionEntryController';
-import { InvoicePreviewDialog } from '@/components/commissions/invoice-preview-dialog';
+import {
+    InvoiceSheet,
+    invoicePayChip,
+} from '@/components/commissions/invoice-sheet';
 import {
     DataTableCard,
     DataTableCardFilters,
@@ -71,7 +75,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useInitials } from '@/hooks/use-initials';
 import { useTableFilters } from '@/hooks/use-table-filters';
 import { useTranslation } from '@/hooks/use-translation';
-import { formatDateRange, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateRange, formatDateTime } from '@/lib/format';
 import { statusChipClass } from '@/lib/order-status';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
@@ -85,7 +89,15 @@ import type {
 const NONE = '__all__';
 
 type Agent = { id: number; name: string; avatar: string | null };
-type AgentTotals = { earned: number; paid: number; pending: number };
+type AgentTotals = {
+    entries: number;
+    uninvoiced: number;
+    last_entry_at: string | null;
+    earned: number;
+    paid: number;
+    pending: number;
+};
+type AgentSortKey = 'name' | 'entries' | 'earned' | 'pending' | 'last';
 type CommissionFilters = {
     per_page?: string;
     agent_id?: string;
@@ -151,7 +163,7 @@ function KpiCard({
     text: string;
 }) {
     return (
-        <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
+        <div className="rounded-xl border border-border bg-card p-5 shadow-xs transition-colors hover:bg-muted/30">
             <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-medium" style={{ color: text }}>
                     {label}
@@ -168,7 +180,7 @@ function KpiCard({
                     {value}
                 </span>
                 {unit && (
-                    <span className="ml-1.5 text-xs font-medium text-muted-foreground">
+                    <span className="ml-1 text-xs text-muted-foreground">
                         {unit}
                     </span>
                 )}
@@ -178,10 +190,14 @@ function KpiCard({
 }
 
 const TAB_LIST =
-    'h-auto flex-wrap justify-start gap-0 rounded-lg border border-border bg-muted p-1';
+    'inline-flex h-auto w-auto flex-wrap items-center justify-start gap-1 rounded-lg border border-border bg-muted/40 p-1';
 const TAB_TRIGGER =
-    'h-auto flex-none rounded-md border-0 px-4 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs';
+    'h-8 flex-none rounded-md border-0 px-3.5 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-xs';
 const FILTER_LABEL = 'text-sm font-medium text-foreground';
+const FIELD = 'h-9 w-full rounded-md bg-card text-sm shadow-xs';
+/** Outline row action, same on the Invoices and By agent tables. */
+const ROW_ACTION =
+    'h-8 gap-1.5 rounded-md bg-card px-3 text-xs font-medium shadow-xs hover:bg-accent hover:text-accent-foreground [&_svg]:size-3.5';
 
 const UNINVOICED = 'uninvoiced';
 
@@ -193,14 +209,18 @@ const INVOICE_STATUS_OPTIONS: { value: InvoiceStatus; label: string }[] = [
     { value: 'cancelled', label: 'Cancelled' },
 ];
 
-/* Platform palette: draft muted, issued mustard (waiting), paid teal,
-   cancelled red — same hues as the order status chips. */
-const invoiceStatusClasses: Record<InvoiceStatus, string> = {
-    draft: `${statusChipClass} bg-muted text-muted-foreground`,
-    issued: `${statusChipClass} bg-[#EFA22C]/12 text-[#A87110] dark:text-[#F3B95C]`,
-    paid: `${statusChipClass} bg-[#16A08E]/10 text-[#0C7D6F] dark:text-[#4CC7B4]`,
-    cancelled: `${statusChipClass} bg-[#D92D20]/10 text-[#B3281D] dark:text-[#F0766C]`,
-};
+/** Entries tab: invoiced petrol, paid teal, cancelled red. */
+function entryChipClass(status: InvoiceStatus): string {
+    if (status === 'paid') {
+        return 'bg-[#16A08E]/10 text-[#0C7D6F] dark:text-[#4CC7B4]';
+    }
+
+    if (status === 'cancelled') {
+        return 'bg-[#D92D20]/10 text-[#B3281D] dark:text-[#F0766C]';
+    }
+
+    return 'bg-[#468FA5]/12 text-[#2E7389] dark:text-[#7DB5C7]';
+}
 
 function money(value: string | number): string {
     return `${Number(value).toFixed(2)} MAD`;
@@ -231,13 +251,14 @@ export default function CommissionEntriesIndex({
 
     const getInitials = useInitials();
 
-    // Over every entry the filters match (not just this page): the
-    // per-agent totals are aggregated server-side across the whole set.
+    // Aggregated server-side over the whole ledger, never the filters or
+    // the current page, so the tiles hold still while filtering.
     const totalsList = Object.values(totalsByAgent);
     const summary = {
         earned: totalsList.reduce((sum, row) => sum + row.earned, 0),
         paid: totalsList.reduce((sum, row) => sum + row.paid, 0),
         pending: totalsList.reduce((sum, row) => sum + row.pending, 0),
+        uninvoiced: totalsList.reduce((sum, row) => sum + row.uninvoiced, 0),
         earningAgents: totalsList.filter((row) => row.earned > 0).length,
     };
     const amount = (value: number) =>
@@ -258,6 +279,13 @@ export default function CommissionEntriesIndex({
         />
     );
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [tab, setTab] = useState('entries');
+    const [agentQuery, setAgentQuery] = useState('');
+    const [onlyWithBalance, setOnlyWithBalance] = useState(false);
+    const [agentSort, setAgentSort] = useState<{
+        key: AgentSortKey;
+        dir: 1 | -1;
+    }>({ key: 'earned', dir: -1 });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [bulkProcessing, setBulkProcessing] = useState(false);
 
@@ -353,6 +381,90 @@ export default function CommissionEntriesIndex({
         null,
     );
 
+    /**
+     * "View entries": the agent's FULL history. Every other entries filter
+     * is cleared and the page reset (draft carries no page key), so the
+     * footer's total equals the Entries count on the By agent row.
+     */
+    const viewAgentEntries = (agentId: number) => {
+        setSelectedIds([]);
+        updateFilters({
+            agent_id: String(agentId),
+            status: undefined,
+            date_from: undefined,
+            date_to: undefined,
+            min_amount: undefined,
+            max_amount: undefined,
+        });
+        setTab('entries');
+    };
+
+    const agentRows = agents
+        .map((agent) => {
+            const totals = totalsByAgent[agent.id];
+
+            return {
+                ...agent,
+                entries: totals?.entries ?? 0,
+                earned: totals?.earned ?? 0,
+                pending: totals?.pending ?? 0,
+                lastEntryAt: totals?.last_entry_at ?? null,
+            };
+        })
+        .filter(
+            (agent) =>
+                agent.name
+                    .toLowerCase()
+                    .includes(agentQuery.trim().toLowerCase()) &&
+                (!onlyWithBalance || agent.earned > 0),
+        )
+        .sort((a, b) => {
+            const value = (row: typeof a): string | number =>
+                agentSort.key === 'name'
+                    ? row.name.toLowerCase()
+                    : agentSort.key === 'last'
+                      ? (row.lastEntryAt ?? '')
+                      : row[agentSort.key];
+            const va = value(a);
+            const vb = value(b);
+
+            return va < vb ? -agentSort.dir : va > vb ? agentSort.dir : 0;
+        });
+
+    const agentSortHeader = (title: string, key: AgentSortKey) => {
+        const active = agentSort.key === key;
+
+        return (
+            <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn(
+                    'ml-0 h-8 gap-1 px-0 text-xs font-medium hover:bg-transparent hover:text-foreground [&_svg]:size-3.5',
+                    active
+                        ? 'text-foreground [&_svg]:opacity-90'
+                        : 'text-muted-foreground [&_svg]:opacity-40',
+                )}
+                onClick={() =>
+                    setAgentSort((current) =>
+                        current.key === key
+                            ? { key, dir: current.dir === 1 ? -1 : 1 }
+                            : { key, dir: key === 'name' ? 1 : -1 },
+                    )
+                }
+            >
+                {title}
+                {!active ? (
+                    <ChevronsUpDown />
+                ) : agentSort.dir === 1 ? (
+                    <ArrowUp />
+                ) : (
+                    <ArrowDown />
+                )}
+            </Button>
+        );
+    };
+
     const entryRows = entries.data;
     const invoiceRows = invoices.data;
     const selectableRows = entryRows.filter(
@@ -424,9 +536,9 @@ export default function CommissionEntriesIndex({
                     />
                     <KpiCard
                         label={t('Awaiting invoice')}
-                        value={String(invoiceableCount)}
+                        value={String(summary.uninvoiced)}
                         unit={
-                            invoiceableCount === 1 ? t('entry') : t('entries')
+                            summary.uninvoiced === 1 ? t('entry') : t('entries')
                         }
                         icon={FileText}
                         color="#468FA5"
@@ -453,7 +565,7 @@ export default function CommissionEntriesIndex({
                     )}
                 </div>
 
-                <Tabs defaultValue="entries">
+                <Tabs value={tab} onValueChange={setTab}>
                     <TabsList className={TAB_LIST}>
                         <TabsTrigger value="entries" className={TAB_TRIGGER}>
                             {t('Entries')}
@@ -514,7 +626,16 @@ export default function CommissionEntriesIndex({
                         )}
 
                         <DataTableCard>
-                            <DataTableCardFilters className="flex-wrap items-end">
+                            {/* The `auto` last track sizes to the action
+                                buttons so the Invoice label never clips. */}
+                            <DataTableCardFilters
+                                className={cn(
+                                    'grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-3',
+                                    isAdmin
+                                        ? 'xl:grid-cols-[repeat(6,minmax(0,1fr))_auto]'
+                                        : 'xl:grid-cols-[repeat(5,minmax(0,1fr))_auto]',
+                                )}
+                            >
                                 {isAdmin && (
                                     <div className="grid gap-1.5">
                                         <Label className={FILTER_LABEL}>
@@ -531,7 +652,7 @@ export default function CommissionEntriesIndex({
                                                 })
                                             }
                                         >
-                                            <SelectTrigger className="h-10 w-44">
+                                            <SelectTrigger className={FIELD}>
                                                 <SelectValue
                                                     placeholder={t(
                                                         'All agents',
@@ -573,7 +694,7 @@ export default function CommissionEntriesIndex({
                                             })
                                         }
                                     >
-                                        <SelectTrigger className="h-10 w-44">
+                                        <SelectTrigger className={FIELD}>
                                             <SelectValue
                                                 placeholder={t('Any status')}
                                             />
@@ -611,7 +732,7 @@ export default function CommissionEntriesIndex({
                                             })
                                         }
                                         placeholder={t('Any date')}
-                                        className="h-10 w-44"
+                                        className={cn(FIELD, 'font-mono')}
                                     />
                                 </div>
 
@@ -625,7 +746,7 @@ export default function CommissionEntriesIndex({
                                             updateFilters({ date_to: value })
                                         }
                                         placeholder={t('Any date')}
-                                        className="h-10 w-44"
+                                        className={cn(FIELD, 'font-mono')}
                                     />
                                 </div>
 
@@ -637,7 +758,10 @@ export default function CommissionEntriesIndex({
                                         type="number"
                                         inputMode="decimal"
                                         placeholder="0"
-                                        className="h-10 w-44"
+                                        className={cn(
+                                            FIELD,
+                                            'font-mono tabular-nums',
+                                        )}
                                         value={draft.min_amount ?? ''}
                                         onChange={(e) =>
                                             updateFilters({
@@ -656,7 +780,10 @@ export default function CommissionEntriesIndex({
                                         type="number"
                                         inputMode="decimal"
                                         placeholder={t('Any')}
-                                        className="h-10 w-44"
+                                        className={cn(
+                                            FIELD,
+                                            'font-mono tabular-nums',
+                                        )}
                                         value={draft.max_amount ?? ''}
                                         onChange={(e) =>
                                             updateFilters({
@@ -667,39 +794,48 @@ export default function CommissionEntriesIndex({
                                     />
                                 </div>
 
-                                {hasActiveFilters && (
-                                    <DataTableResetFiltersButton
-                                        onReset={resetFilters}
-                                    />
-                                )}
+                                <div className="flex items-center gap-2">
+                                    {hasActiveFilters && (
+                                        <DataTableResetFiltersButton
+                                            onReset={resetFilters}
+                                        />
+                                    )}
 
-                                {/* Invoices everything the filters match, not
-                                    just the ticked rows on this page — the
-                                    per-page checkboxes can't express "the
-                                    whole of July for this agent" once it
-                                    spans more than one page. */}
-                                {isAdmin && invoiceableCount > 0 && (
-                                    <Button
-                                        type="button"
-                                        className="ml-auto h-10 gap-2 px-4 font-semibold hover:opacity-90"
-                                        onClick={() => setBulkOpen(true)}
-                                    >
-                                        <CircleDollarSign />
-                                        {invoiceableCount === 1
-                                            ? t(
-                                                  'Invoice :count matching entry',
-                                                  { count: invoiceableCount },
-                                              )
-                                            : t(
-                                                  'Invoice :count matching entries',
-                                                  { count: invoiceableCount },
-                                              )}
-                                    </Button>
-                                )}
+                                    {/* Invoices everything the filters match,
+                                        not just the ticked rows on this page —
+                                        the per-page checkboxes can't express
+                                        "the whole of July for this agent" once
+                                        it spans more than one page. It lives
+                                        in the Entries tab, so the other tabs
+                                        never show it. */}
+                                    {isAdmin && (
+                                        <Button
+                                            type="button"
+                                            className="h-9 gap-2 px-4 font-semibold whitespace-nowrap shadow-xs hover:opacity-90 disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
+                                            disabled={invoiceableCount === 0}
+                                            onClick={() => setBulkOpen(true)}
+                                        >
+                                            <CircleDollarSign />
+                                            {invoiceableCount === 1
+                                                ? t(
+                                                      'Invoice :count matching entry',
+                                                      {
+                                                          count: invoiceableCount,
+                                                      },
+                                                  )
+                                                : t(
+                                                      'Invoice :count matching entries',
+                                                      {
+                                                          count: invoiceableCount,
+                                                      },
+                                                  )}
+                                        </Button>
+                                    )}
+                                </div>
                             </DataTableCardFilters>
 
                             <DataTableCardTable>
-                                <Table>
+                                <Table className="min-w-[900px]">
                                     <TableHeader>
                                         <TableRow>
                                             {isAdmin && (
@@ -792,23 +928,23 @@ export default function CommissionEntriesIndex({
                                                         </TableCell>
                                                     )}
                                                     {isAdmin && (
-                                                        <TableCell className="font-medium whitespace-nowrap">
+                                                        <TableCell className="text-sm font-medium whitespace-nowrap">
                                                             {entry.user?.name}
                                                         </TableCell>
                                                     )}
-                                                    <TableCell className="whitespace-nowrap">
+                                                    <TableCell className="text-sm whitespace-nowrap">
                                                         {entryLabel(
                                                             entry as EntryWithRule,
                                                             t,
                                                         )}
                                                     </TableCell>
-                                                    <TableCell className="whitespace-nowrap">
+                                                    <TableCell className="text-sm whitespace-nowrap">
                                                         <span className="font-mono font-semibold tabular-nums">
                                                             {Number(
                                                                 entry.amount,
                                                             ).toFixed(2)}
-                                                        </span>{' '}
-                                                        <span className="text-xs text-muted-foreground">
+                                                        </span>
+                                                        <span className="ml-1 text-xs text-muted-foreground">
                                                             MAD
                                                         </span>
                                                     </TableCell>
@@ -818,11 +954,12 @@ export default function CommissionEntriesIndex({
                                                                 variant="outline"
                                                                 className={cn(
                                                                     'border-transparent font-mono',
-                                                                    invoiceStatusClasses[
+                                                                    statusChipClass,
+                                                                    entryChipClass(
                                                                         entry
                                                                             .invoice
-                                                                            .status
-                                                                    ],
+                                                                            .status,
+                                                                    ),
                                                                 )}
                                                             >
                                                                 {
@@ -842,7 +979,7 @@ export default function CommissionEntriesIndex({
                                                             </Badge>
                                                         )}
                                                     </TableCell>
-                                                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                                                    <TableCell className="text-sm whitespace-nowrap text-muted-foreground">
                                                         {formatDateTime(
                                                             entry.created_at,
                                                         )}
@@ -986,7 +1123,7 @@ export default function CommissionEntriesIndex({
                             </DataTableCardFilters>
 
                             <DataTableCardTable>
-                                <Table>
+                                <Table className="min-w-[900px]">
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>
@@ -1042,20 +1179,8 @@ export default function CommissionEntriesIndex({
                                         ) : (
                                             invoiceRows.map((invoice) => (
                                                 <TableRow key={invoice.id}>
-                                                    <TableCell>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                setPreviewInvoiceId(
-                                                                    invoice.id,
-                                                                )
-                                                            }
-                                                            className="rounded-sm font-medium underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
-                                                        >
-                                                            {
-                                                                invoice.invoice_number
-                                                            }
-                                                        </button>
+                                                    <TableCell className="font-mono text-sm font-medium whitespace-nowrap">
+                                                        {invoice.invoice_number}
                                                     </TableCell>
                                                     {isAdmin && (
                                                         <TableCell>
@@ -1079,7 +1204,7 @@ export default function CommissionEntriesIndex({
                                                                             )}
                                                                         </AvatarFallback>
                                                                     </Avatar>
-                                                                    <span className="whitespace-nowrap">
+                                                                    <span className="text-sm font-medium whitespace-nowrap">
                                                                         {
                                                                             invoice
                                                                                 .user
@@ -1100,97 +1225,53 @@ export default function CommissionEntriesIndex({
                                                             )}
                                                         </TableCell>
                                                     )}
-                                                    <TableCell className="whitespace-nowrap">
+                                                    <TableCell className="text-sm whitespace-nowrap text-muted-foreground">
                                                         {formatDateRange(
                                                             invoice.period_start,
                                                             invoice.period_end,
                                                         )}
                                                     </TableCell>
-                                                    <TableCell className="font-mono font-semibold tabular-nums">
-                                                        {money(
-                                                            invoice.total_amount,
-                                                        )}
+                                                    <TableCell className="text-sm whitespace-nowrap">
+                                                        <span className="font-mono font-semibold tabular-nums">
+                                                            {amount(
+                                                                Number(
+                                                                    invoice.total_amount,
+                                                                ),
+                                                            )}
+                                                        </span>
+                                                        <span className="ml-1 text-xs text-muted-foreground">
+                                                            MAD
+                                                        </span>
                                                     </TableCell>
                                                     <TableCell>
                                                         <Badge
                                                             variant="outline"
-                                                            className={`border-transparent ${invoiceStatusClasses[invoice.status]}`}
+                                                            className={`border-transparent ${invoicePayChip(invoice.status).className}`}
                                                         >
-                                                            {invoice.status}
+                                                            {t(
+                                                                invoicePayChip(
+                                                                    invoice.status,
+                                                                ).label,
+                                                            )}
                                                         </Badge>
                                                     </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center justify-end gap-2">
-                                                            {isAdmin &&
-                                                                invoice.status !==
-                                                                    'paid' && (
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="outline"
-                                                                        onClick={() =>
-                                                                            router.patch(
-                                                                                markInvoicePaid(
-                                                                                    invoice.id,
-                                                                                )
-                                                                                    .url,
-                                                                            )
-                                                                        }
-                                                                    >
-                                                                        {t(
-                                                                            'Mark as paid',
-                                                                        )}
-                                                                    </Button>
-                                                                )}
-                                                            {/* A real anchor, not
-                                                            a router call — the
-                                                            response is a file
-                                                            download, so an
-                                                            Inertia visit would
-                                                            get a PDF body it
-                                                            can't render. */}
-                                                            <Button
-                                                                size="sm"
-                                                                variant="ghost"
-                                                                onClick={() =>
-                                                                    setPreviewInvoiceId(
-                                                                        invoice.id,
-                                                                    )
-                                                                }
-                                                                aria-label={t(
-                                                                    'Preview invoice :number',
-                                                                    {
-                                                                        number: invoice.invoice_number,
-                                                                    },
-                                                                )}
-                                                            >
-                                                                <Eye />
-                                                                {t('Preview')}
-                                                            </Button>
-                                                            <Button
-                                                                asChild
-                                                                size="sm"
-                                                                variant="ghost"
-                                                            >
-                                                                <a
-                                                                    href={
-                                                                        downloadInvoice(
-                                                                            invoice.id,
-                                                                        ).url
-                                                                    }
-                                                                    aria-label={t(
-                                                                        'Download invoice :number',
-                                                                        {
-                                                                            number: invoice.invoice_number,
-                                                                        },
-                                                                    )}
-                                                                >
-                                                                    <Download />
-                                                                    {t(
-                                                                        'Download',
-                                                                    )}
-                                                                </a>
-                                                            </Button>
-                                                        </div>
+                                                    <TableCell className="text-right">
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className={
+                                                                ROW_ACTION
+                                                            }
+                                                            onClick={() =>
+                                                                setPreviewInvoiceId(
+                                                                    invoice.id,
+                                                                )
+                                                            }
+                                                        >
+                                                            <Eye />
+                                                            {t('View details')}
+                                                        </Button>
                                                     </TableCell>
                                                 </TableRow>
                                             ))
@@ -1220,111 +1301,226 @@ export default function CommissionEntriesIndex({
                     {isAdmin && (
                         <TabsContent value="agents" className="space-y-4 pt-4">
                             <DataTableCard>
+                                <div className="flex flex-wrap items-center gap-3 p-4">
+                                    <div className="relative w-full sm:w-72">
+                                        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                                        <Input
+                                            value={agentQuery}
+                                            onChange={(e) =>
+                                                setAgentQuery(e.target.value)
+                                            }
+                                            placeholder={t('Search agents…')}
+                                            className="h-9 rounded-md bg-card pr-3 pl-9 text-sm shadow-xs"
+                                        />
+                                    </div>
+                                    <Label className="ml-auto inline-flex cursor-pointer items-center gap-2 text-sm font-normal text-muted-foreground">
+                                        <Checkbox
+                                            checked={onlyWithBalance}
+                                            onCheckedChange={(checked) =>
+                                                setOnlyWithBalance(
+                                                    checked === true,
+                                                )
+                                            }
+                                        />
+                                        {t('Only agents with a balance')}
+                                    </Label>
+                                </div>
+
                                 <DataTableCardTable>
-                                    <Table>
+                                    <Table className="min-w-[820px]">
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>
-                                                    {t('Agent')}
+                                                    {agentSortHeader(
+                                                        t('Agent'),
+                                                        'name',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead>
-                                                    {t('Earned')}
+                                                    {agentSortHeader(
+                                                        t('Entries'),
+                                                        'entries',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead>
-                                                    {t('Paid')}
+                                                    {agentSortHeader(
+                                                        t('Earned'),
+                                                        'earned',
+                                                    )}
                                                 </TableHead>
                                                 <TableHead>
-                                                    {t('Pending payout')}
+                                                    {agentSortHeader(
+                                                        t('Pending'),
+                                                        'pending',
+                                                    )}
+                                                </TableHead>
+                                                <TableHead>
+                                                    {agentSortHeader(
+                                                        t('Last entry'),
+                                                        'last',
+                                                    )}
+                                                </TableHead>
+                                                <TableHead className="text-right">
+                                                    {t('Actions')}
                                                 </TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {agents.map((agent) => {
-                                                const totals = totalsByAgent[
-                                                    agent.id
-                                                ] ?? {
-                                                    earned: 0,
-                                                    paid: 0,
-                                                    pending: 0,
-                                                };
+                                            {agentRows.length === 0 ? (
+                                                <TableRow className="hover:bg-transparent">
+                                                    <TableCell
+                                                        colSpan={6}
+                                                        className="px-4 py-14 text-center text-sm text-muted-foreground"
+                                                    >
+                                                        {t(
+                                                            'No agents match this search.',
+                                                        )}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ) : (
+                                                agentRows.map((agent) => {
+                                                    // Zero balances must not
+                                                    // read as achievement.
+                                                    const idle =
+                                                        agent.earned === 0 &&
+                                                        agent.pending === 0;
 
-                                                return (
-                                                    <TableRow key={agent.id}>
-                                                        <TableCell>
-                                                            <div className="flex items-center gap-2.5">
-                                                                <Avatar className="size-7">
-                                                                    <AvatarImage
-                                                                        src={
-                                                                            agent.avatar ??
-                                                                            undefined
-                                                                        }
-                                                                        alt={
+                                                    return (
+                                                        <TableRow
+                                                            key={agent.id}
+                                                        >
+                                                            <TableCell>
+                                                                <div className="flex items-center gap-2.5">
+                                                                    <Avatar className="size-8 border border-border">
+                                                                        <AvatarImage
+                                                                            src={
+                                                                                agent.avatar ??
+                                                                                undefined
+                                                                            }
+                                                                            alt={
+                                                                                agent.name
+                                                                            }
+                                                                        />
+                                                                        <AvatarFallback className="bg-secondary text-[11px] font-semibold text-secondary-foreground">
+                                                                            {getInitials(
+                                                                                agent.name,
+                                                                            )}
+                                                                        </AvatarFallback>
+                                                                    </Avatar>
+                                                                    <span className="text-sm font-medium whitespace-nowrap">
+                                                                        {
                                                                             agent.name
                                                                         }
-                                                                    />
-                                                                    <AvatarFallback className="bg-secondary text-[11px] font-semibold text-secondary-foreground">
-                                                                        {getInitials(
-                                                                            agent.name,
-                                                                        )}
-                                                                    </AvatarFallback>
-                                                                </Avatar>
-                                                                <span className="font-medium whitespace-nowrap">
-                                                                    {agent.name}
-                                                                </span>
-                                                            </div>
-                                                        </TableCell>
-                                                        {(
-                                                            [
-                                                                [
-                                                                    totals.earned,
-                                                                    '',
-                                                                ],
-                                                                [
-                                                                    totals.paid,
-                                                                    'text-[#0C7D6F]',
-                                                                ],
-                                                                [
-                                                                    totals.pending,
-                                                                    totals.pending >
-                                                                    0
-                                                                        ? 'text-[#A87110]'
-                                                                        : '',
-                                                                ],
-                                                            ] as [
-                                                                number,
-                                                                string,
-                                                            ][]
-                                                        ).map(
-                                                            (
-                                                                [value, tone],
-                                                                i,
-                                                            ) => (
-                                                                <TableCell
-                                                                    key={i}
-                                                                    className="whitespace-nowrap"
-                                                                >
-                                                                    <span
-                                                                        className={cn(
-                                                                            'font-mono font-semibold tabular-nums',
-                                                                            tone,
-                                                                        )}
-                                                                    >
-                                                                        {amount(
-                                                                            value,
-                                                                        )}
-                                                                    </span>{' '}
-                                                                    <span className="text-xs text-muted-foreground">
-                                                                        MAD
                                                                     </span>
-                                                                </TableCell>
-                                                            ),
-                                                        )}
-                                                    </TableRow>
-                                                );
-                                            })}
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell
+                                                                className={cn(
+                                                                    'font-mono text-sm tabular-nums',
+                                                                    agent.entries ===
+                                                                        0 &&
+                                                                        'text-muted-foreground',
+                                                                )}
+                                                            >
+                                                                {agent.entries}
+                                                            </TableCell>
+                                                            {(
+                                                                [
+                                                                    [
+                                                                        agent.earned,
+                                                                        'text-[#0C7D6F] dark:text-[#4CC7B4]',
+                                                                    ],
+                                                                    [
+                                                                        agent.pending,
+                                                                        'text-[#A87110] dark:text-[#F3B95C]',
+                                                                    ],
+                                                                ] as [
+                                                                    number,
+                                                                    string,
+                                                                ][]
+                                                            ).map(
+                                                                (
+                                                                    [
+                                                                        value,
+                                                                        tone,
+                                                                    ],
+                                                                    i,
+                                                                ) => (
+                                                                    <TableCell
+                                                                        key={i}
+                                                                        className="text-sm whitespace-nowrap"
+                                                                    >
+                                                                        <span
+                                                                            className={cn(
+                                                                                'font-mono tabular-nums',
+                                                                                idle
+                                                                                    ? 'text-muted-foreground'
+                                                                                    : cn(
+                                                                                          'font-semibold',
+                                                                                          tone,
+                                                                                      ),
+                                                                            )}
+                                                                        >
+                                                                            {amount(
+                                                                                value,
+                                                                            )}
+                                                                        </span>
+                                                                        <span className="ml-1 text-xs text-muted-foreground">
+                                                                            MAD
+                                                                        </span>
+                                                                    </TableCell>
+                                                                ),
+                                                            )}
+                                                            <TableCell className="text-sm whitespace-nowrap text-muted-foreground">
+                                                                {agent.lastEntryAt
+                                                                    ? formatDate(
+                                                                          agent.lastEntryAt.replace(
+                                                                              ' ',
+                                                                              'T',
+                                                                          ),
+                                                                      )
+                                                                    : '—'}
+                                                            </TableCell>
+                                                            <TableCell className="text-right">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className={
+                                                                        ROW_ACTION
+                                                                    }
+                                                                    disabled={
+                                                                        agent.entries ===
+                                                                        0
+                                                                    }
+                                                                    onClick={() =>
+                                                                        viewAgentEntries(
+                                                                            agent.id,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <Eye />
+                                                                    {t(
+                                                                        'View entries',
+                                                                    )}
+                                                                </Button>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })
+                                            )}
                                         </TableBody>
                                     </Table>
                                 </DataTableCardTable>
+
+                                <DataTableCardFooter>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('Showing :shown of :total agents', {
+                                            shown: agentRows.length,
+                                            total: agents.length,
+                                        })}
+                                    </p>
+                                </DataTableCardFooter>
                             </DataTableCard>
                         </TabsContent>
                     )}
@@ -1404,9 +1600,9 @@ export default function CommissionEntriesIndex({
                 </AlertDialogContent>
             </AlertDialog>
 
-            <InvoicePreviewDialog
+            <InvoiceSheet
                 invoiceId={previewInvoiceId}
-                open={previewInvoiceId !== null}
+                canMarkPaid={isAdmin}
                 onOpenChange={(open) => !open && setPreviewInvoiceId(null)}
             />
         </>

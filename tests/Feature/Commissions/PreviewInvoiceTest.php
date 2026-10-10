@@ -42,6 +42,7 @@ test('admin previews an invoice with its line items', function () {
         ->assertOk()
         ->assertJsonPath('invoice_number', 'INV-PREVIEW-1')
         ->assertJsonPath('status', 'issued')
+        ->assertJsonPath('issued_at', fn ($date) => $date !== null)
         ->assertJsonPath('agent.name', $admin->name)
         ->assertJsonPath('entries.0.reference', 'ORD-PREVIEW-1')
         ->assertJsonCount(1, 'entries');

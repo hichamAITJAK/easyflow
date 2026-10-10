@@ -63,11 +63,16 @@ class CommissionEntryController extends Controller
             ->paginate($this->resolvePerPage($request))
             ->withQueryString();
 
-        // Running totals per agent must reflect every filtered entry, not just
-        // the current page, so they're aggregated separately from the paginated list.
-        $totals = $applyFilters(CommissionLedgerEntry::query())
+        // Per-agent totals behind the KPI tiles and the By agent tab. Taken
+        // over the whole ledger (an agent only ever sees their own), never
+        // the entries filters or the current page: the tiles must not shrink
+        // when a filter is set, and an agent's Entries count must equal what
+        // "View entries" lists once it clears every other filter.
+        $totals = CommissionLedgerEntry::query()
+            ->where('commission_ledger_entries.business_id', $user->business_id)
+            ->when(! $isAdmin, fn ($q) => $q->where('commission_ledger_entries.user_id', $user->id))
             ->leftJoin('invoices', 'invoices.id', '=', 'commission_ledger_entries.invoice_id')
-            ->selectRaw("commission_ledger_entries.user_id, sum(commission_ledger_entries.amount) as earned, sum(case when invoices.status = 'paid' then commission_ledger_entries.amount else 0 end) as paid")
+            ->selectRaw("commission_ledger_entries.user_id, count(*) as entries, sum(case when commission_ledger_entries.invoice_id is null then 1 else 0 end) as uninvoiced, max(commission_ledger_entries.created_at) as last_entry_at, sum(commission_ledger_entries.amount) as earned, sum(case when invoices.status = 'paid' then commission_ledger_entries.amount else 0 end) as paid")
             ->groupBy('commission_ledger_entries.user_id')
             // toBase(): these are synthetic aggregate rows (earned/paid),
             // not CommissionLedgerEntry models — hydrating them as models
@@ -139,6 +144,9 @@ class CommissionEntryController extends Controller
             'invoiceableCount' => $invoiceableCount,
             'invoiceableAgentCount' => $invoiceableAgentCount,
             'totalsByAgent' => $totals->map(fn ($row) => [
+                'entries' => (int) $row->entries,
+                'uninvoiced' => (int) $row->uninvoiced,
+                'last_entry_at' => $row->last_entry_at,
                 'earned' => (float) $row->earned,
                 'paid' => (float) $row->paid,
                 'pending' => (float) $row->earned - (float) $row->paid,
@@ -364,6 +372,7 @@ class CommissionEntryController extends Controller
             'status' => $invoice->status,
             'period_start' => $invoice->period_start->toDateString(),
             'period_end' => $invoice->period_end->toDateString(),
+            'issued_at' => $invoice->created_at?->toDateString(),
             'total_amount' => $invoice->total_amount,
             'notes' => $invoice->notes,
             'business_name' => $invoice->business?->name,
