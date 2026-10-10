@@ -252,6 +252,7 @@ export function RequestSheet({
             },
             {
                 preserveScroll: true,
+                only: ['queue'],
                 onStart: () => setProcessing(true),
                 onFinish: () => setProcessing(false),
                 onError: (e) => setErrors(e as Errors),
@@ -396,8 +397,11 @@ export function RequestDetailSheet({
         setProcessing(true);
         fn();
     };
-    const opts = (after?: () => void) => ({
+    // Each action names the props it changes; the server runs only those
+    // queries and the rest of the page keeps its state.
+    const opts = (only: string[], after?: () => void) => ({
         preserveScroll: true,
+        only,
         onFinish: () => setProcessing(false),
         onError: (e: Record<string, string>) => setErrors(e),
         onSuccess: () => {
@@ -451,7 +455,9 @@ export function RequestDetailSheet({
                                                 items: draftToItems(draft),
                                                 note,
                                             },
-                                            opts(() => setMode('view')),
+                                            opts(['queue'], () =>
+                                                setMode('view'),
+                                            ),
                                         ),
                                     )
                                 }
@@ -504,7 +510,7 @@ export function RequestDetailSheet({
                                 visit(() =>
                                     router.delete(
                                         destroyRequest(item.id).url,
-                                        opts(close),
+                                        opts(['queue'], close),
                                     ),
                                 )
                             }
@@ -598,7 +604,14 @@ export function RequestDetailSheet({
                                     router.post(
                                         validateRequest(item.id).url,
                                         { amount_mad: Number(amount) },
-                                        opts(close),
+                                        opts(
+                                            [
+                                                'queue',
+                                                'products',
+                                                'commissions',
+                                            ],
+                                            close,
+                                        ),
                                     ),
                                 )
                             }
@@ -617,7 +630,7 @@ export function RequestDetailSheet({
                                 router.post(
                                     requestEdits(item.id).url,
                                     { points },
-                                    opts(close),
+                                    opts(['queue'], close),
                                 ),
                             )
                         }

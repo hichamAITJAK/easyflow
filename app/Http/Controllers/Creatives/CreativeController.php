@@ -36,29 +36,11 @@ class CreativeController extends Controller
     {
         $businessId = $user->business_id;
 
-        $products = CreativeProduct::with(['editors:id,name'])
-            ->with(['requests' => fn ($q) => $q->where('status', ContentRequestStatus::VALIDATED)
-                ->with(['items', 'editor:id,name', 'commission:id,content_request_id,amount'])
-                ->orderByDesc('validated_at')])
-            ->orderByDesc('created_at')
-            ->get();
-
-        $queue = ContentRequest::where('status', '!=', ContentRequestStatus::VALIDATED)
-            ->with(['items', 'editor:id,name', 'product:id,name,kind,links,status'])
-            ->orderByDesc('created_at')
-            ->get();
-
-        $commissions = CommissionLedgerEntry::where('business_id', $businessId)
-            ->where('entry_type', 'creative')
-            ->with(['user:id,name', 'invoice:id,invoice_number,status', 'contentRequest:id,creative_product_id,validated_at', 'contentRequest.product:id,name'])
-            ->latest('created_at')
-            ->get();
-
-        $monthStart = Carbon::now()->startOfMonth();
-        $isPaid = fn (CommissionLedgerEntry $e) => $e->invoice?->status === 'paid';
-
+        // Every prop is a closure: a partial reload (`only: [...]`) after an
+        // action runs just the queries it asked for. Commissions are deferred
+        // — the page paints first, that tab fills in a second request.
         return Inertia::render('creatives/admin', [
-            'products' => $products->map(fn (CreativeProduct $p) => [
+            'products' => fn () => $this->adminProducts()->map(fn (CreativeProduct $p) => [
                 'id' => $p->id,
                 'name' => $p->name,
                 'kind' => $p->kind,
@@ -78,23 +60,14 @@ class CreativeController extends Controller
                     'drive_url' => $r->drive_url,
                 ])->values(),
             ])->values(),
-            'queue' => $queue->map(fn (ContentRequest $r) => $this->requestPayload($r))->values(),
-            'commissions' => [
-                'rows' => $commissions->map(fn (CommissionLedgerEntry $e) => [
-                    'id' => $e->id,
-                    'product' => $e->contentRequest?->product?->name ?? '—',
-                    'label' => $e->description,
-                    'editor' => $e->user?->name ?? __('Deleted editor'),
-                    'validated_at' => Carbon::parse($e->created_at)->toIso8601String(),
-                    'amount' => (int) round((float) $e->amount),
-                    'paid' => $isPaid($e),
-                    'invoice_number' => $e->invoice?->invoice_number,
-                ])->values(),
-                'pending' => (int) round((float) $commissions->reject($isPaid)->sum('amount')),
-                'paidThisMonth' => (int) round((float) $commissions->filter($isPaid)->filter(fn ($e) => Carbon::parse($e->created_at)->greaterThanOrEqualTo($monthStart))->sum('amount')),
-                'countThisMonth' => $commissions->filter(fn ($e) => Carbon::parse($e->created_at)->greaterThanOrEqualTo($monthStart))->count(),
-            ],
-            'editors' => User::where('business_id', $businessId)
+            'queue' => fn () => ContentRequest::where('status', '!=', ContentRequestStatus::VALIDATED)
+                ->with(['items', 'editor:id,name', 'product:id,name,kind,links,status'])
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(fn (ContentRequest $r) => $this->requestPayload($r))
+                ->values(),
+            'commissions' => Inertia::defer(fn () => $this->adminCommissions($businessId)),
+            'editors' => fn () => User::where('business_id', $businessId)
                 ->where('role', UserRole::CREATIVES_EDITOR)
                 ->orderBy('name')
                 ->get(['id', 'name'])
@@ -103,18 +76,79 @@ class CreativeController extends Controller
         ]);
     }
 
-    private function editorPage(User $editor): Response
+    private function adminProducts()
     {
-        $products = CreativeProduct::where('status', CreativeProductStatus::ACTIVE)
-            ->whereHas('editors', fn ($q) => $q->whereKey($editor->id))
-            ->orderBy('name')
-            ->get();
-
-        $requests = ContentRequest::where('editor_id', $editor->id)
-            ->with(['items', 'product:id,name,kind,links,status'])
+        return CreativeProduct::with(['editors:id,name'])
+            ->with(['requests' => fn ($q) => $q->where('status', ContentRequestStatus::VALIDATED)
+                ->with(['items', 'editor:id,name', 'commission:id,content_request_id,amount'])
+                ->orderByDesc('validated_at')])
             ->orderByDesc('created_at')
             ->get();
+    }
 
+    /** @return array<string, mixed> */
+    private function adminCommissions(int $businessId): array
+    {
+        $commissions = CommissionLedgerEntry::where('business_id', $businessId)
+            ->where('entry_type', 'creative')
+            ->with(['user:id,name', 'invoice:id,invoice_number,status', 'contentRequest:id,creative_product_id,validated_at', 'contentRequest.product:id,name'])
+            ->latest('created_at')
+            ->get();
+
+        $monthStart = Carbon::now()->startOfMonth();
+        $isPaid = fn (CommissionLedgerEntry $e) => $e->invoice?->status === 'paid';
+
+        return [
+            'rows' => $commissions->map(fn (CommissionLedgerEntry $e) => [
+                'id' => $e->id,
+                'product' => $e->contentRequest?->product?->name ?? '—',
+                'label' => $e->description,
+                'editor' => $e->user?->name ?? __('Deleted editor'),
+                'validated_at' => Carbon::parse($e->created_at)->toIso8601String(),
+                'amount' => (int) round((float) $e->amount),
+                'paid' => $isPaid($e),
+                'invoice_number' => $e->invoice?->invoice_number,
+            ])->values(),
+            'pending' => (int) round((float) $commissions->reject($isPaid)->sum('amount')),
+            'paidThisMonth' => (int) round((float) $commissions->filter($isPaid)->filter(fn ($e) => Carbon::parse($e->created_at)->greaterThanOrEqualTo($monthStart))->sum('amount')),
+            'countThisMonth' => $commissions->filter(fn ($e) => Carbon::parse($e->created_at)->greaterThanOrEqualTo($monthStart))->count(),
+        ];
+    }
+
+    private function editorPage(User $editor): Response
+    {
+        return Inertia::render('creatives/editor', [
+            'products' => fn () => CreativeProduct::where('status', CreativeProductStatus::ACTIVE)
+                ->whereHas('editors', fn ($q) => $q->whereKey($editor->id))
+                ->orderBy('name')
+                ->get()
+                ->map(fn (CreativeProduct $p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'kind' => $p->kind,
+                    'links' => $p->links,
+                    'description' => $p->description,
+                    'works_count' => $p->works_count,
+                    'last_push_at' => $p->last_push_at?->toIso8601String(),
+                ])->values(),
+            'requests' => fn () => ContentRequest::where('editor_id', $editor->id)
+                ->with(['items', 'product:id,name,kind,links,status'])
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(fn (ContentRequest $r) => $this->requestPayload($r))
+                ->values(),
+            'commissions' => Inertia::defer(fn () => $this->editorCommissions($editor)),
+            // The editor's screen names the person who reviews their work.
+            'admin' => fn () => User::where('business_id', $editor->business_id)
+                ->where('role', UserRole::ADMIN)
+                ->orderBy('id')
+                ->value('name') ?? __('your admin'),
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function editorCommissions(User $editor): array
+    {
         $entries = CommissionLedgerEntry::where('business_id', $editor->business_id)
             ->where('user_id', $editor->id)
             ->where('entry_type', 'creative')
@@ -126,38 +160,19 @@ class CreativeController extends Controller
         $isPaid = fn (CommissionLedgerEntry $e) => $e->invoice?->status === 'paid';
         $thisMonth = fn (CommissionLedgerEntry $e) => Carbon::parse($e->created_at)->greaterThanOrEqualTo($monthStart);
 
-        // The editor's screen names the person who reviews their work.
-        $admin = User::where('business_id', $editor->business_id)
-            ->where('role', UserRole::ADMIN)
-            ->orderBy('id')
-            ->value('name');
-
-        return Inertia::render('creatives/editor', [
-            'products' => $products->map(fn (CreativeProduct $p) => [
-                'id' => $p->id,
-                'name' => $p->name,
-                'kind' => $p->kind,
-                'links' => $p->links,
-                'description' => $p->description,
-                'works_count' => $p->works_count,
-                'last_push_at' => $p->last_push_at?->toIso8601String(),
+        return [
+            'rows' => $entries->map(fn (CommissionLedgerEntry $e) => [
+                'id' => $e->id,
+                'product' => $e->contentRequest?->product?->name ?? '—',
+                'label' => $e->description,
+                'validated_at' => Carbon::parse($e->created_at)->toIso8601String(),
+                'amount' => (int) round((float) $e->amount),
+                'paid' => $isPaid($e),
             ])->values(),
-            'requests' => $requests->map(fn (ContentRequest $r) => $this->requestPayload($r))->values(),
-            'commissions' => [
-                'rows' => $entries->map(fn (CommissionLedgerEntry $e) => [
-                    'id' => $e->id,
-                    'product' => $e->contentRequest?->product?->name ?? '—',
-                    'label' => $e->description,
-                    'validated_at' => Carbon::parse($e->created_at)->toIso8601String(),
-                    'amount' => (int) round((float) $e->amount),
-                    'paid' => $isPaid($e),
-                ])->values(),
-                'pending' => (int) round((float) $entries->reject($isPaid)->sum('amount')),
-                'paidThisMonth' => (int) round((float) $entries->filter($isPaid)->filter($thisMonth)->sum('amount')),
-                'countThisMonth' => $entries->filter($thisMonth)->count(),
-            ],
-            'admin' => $admin ?? __('your admin'),
-        ]);
+            'pending' => (int) round((float) $entries->reject($isPaid)->sum('amount')),
+            'paidThisMonth' => (int) round((float) $entries->filter($isPaid)->filter($thisMonth)->sum('amount')),
+            'countThisMonth' => $entries->filter($thisMonth)->count(),
+        ];
     }
 
     /** @return array<string, mixed> */

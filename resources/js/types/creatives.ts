@@ -71,7 +71,8 @@ export type CommissionRow = {
 export type AdminCreativesProps = {
     products: CreativeProduct[];
     queue: QueueItem[];
-    commissions: {
+    /** Deferred: absent on first paint, filled by a second request. */
+    commissions?: {
         rows: CommissionRow[];
         pending: number;
         paidThisMonth: number;

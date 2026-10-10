@@ -7,6 +7,7 @@ use App\Models\ContentRequest;
 use App\Models\CreativeProduct;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Inertia;
 
 uses(RefreshDatabase::class);
 
@@ -17,6 +18,17 @@ function creativesSetup(): array
     $other = User::factory()->creativesEditor()->create(['business_id' => $admin->business_id, 'name' => 'Imane C.']);
 
     return [$admin, $editor, $other];
+}
+
+/** Commissions are a deferred prop: the browser asks for them in a partial reload. */
+function creativesPartial(string $component, array $only): array
+{
+    return [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => (string) Inertia::getVersion(),
+        'X-Inertia-Partial-Component' => $component,
+        'X-Inertia-Partial-Data' => implode(',', $only),
+    ];
 }
 
 test('an admin creates a product and orders content: one sent row per editor', function () {
@@ -126,8 +138,13 @@ test('the queue state machine: push → edits → resubmit → validate writes t
         ->assertInertia(fn ($page) => $page
             ->has('queue', 0)
             ->where('products.0.history.0.amount', 150)
-            ->where('commissions.pending', 150)
-            ->where('commissions.rows.0.label', 'Posture Pro · Videos ×3'));
+            ->missing('commissions'));
+
+    $this->actingAs($admin)->get(route('creatives.index'), creativesPartial('creatives/admin', ['commissions']))
+        ->assertOk()
+        ->assertJsonPath('props.commissions.pending', 150)
+        ->assertJsonPath('props.commissions.rows.0.label', 'Posture Pro · Videos ×3')
+        ->assertJsonMissingPath('props.queue');
 
     // It shows up on the shared Commissions page for both of them.
     $this->actingAs($editor)->get(route('commission-entries.index'))
@@ -200,6 +217,8 @@ test('an admin marks a creative pay row paid from the Creatives tab', function (
     $this->actingAs($admin)->put(route('creatives.commissions.pay', $entry))->assertStatus(422);
     $this->actingAs($editor)->put(route('creatives.commissions.pay', $entry))->assertForbidden();
 
-    $this->actingAs($admin)->get(route('creatives.index'))
-        ->assertInertia(fn ($page) => $page->where('commissions.rows.0.paid', true)->where('commissions.pending', 0)->etc());
+    $this->actingAs($admin)->get(route('creatives.index'), creativesPartial('creatives/admin', ['commissions']))
+        ->assertOk()
+        ->assertJsonPath('props.commissions.rows.0.paid', true)
+        ->assertJsonPath('props.commissions.pending', 0);
 });

@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Deferred, Head, router, usePoll } from '@inertiajs/react';
 import { Plus, Send } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -26,6 +26,7 @@ import {
     isStale,
 } from '@/components/creatives/ui';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatDate } from '@/lib/format';
@@ -187,6 +188,12 @@ export default function CreativesAdmin({
     editors,
 }: AdminCreativesProps) {
     const { t } = useTranslation();
+
+    // Editors push content on their own clock: refresh the review queue
+    // every 30s (paused while the tab is hidden) so "returned" rows and
+    // the badge arrive without touching the page.
+    usePoll(30_000, { only: ['queue'] });
+
     const [space, setSpace] = useState<Space>('test');
     const [newOpen, setNewOpen] = useState(false);
     const [requestOpen, setRequestOpen] = useState(false);
@@ -487,143 +494,170 @@ export default function CreativesAdmin({
                     </TabsContent>
 
                     <TabsContent value="commissions" className="pt-4">
-                        <div className="rounded-xl border border-border bg-card shadow-xs">
-                            <div className="flex flex-wrap items-center justify-between gap-4 p-6 pb-4">
-                                <div>
-                                    <h2 className="text-lg font-semibold tracking-tight">
-                                        {t('Commissions')}
-                                    </h2>
-                                    <p className="mt-0.5 text-sm text-muted-foreground">
-                                        {t(
-                                            'Validated workloads and what they pay — invoice and pay them from the Commissions page.',
-                                        )}
-                                    </p>
-                                </div>
-                                <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
-                                    <span>
-                                        {t('Pending')}{' '}
-                                        <Money
-                                            value={commissions.pending}
-                                            className="text-base text-[#A87110]"
-                                        />
-                                    </span>
-                                    <span>
-                                        {t('Paid this month')}{' '}
-                                        <Money
-                                            value={commissions.paidThisMonth}
-                                            className="text-base text-[#0C7D6F]"
-                                        />
-                                    </span>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            router.get(commissionsIndex().url)
-                                        }
-                                    >
-                                        {t('Open Commissions')}
-                                    </Button>
-                                </div>
-                            </div>
-                            <div className="max-h-[420px] overflow-x-auto overflow-y-auto border-t border-border">
-                                <table className="w-full text-sm">
-                                    <thead className="sticky top-0 z-10 bg-card">
-                                        <tr className="border-b border-border">
-                                            <Th>{t('Workload')}</Th>
-                                            <Th>{t('Editor')}</Th>
-                                            <Th>{t('Validated')}</Th>
-                                            <Th>{t('Commission')}</Th>
-                                            <Th>{t('Status')}</Th>
-                                            <Th />
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {commissions.rows.map((c) => (
-                                            <tr
-                                                key={c.id}
-                                                className="border-b border-border last:border-0 hover:bg-muted/40"
+                        <Deferred
+                            data="commissions"
+                            fallback={<CommissionsSkeleton />}
+                        >
+                            {commissions && (
+                                <div className="rounded-xl border border-border bg-card shadow-xs">
+                                    <div className="flex flex-wrap items-center justify-between gap-4 p-6 pb-4">
+                                        <div>
+                                            <h2 className="text-lg font-semibold tracking-tight">
+                                                {t('Commissions')}
+                                            </h2>
+                                            <p className="mt-0.5 text-sm text-muted-foreground">
+                                                {t(
+                                                    'Validated workloads and what they pay — invoice and pay them from the Commissions page.',
+                                                )}
+                                            </p>
+                                        </div>
+                                        <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
+                                            <span>
+                                                {t('Pending')}{' '}
+                                                <Money
+                                                    value={commissions.pending}
+                                                    className="text-base text-[#A87110]"
+                                                />
+                                            </span>
+                                            <span>
+                                                {t('Paid this month')}{' '}
+                                                <Money
+                                                    value={
+                                                        commissions.paidThisMonth
+                                                    }
+                                                    className="text-base text-[#0C7D6F]"
+                                                />
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                    router.get(
+                                                        commissionsIndex().url,
+                                                    )
+                                                }
                                             >
-                                                <td className="px-4 py-4 first:pl-6">
-                                                    <p className="truncate font-semibold">
-                                                        {c.product}
-                                                    </p>
-                                                    <p className="truncate text-xs text-muted-foreground">
-                                                        {c.label}
-                                                    </p>
-                                                </td>
-                                                <td className="px-4 py-4">
-                                                    {c.editor}
-                                                </td>
-                                                <td className="px-4 py-4 text-muted-foreground">
-                                                    {formatDate(c.validated_at)}
-                                                </td>
-                                                <td className="px-4 py-4">
-                                                    <Money value={c.amount} />
-                                                </td>
-                                                <td className="px-4 py-4 pr-6">
-                                                    {c.paid ? (
-                                                        <span className="rounded-full bg-[#16A08E]/10 px-2.5 py-1 text-xs font-semibold text-[#0C7D6F]">
-                                                            {t('Paid')}
-                                                        </span>
-                                                    ) : c.invoice_number ? (
-                                                        <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground">
-                                                            {c.invoice_number}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="rounded-full bg-[#EFA22C]/12 px-2.5 py-1 text-xs font-semibold text-[#A87110]">
-                                                            {t('Pending')}
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="px-4 py-4 pr-6 text-right">
-                                                    {!c.paid && (
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                router.put(
-                                                                    payCommission(
-                                                                        c.id,
-                                                                    ).url,
-                                                                    {},
+                                                {t('Open Commissions')}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <div className="max-h-[420px] overflow-x-auto overflow-y-auto border-t border-border">
+                                        <table className="w-full text-sm">
+                                            <thead className="sticky top-0 z-10 bg-card">
+                                                <tr className="border-b border-border">
+                                                    <Th>{t('Workload')}</Th>
+                                                    <Th>{t('Editor')}</Th>
+                                                    <Th>{t('Validated')}</Th>
+                                                    <Th>{t('Commission')}</Th>
+                                                    <Th>{t('Status')}</Th>
+                                                    <Th />
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {commissions.rows.map((c) => (
+                                                    <tr
+                                                        key={c.id}
+                                                        className="border-b border-border last:border-0 hover:bg-muted/40"
+                                                    >
+                                                        <td className="px-4 py-4 first:pl-6">
+                                                            <p className="truncate font-semibold">
+                                                                {c.product}
+                                                            </p>
+                                                            <p className="truncate text-xs text-muted-foreground">
+                                                                {c.label}
+                                                            </p>
+                                                        </td>
+                                                        <td className="px-4 py-4">
+                                                            {c.editor}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-muted-foreground">
+                                                            {formatDate(
+                                                                c.validated_at,
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-4">
+                                                            <Money
+                                                                value={c.amount}
+                                                            />
+                                                        </td>
+                                                        <td className="px-4 py-4 pr-6">
+                                                            {c.paid ? (
+                                                                <span className="rounded-full bg-[#16A08E]/10 px-2.5 py-1 text-xs font-semibold text-[#0C7D6F]">
+                                                                    {t('Paid')}
+                                                                </span>
+                                                            ) : c.invoice_number ? (
+                                                                <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground">
                                                                     {
-                                                                        preserveScroll: true,
-                                                                    },
-                                                                )
-                                                            }
+                                                                        c.invoice_number
+                                                                    }
+                                                                </span>
+                                                            ) : (
+                                                                <span className="rounded-full bg-[#EFA22C]/12 px-2.5 py-1 text-xs font-semibold text-[#A87110]">
+                                                                    {t(
+                                                                        'Pending',
+                                                                    )}
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-4 pr-6 text-right">
+                                                            {!c.paid && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() =>
+                                                                        router.put(
+                                                                            payCommission(
+                                                                                c.id,
+                                                                            )
+                                                                                .url,
+                                                                            {},
+                                                                            {
+                                                                                preserveScroll: true,
+                                                                                only: [
+                                                                                    'commissions',
+                                                                                ],
+                                                                            },
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {t(
+                                                                        'Mark paid',
+                                                                    )}
+                                                                </Button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {!commissions.rows.length && (
+                                                    <tr>
+                                                        <td
+                                                            colSpan={6}
+                                                            className="px-6 py-10 text-center text-sm text-muted-foreground"
                                                         >
-                                                            {t('Mark paid')}
-                                                        </Button>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {!commissions.rows.length && (
-                                            <tr>
-                                                <td
-                                                    colSpan={6}
-                                                    className="px-6 py-10 text-center text-sm text-muted-foreground"
-                                                >
-                                                    {t(
-                                                        'No validated workloads yet.',
-                                                    )}
-                                                </td>
-                                            </tr>
+                                                            {t(
+                                                                'No validated workloads yet.',
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="border-t border-border px-6 py-3 text-xs text-muted-foreground">
+                                        {t(
+                                            commissions.countThisMonth === 1
+                                                ? ':count workload this month'
+                                                : ':count workloads this month',
+                                            {
+                                                count: commissions.countThisMonth,
+                                            },
                                         )}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div className="border-t border-border px-6 py-3 text-xs text-muted-foreground">
-                                {t(
-                                    commissions.countThisMonth === 1
-                                        ? ':count workload this month'
-                                        : ':count workloads this month',
-                                    { count: commissions.countThisMonth },
-                                )}
-                            </div>
-                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </Deferred>
                     </TabsContent>
                 </Tabs>
             </div>
@@ -663,3 +697,21 @@ CreativesAdmin.layout = {
         { title: 'Creatives', href: '/creatives' },
     ],
 };
+
+function CommissionsSkeleton() {
+    return (
+        <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="mt-2 h-4 w-72" />
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <Skeleton className="h-20" />
+                <Skeleton className="h-20" />
+            </div>
+            <div className="mt-6 space-y-3">
+                <Skeleton className="h-10" />
+                <Skeleton className="h-10" />
+                <Skeleton className="h-10" />
+            </div>
+        </div>
+    );
+}

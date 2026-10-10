@@ -1,4 +1,4 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Deferred, Head, router, usePage, usePoll } from '@inertiajs/react';
 import { Eye, ExternalLink, Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -27,6 +27,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/use-translation';
@@ -60,7 +61,8 @@ type CommissionRow = {
 type Props = {
     products: EditorProduct[];
     requests: QueueItem[];
-    commissions: {
+    /** Deferred: absent on first paint, filled by a second request. */
+    commissions?: {
         rows: CommissionRow[];
         pending: number;
         paidThisMonth: number;
@@ -383,6 +385,7 @@ function PushSheet({
             method: update ? 'put' : 'post',
             data: { drive_url: driveUrl, note },
             preserveScroll: true,
+            only: ['requests'],
             onFinish: () => setProcessing(false),
             onError: (e) => setErrors(e as Errors),
             onSuccess: () => onOpenChange(false),
@@ -518,6 +521,7 @@ function SelfPushSheet({
             },
             {
                 preserveScroll: true,
+                only: ['requests'],
                 onFinish: () => setProcessing(false),
                 onError: (e) => setErrors(e as Errors),
                 onSuccess: () => {
@@ -673,6 +677,10 @@ export default function CreativesEditor({
     const { t } = useTranslation();
     const { auth } = usePage<PageProps>().props;
     const firstName = auth.user?.name?.split(' ')[0] ?? '';
+
+    // New requests and edit notes from the admin land every 30s without a
+    // reload (paused while the tab is hidden).
+    usePoll(30_000, { only: ['requests'] });
 
     const [space, setSpace] = useState<Space>('products');
     const [briefId, setBriefId] = useState<number | null>(null);
@@ -1043,102 +1051,119 @@ export default function CreativesEditor({
                     </TabsContent>
 
                     <TabsContent value="commissions" className="pt-4">
-                        <div className="rounded-xl border border-border bg-card shadow-xs">
-                            <div className="flex flex-wrap items-center justify-between gap-4 p-6 pb-4">
-                                <div>
-                                    <h2 className="text-lg font-semibold tracking-tight">
-                                        {t('My commissions')}
-                                    </h2>
-                                    <p className="mt-0.5 text-sm text-muted-foreground">
+                        <Deferred
+                            data="commissions"
+                            fallback={<CommissionsSkeleton />}
+                        >
+                            {commissions && (
+                                <div className="rounded-xl border border-border bg-card shadow-xs">
+                                    <div className="flex flex-wrap items-center justify-between gap-4 p-6 pb-4">
+                                        <div>
+                                            <h2 className="text-lg font-semibold tracking-tight">
+                                                {t('My commissions')}
+                                            </h2>
+                                            <p className="mt-0.5 text-sm text-muted-foreground">
+                                                {t(
+                                                    'Validated workloads and what they pay you.',
+                                                )}
+                                            </p>
+                                        </div>
+                                        <div className="flex gap-6 text-sm text-muted-foreground">
+                                            <span>
+                                                {t('Pending')}{' '}
+                                                <Money
+                                                    value={commissions.pending}
+                                                    className="text-base text-[#A87110]"
+                                                />
+                                            </span>
+                                            <span>
+                                                {t('Paid this month')}{' '}
+                                                <Money
+                                                    value={
+                                                        commissions.paidThisMonth
+                                                    }
+                                                    className="text-base text-[#0C7D6F]"
+                                                />
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="max-h-[420px] overflow-x-auto overflow-y-auto border-t border-border">
+                                        <table className="w-full text-sm">
+                                            <thead className="sticky top-0 z-10 bg-card">
+                                                <tr className="border-b border-border">
+                                                    <Th>{t('Workload')}</Th>
+                                                    <Th>{t('Validated')}</Th>
+                                                    <Th>{t('Commission')}</Th>
+                                                    <Th>{t('Status')}</Th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {commissions.rows.map((c) => (
+                                                    <tr
+                                                        key={c.id}
+                                                        className="border-b border-border last:border-0 hover:bg-muted/40"
+                                                    >
+                                                        <td className="px-4 py-4 first:pl-6">
+                                                            <p className="truncate font-semibold">
+                                                                {c.product}
+                                                            </p>
+                                                            <p className="truncate text-xs text-muted-foreground">
+                                                                {c.label}
+                                                            </p>
+                                                        </td>
+                                                        <td className="px-4 py-4 text-muted-foreground">
+                                                            {formatDate(
+                                                                c.validated_at,
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-4">
+                                                            <Money
+                                                                value={c.amount}
+                                                            />
+                                                        </td>
+                                                        <td className="px-4 py-4 pr-6">
+                                                            {c.paid ? (
+                                                                <span className="rounded-full bg-[#16A08E]/10 px-2.5 py-1 text-xs font-semibold text-[#0C7D6F]">
+                                                                    {t('Paid')}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="rounded-full bg-[#EFA22C]/12 px-2.5 py-1 text-xs font-semibold text-[#A87110]">
+                                                                    {t(
+                                                                        'Pending',
+                                                                    )}
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {!commissions.rows.length && (
+                                                    <tr>
+                                                        <td
+                                                            colSpan={4}
+                                                            className="px-6 py-10 text-center text-sm text-muted-foreground"
+                                                        >
+                                                            {t(
+                                                                'No validated workloads yet.',
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="border-t border-border px-6 py-3 text-xs text-muted-foreground">
                                         {t(
-                                            'Validated workloads and what they pay you.',
+                                            commissions.countThisMonth === 1
+                                                ? ':count validated workload this month'
+                                                : ':count validated workloads this month',
+                                            {
+                                                count: commissions.countThisMonth,
+                                            },
                                         )}
-                                    </p>
+                                    </div>
                                 </div>
-                                <div className="flex gap-6 text-sm text-muted-foreground">
-                                    <span>
-                                        {t('Pending')}{' '}
-                                        <Money
-                                            value={commissions.pending}
-                                            className="text-base text-[#A87110]"
-                                        />
-                                    </span>
-                                    <span>
-                                        {t('Paid this month')}{' '}
-                                        <Money
-                                            value={commissions.paidThisMonth}
-                                            className="text-base text-[#0C7D6F]"
-                                        />
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="max-h-[420px] overflow-x-auto overflow-y-auto border-t border-border">
-                                <table className="w-full text-sm">
-                                    <thead className="sticky top-0 z-10 bg-card">
-                                        <tr className="border-b border-border">
-                                            <Th>{t('Workload')}</Th>
-                                            <Th>{t('Validated')}</Th>
-                                            <Th>{t('Commission')}</Th>
-                                            <Th>{t('Status')}</Th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {commissions.rows.map((c) => (
-                                            <tr
-                                                key={c.id}
-                                                className="border-b border-border last:border-0 hover:bg-muted/40"
-                                            >
-                                                <td className="px-4 py-4 first:pl-6">
-                                                    <p className="truncate font-semibold">
-                                                        {c.product}
-                                                    </p>
-                                                    <p className="truncate text-xs text-muted-foreground">
-                                                        {c.label}
-                                                    </p>
-                                                </td>
-                                                <td className="px-4 py-4 text-muted-foreground">
-                                                    {formatDate(c.validated_at)}
-                                                </td>
-                                                <td className="px-4 py-4">
-                                                    <Money value={c.amount} />
-                                                </td>
-                                                <td className="px-4 py-4 pr-6">
-                                                    {c.paid ? (
-                                                        <span className="rounded-full bg-[#16A08E]/10 px-2.5 py-1 text-xs font-semibold text-[#0C7D6F]">
-                                                            {t('Paid')}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="rounded-full bg-[#EFA22C]/12 px-2.5 py-1 text-xs font-semibold text-[#A87110]">
-                                                            {t('Pending')}
-                                                        </span>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {!commissions.rows.length && (
-                                            <tr>
-                                                <td
-                                                    colSpan={4}
-                                                    className="px-6 py-10 text-center text-sm text-muted-foreground"
-                                                >
-                                                    {t(
-                                                        'No validated workloads yet.',
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div className="border-t border-border px-6 py-3 text-xs text-muted-foreground">
-                                {t(
-                                    commissions.countThisMonth === 1
-                                        ? ':count validated workload this month'
-                                        : ':count validated workloads this month',
-                                    { count: commissions.countThisMonth },
-                                )}
-                            </div>
-                        </div>
+                            )}
+                        </Deferred>
                     </TabsContent>
                 </Tabs>
             </div>
@@ -1176,3 +1201,21 @@ CreativesEditor.layout = {
         { title: 'Creatives', href: '/creatives' },
     ],
 };
+
+function CommissionsSkeleton() {
+    return (
+        <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="mt-2 h-4 w-72" />
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <Skeleton className="h-20" />
+                <Skeleton className="h-20" />
+            </div>
+            <div className="mt-6 space-y-3">
+                <Skeleton className="h-10" />
+                <Skeleton className="h-10" />
+                <Skeleton className="h-10" />
+            </div>
+        </div>
+    );
+}

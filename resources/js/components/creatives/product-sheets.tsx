@@ -176,6 +176,7 @@ export function NewProductSheet({
             },
             {
                 preserveScroll: true,
+                only: ['products'],
                 onStart: () => setProcessing(true),
                 onFinish: () => setProcessing(false),
                 onError: (e) => setErrors(e as Errors),
@@ -339,6 +340,7 @@ export function BriefSheet({
             },
             {
                 preserveScroll: true,
+                only: ['products', 'queue'],
                 onStart: () => setProcessing(true),
                 onFinish: () => setProcessing(false),
                 onError: (e) => setErrors(e as Errors),
@@ -538,6 +540,6 @@ export function setProductStatus(
     router.put(
         productStatus(product.id).url,
         { status },
-        { preserveScroll: true },
+        { preserveScroll: true, only: ['products', 'queue'] },
     );
 }
