@@ -5,6 +5,8 @@ export type CatalogPlatform = {
     slug: string;
     description: string | null;
     logo_url: string | null;
+    /** The repo-shipped icon for this slug, when one exists. */
+    default_logo_url?: string | null;
     stores_count: number;
     created_at: string;
 };

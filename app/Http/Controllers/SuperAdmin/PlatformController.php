@@ -36,8 +36,20 @@ class PlatformController extends Controller
             ->get(['id', 'name', 'slug', 'description', 'logo_url', 'created_at']);
 
         return Inertia::render('super-admin/platforms/index', [
-            'platforms' => $platforms,
+            'platforms' => $platforms->map(fn (EcommercePlatform $platform) => [
+                ...$platform->toArray(),
+                // The icon that ships with the repo for this slug, so a card
+                // always has a logo even when none was uploaded.
+                'default_logo_url' => $this->defaultLogo($platform->slug),
+            ])->values(),
         ]);
+    }
+
+    private function defaultLogo(string $slug): ?string
+    {
+        $path = 'assets/images/'.strtolower($slug).'_icon.png';
+
+        return file_exists(public_path($path)) ? asset($path) : null;
     }
 
     public function edit(EcommercePlatform $platform): Response
