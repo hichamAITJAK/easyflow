@@ -113,11 +113,8 @@ export interface DashboardProps {
         deliveredUnpaid: number;
         lastSettlement: {
             status: 'matched' | 'difference';
-            /** Received − expected: negative means the courier paid less. */
+            /** The latest shortfall (negative): the courier paid less. */
             differenceMad: number;
-            expectedMad: number;
-            actualMad: number;
-            courier: string | null;
         } | null;
     };
     parcels: {
@@ -828,42 +825,16 @@ function FinanceRow({
                                     ) : (
                                         <p
                                             className="mt-0.5 inline-flex items-center gap-1.5 font-mono text-sm font-semibold tabular-nums"
-                                            style={{
-                                                color:
-                                                    settled.differenceMad < 0
-                                                        ? C.redText
-                                                        : C.greenText,
-                                            }}
+                                            style={{ color: C.redText }}
                                         >
-                                            {settled.differenceMad < 0 ? (
-                                                <TriangleAlert className="size-4" />
-                                            ) : (
-                                                <CheckCircle2 className="size-4" />
-                                            )}
-                                            {settled.differenceMad < 0
-                                                ? '−'
-                                                : '+'}
+                                            <TriangleAlert className="size-4" />
+                                            −
                                             {money2(
                                                 Math.abs(settled.differenceMad),
                                             )}{' '}
                                             MAD
                                         </p>
                                     )}
-                                    <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-                                        {t(
-                                            'Received :actual of :expected MAD',
-                                            {
-                                                actual: money2(
-                                                    settled.actualMad,
-                                                ),
-                                                expected: money2(
-                                                    settled.expectedMad,
-                                                ),
-                                            },
-                                        )}
-                                        {settled.courier &&
-                                            ` · ${settled.courier}`}
-                                    </p>
                                 </>
                             )}
                         </div>

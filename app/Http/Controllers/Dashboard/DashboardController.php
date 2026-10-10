@@ -457,26 +457,28 @@ class DashboardController extends Controller
                 ->whereColumn('courier_settlements.period_end', '>=', 'orders.shipped_at'))
             ->count();
 
-        $last = CourierSettlement::where('business_id', $businessId)
-            ->where('status', '!=', 'pending')
-            ->with('deliveryAccount.courier:id,name')
+        $closed = CourierSettlement::where('business_id', $businessId)
+            ->where('status', '!=', 'pending');
+
+        // Only a shortfall is worth flagging here: the latest settlement
+        // where the courier sent less than it owed. An overpayment or a
+        // match reads as "all good".
+        $lastShort = (clone $closed)
+            ->where('difference_amount', '<=', -CourierSettlementService::MATCH_TOLERANCE_MAD)
             ->latest('period_end')
             ->first();
-
-        $difference = $last === null ? 0.0 : (float) $last->difference_amount;
 
         return [
             'toReceiveMad' => round($toReceive, 2),
             'deliveredUnpaid' => $deliveredUnpaid,
-            'lastSettlement' => $last === null
-                ? null
-                : [
-                    'status' => abs($difference) < CourierSettlementService::MATCH_TOLERANCE_MAD ? 'matched' : 'difference',
-                    'differenceMad' => round($difference, 2),
-                    'expectedMad' => round((float) $last->expected_amount, 2),
-                    'actualMad' => round((float) $last->actual_amount, 2),
-                    'courier' => $last->deliveryAccount?->courier?->name ?? $last->deliveryAccount?->label,
+            'lastSettlement' => match (true) {
+                $lastShort !== null => [
+                    'status' => 'difference',
+                    'differenceMad' => round((float) $lastShort->difference_amount, 2),
                 ],
+                $closed->exists() => ['status' => 'matched', 'differenceMad' => 0.0],
+                default => null,
+            },
         ];
     }
 
