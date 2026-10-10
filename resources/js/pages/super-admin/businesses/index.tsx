@@ -144,7 +144,10 @@ export default function SuperAdminBusinessesIndex({
                         title={t('Businesses')}
                         description={t('Every tenant onboarded onto EasyFlow.')}
                     />
-                    <Button asChild>
+                    <Button
+                        asChild
+                        className="h-10 rounded-lg px-4 text-sm font-semibold hover:opacity-90"
+                    >
                         <Link href={createBusiness()}>
                             <Plus />
                             {t('Add business')}
@@ -152,11 +155,11 @@ export default function SuperAdminBusinessesIndex({
                     </Button>
                 </div>
 
-                <DataTableCard>
+                <DataTableCard className="rounded-xl border border-border bg-card shadow-xs">
                     <DataTableCardToolbar>
                         <div className="flex flex-wrap items-center gap-2">
                             <Input
-                                className="w-full max-w-sm sm:w-64"
+                                className="h-9 w-full max-w-sm rounded-md border-input bg-card text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20 sm:w-72"
                                 placeholder={t('Search by name or slug…')}
                                 value={search}
                                 onChange={(event) =>
@@ -176,19 +179,23 @@ export default function SuperAdminBusinessesIndex({
                                 }
                             >
                                 <SelectTrigger
-                                    className="w-36"
+                                    className="h-9 w-36 rounded-md border-input bg-card text-sm shadow-xs hover:bg-accent"
                                     aria-label={t('Filter by status')}
                                 >
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value={ANY_STATUS}>
+                                <SelectContent className="rounded-md border-border bg-popover shadow-md">
+                                    <SelectItem
+                                        value={ANY_STATUS}
+                                        className="rounded-sm px-2 py-1.5 text-sm"
+                                    >
                                         {t('Any status')}
                                     </SelectItem>
                                     {STATUS_OPTIONS.map((option) => (
                                         <SelectItem
                                             key={option.value}
                                             value={option.value}
+                                            className="rounded-sm px-2 py-1.5 text-sm"
                                         >
                                             {t(option.label)}
                                         </SelectItem>
@@ -235,7 +242,7 @@ export default function SuperAdminBusinessesIndex({
                         />
                     </DataTableCardTable>
 
-                    <DataTableCardFooter>
+                    <DataTableCardFooter className="px-6 py-3 text-xs text-muted-foreground">
                         <DataTablePaginationServer paginated={businesses} />
                     </DataTableCardFooter>
                 </DataTableCard>

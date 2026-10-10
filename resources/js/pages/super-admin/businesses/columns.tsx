@@ -24,9 +24,8 @@ import type { Business, BusinessFilters, BusinessStatus } from '@/types';
  * so each status keeps a distinct, stable color rather than one neutral chip.
  */
 const STATUS_STYLES: Record<BusinessStatus, string> = {
-    active: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
-    suspended:
-        'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+    active: 'bg-[#16A08E]/10 text-[#0C7D6F]',
+    suspended: 'bg-[#EFA22C]/12 text-[#A87110]',
     cancelled: 'bg-muted text-muted-foreground',
 };
 
@@ -63,6 +62,12 @@ export function createColumns({
             currentDirection={filters.direction}
             routeUrl={routeUrl}
             query={filters}
+            className={cn(
+                'h-8 text-xs font-medium hover:text-foreground [&_svg]:size-3.5',
+                filters.sort === sortKey
+                    ? 'text-foreground [&_svg]:opacity-90'
+                    : 'text-muted-foreground [&_svg]:opacity-40',
+            )}
         />
     );
 
@@ -73,7 +78,7 @@ export function createColumns({
             header: () => sortHeader('Business', 'name'),
             cell: ({ row }) => (
                 <div className="grid gap-0.5">
-                    <span className="font-medium">{row.original.name}</span>
+                    <span className="font-semibold">{row.original.name}</span>
                     <span className="font-mono text-xs text-muted-foreground">
                         {row.original.slug}
                     </span>
@@ -87,7 +92,7 @@ export function createColumns({
                 <Badge
                     variant="outline"
                     className={cn(
-                        'text-xs font-medium',
+                        'rounded-full border-0 px-2.5 py-1 text-xs font-semibold',
                         STATUS_STYLES[row.original.status],
                     )}
                 >
@@ -102,8 +107,8 @@ export function createColumns({
             id: 'users',
             header: () => sortHeader('Users', 'users_count'),
             cell: ({ row }) => (
-                <span className="inline-flex items-center gap-1.5 tabular-nums">
-                    <Users className="size-3.5 text-muted-foreground" />
+                <span className="inline-flex items-center gap-1.5 font-mono text-sm tabular-nums">
+                    <Users className="size-4 text-muted-foreground" />
                     {row.original.users_count ?? 0}
                 </span>
             ),
@@ -113,7 +118,7 @@ export function createColumns({
             id: 'onboarded',
             header: () => sortHeader('Onboarded', 'created_at'),
             cell: ({ row }) => (
-                <span className="text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                     {formatDate(row.original.created_at)}
                 </span>
             ),
@@ -141,7 +146,7 @@ export function createColumns({
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="size-8"
+                                    className="size-8 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                                     aria-label={t('Actions for :name', {
                                         name: business.name,
                                     })}
@@ -149,7 +154,10 @@ export function createColumns({
                                     <MoreHorizontal />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent
+                                align="end"
+                                className="w-44 rounded-md border-border bg-popover shadow-md"
+                            >
                                 <BusinessRowActionItems
                                     actions={actions}
                                     Item={DropdownMenuItem}
