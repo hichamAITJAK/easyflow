@@ -16,6 +16,7 @@ use App\Models\PerformanceTarget;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\Operations\Settlements\CourierSettlementService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -458,6 +459,7 @@ class DashboardController extends Controller
 
         $last = CourierSettlement::where('business_id', $businessId)
             ->where('status', '!=', 'pending')
+            ->with('deliveryAccount.courier:id,name')
             ->latest('period_end')
             ->first();
 
@@ -469,8 +471,11 @@ class DashboardController extends Controller
             'lastSettlement' => $last === null
                 ? null
                 : [
-                    'status' => $difference == 0.0 ? 'matched' : 'difference',
+                    'status' => abs($difference) < CourierSettlementService::MATCH_TOLERANCE_MAD ? 'matched' : 'difference',
                     'differenceMad' => round($difference, 2),
+                    'expectedMad' => round((float) $last->expected_amount, 2),
+                    'actualMad' => round((float) $last->actual_amount, 2),
+                    'courier' => $last->deliveryAccount?->courier?->name ?? $last->deliveryAccount?->label,
                 ],
         ];
     }

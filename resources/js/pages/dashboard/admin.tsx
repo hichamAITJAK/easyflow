@@ -113,7 +113,11 @@ export interface DashboardProps {
         deliveredUnpaid: number;
         lastSettlement: {
             status: 'matched' | 'difference';
+            /** Received − expected: negative means the courier paid less. */
             differenceMad: number;
+            expectedMad: number;
+            actualMad: number;
+            courier: string | null;
         } | null;
     };
     parcels: {
@@ -560,6 +564,14 @@ function KpiRow({ kpis }: { kpis: KpiBlock }) {
 }
 
 /** A "nice" axis ceiling (1 / 2 / 5 × 10ⁿ) at or above the max. */
+/** MAD with centimes, e.g. 1,500.00. */
+function money2(value: number): string {
+    return value.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+}
+
 function niceCeiling(max: number): number {
     if (max <= 0) {
         return 1000;
@@ -803,24 +815,56 @@ function FinanceRow({
                                 <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
                                     {t('None yet')}
                                 </p>
-                            ) : settled.status === 'matched' ? (
-                                <p
-                                    className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-semibold"
-                                    style={{ color: C.greenText }}
-                                >
-                                    <CheckCircle2 className="size-4" />
-                                    {t('All good · matched')}
-                                </p>
                             ) : (
-                                <p
-                                    className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-semibold"
-                                    style={{ color: C.redText }}
-                                >
-                                    <TriangleAlert className="size-4" />
-                                    {t(':amount MAD difference', {
-                                        amount: money(settled.differenceMad),
-                                    })}
-                                </p>
+                                <>
+                                    {settled.status === 'matched' ? (
+                                        <p
+                                            className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-semibold"
+                                            style={{ color: C.greenText }}
+                                        >
+                                            <CheckCircle2 className="size-4" />
+                                            {t('All good · matched')}
+                                        </p>
+                                    ) : (
+                                        <p
+                                            className="mt-0.5 inline-flex items-center gap-1.5 font-mono text-sm font-semibold tabular-nums"
+                                            style={{
+                                                color:
+                                                    settled.differenceMad < 0
+                                                        ? C.redText
+                                                        : C.greenText,
+                                            }}
+                                        >
+                                            {settled.differenceMad < 0 ? (
+                                                <TriangleAlert className="size-4" />
+                                            ) : (
+                                                <CheckCircle2 className="size-4" />
+                                            )}
+                                            {settled.differenceMad < 0
+                                                ? '−'
+                                                : '+'}
+                                            {money2(
+                                                Math.abs(settled.differenceMad),
+                                            )}{' '}
+                                            MAD
+                                        </p>
+                                    )}
+                                    <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+                                        {t(
+                                            'Received :actual of :expected MAD',
+                                            {
+                                                actual: money2(
+                                                    settled.actualMad,
+                                                ),
+                                                expected: money2(
+                                                    settled.expectedMad,
+                                                ),
+                                            },
+                                        )}
+                                        {settled.courier &&
+                                            ` · ${settled.courier}`}
+                                    </p>
+                                </>
                             )}
                         </div>
                         <Button asChild>

@@ -705,6 +705,15 @@ test('the settlement alert totals the shortfalls of disputed settlements in the 
                 && $a['text'] === 'total settlement difference'))
             ->etc());
 
+    // Last settlement: March's +61.49, with what was received of what was expected.
+    $this->actingAs($admin)->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('expected.lastSettlement.differenceMad', 61.49)
+            ->where('expected.lastSettlement.expectedMad', 1000)
+            ->where('expected.lastSettlement.actualMad', 1061.49)
+            ->where('expected.lastSettlement.courier', 'OzonExpress')
+            ->etc());
+
     // February only: just that period's shortfall.
     $this->actingAs($admin)->get(route('dashboard', ['period' => 'custom', 'date_from' => '2026-02-01', 'date_to' => '2026-02-28']))
         ->assertInertia(fn ($page) => $page
