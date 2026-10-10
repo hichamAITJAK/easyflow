@@ -210,22 +210,34 @@ class DashboardController extends Controller
             ];
         }
 
-        $settlement = CourierSettlement::where('business_id', $businessId)
-            ->where('status', '!=', 'pending')
+        // Every open (disputed) settlement, netted: what couriers still owe
+        // overall, not just the latest period's gap.
+        $disputed = CourierSettlement::where('business_id', $businessId)
+            ->where('status', 'disputed')
             ->with('deliveryAccount.courier:id,name')
-            ->latest('period_end')
-            ->first();
+            ->get();
 
-        if ($settlement !== null && (float) $settlement->difference_amount != 0.0) {
-            $difference = (float) $settlement->difference_amount;
+        $difference = round((float) $disputed->sum('difference_amount'), 2);
+
+        if ($disputed->isNotEmpty() && $difference != 0.0) {
+            $couriers = $disputed
+                ->map(fn (CourierSettlement $s) => $s->deliveryAccount?->courier?->name ?? $s->deliveryAccount?->label)
+                ->filter()
+                ->unique()
+                ->values();
 
             $alerts[] = [
                 'severity' => 'critical',
                 'kind' => 'settlement_difference',
                 'strong' => ($difference < 0 ? '−' : '+').number_format(abs($difference), 0, '.', ',').' MAD',
-                'text' => __('settlement difference with :courier', [
-                    'courier' => $settlement->deliveryAccount?->courier?->name ?? $settlement->deliveryAccount?->label ?? __('courier'),
-                ]),
+                'text' => $couriers->count() === 1
+                    ? trans_choice('total settlement difference with :courier · :count settlement|total settlement difference with :courier · :count settlements', $disputed->count(), [
+                        'courier' => $couriers->first(),
+                        'count' => $disputed->count(),
+                    ])
+                    : trans_choice('total settlement difference · :count settlement|total settlement difference · :count settlements', $disputed->count(), [
+                        'count' => $disputed->count(),
+                    ]),
                 'action' => ['label' => __('Settle'), 'href' => route('settlements.index')],
             ];
         }

@@ -5,7 +5,10 @@ use App\Enums\OrderDeliveryStatus;
 use App\Enums\PerformanceMetric;
 use App\Enums\PerformanceTargetPeriod;
 use App\Enums\UserRole;
+use App\Models\CourierSettlement;
 use App\Models\DailyStatsSummary;
+use App\Models\DeliveryAccount;
+use App\Models\DeliveryCourrier;
 use App\Models\Order;
 use App\Models\OrderStatusEvent;
 use App\Models\PerformanceTarget;
@@ -672,4 +675,31 @@ test('the income chart follows the selected period', function () {
 
     $this->get(route('dashboard', ['period' => 'custom', 'date_from' => '2026-01-01', 'date_to' => '2026-06-30']))
         ->assertInertia(fn ($page) => $page->has('income.buckets', 6)->where('income.grain', 'month'));
+});
+
+test('the settlement alert shows the total gap across open settlements', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $courier = DeliveryCourrier::factory()->create(['name' => 'OzonExpress']);
+    $account = DeliveryAccount::factory()->create(['business_id' => $admin->business_id, 'courier_id' => $courier->id]);
+
+    foreach ([[-562.53, '2026-01'], [-102.67, '2026-02'], [61.49, '2026-03']] as [$diff, $month]) {
+        CourierSettlement::create([
+            'business_id' => $admin->business_id,
+            'delivery_account_id' => $account->id,
+            'period_start' => $month.'-01',
+            'period_end' => $month.'-28',
+            'expected_amount' => 1000,
+            'actual_amount' => 1000 + $diff,
+            'difference_amount' => $diff,
+            'status' => 'disputed',
+        ]);
+    }
+
+    $this->actingAs($admin)->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('alerts', fn ($alerts) => collect($alerts)->contains(fn ($a) => $a['kind'] === 'settlement_difference'
+                && $a['strong'] === '−604 MAD'
+                && str_contains($a['text'], 'OzonExpress')
+                && str_contains($a['text'], '3 settlements')))
+            ->etc());
 });
