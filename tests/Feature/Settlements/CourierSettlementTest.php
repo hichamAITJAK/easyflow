@@ -115,7 +115,8 @@ test('reconciling creates a settlement with expected, actual, and difference amo
     expect((float) $settlement->expected_amount)->toBe(100.0);
     expect((float) $settlement->actual_amount)->toBe(90.0);
     expect((float) $settlement->difference_amount)->toBe(-10.0);
-    expect($settlement->status)->toBe('reconciled');
+    // A 10 MAD shortfall is not a match: the period stays open.
+    expect($settlement->status)->toBe('disputed');
     expect($settlement->reconciled_by)->toBe($admin->id);
     expect($settlement->notes)->toBe('Courier shorted us.');
 });
@@ -191,4 +192,17 @@ test('the expected endpoint returns the computed amount as json', function () {
 
     $response->assertOk();
     expect((float) $response->json('expected_amount'))->toBe(42.0);
+});
+
+test('only a matching amount reconciles; a short or over payment is disputed until corrected', function () {
+    $admin = makeBusinessUser();
+    $account = makeDeliveryAccountForSettlement($admin->business_id);
+    $service = app(CourierSettlementService::class);
+    $start = now()->subDay();
+    $end = now()->addDay();
+
+    // Nothing delivered: expected is 0.
+    expect($service->reconcile($admin->business_id, $account->id, $start, $end, 0.5, $admin->id)->status)->toBe('reconciled')
+        ->and($service->reconcile($admin->business_id, $account->id, $start, $end, 61.49, $admin->id)->status)->toBe('disputed')
+        ->and($service->reconcile($admin->business_id, $account->id, $start, $end, 0, $admin->id)->status)->toBe('reconciled');
 });

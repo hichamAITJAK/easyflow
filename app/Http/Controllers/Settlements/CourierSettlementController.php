@@ -89,7 +89,7 @@ class CourierSettlementController extends Controller
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $this->settlements->reconcile(
+        $settlement = $this->settlements->reconcile(
             $request->user()->business_id,
             (int) $data['delivery_account_id'],
             Carbon::parse($data['period_start']),
@@ -99,7 +99,11 @@ class CourierSettlementController extends Controller
             $data['notes'] ?? null,
         );
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Settlement reconciled.')]);
+        Inertia::flash('toast', $settlement->status === 'reconciled'
+            ? ['type' => 'success', 'message' => __('Settlement reconciled.')]
+            : ['type' => 'error', 'message' => __('Amounts do not match (:difference MAD). The settlement is marked as disputed.', [
+                'difference' => number_format((float) $settlement->difference_amount, 2),
+            ])]);
 
         return back(fallback: route('settlements.index'));
     }

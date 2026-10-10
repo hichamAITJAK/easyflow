@@ -18,6 +18,12 @@ use Carbon\CarbonInterface;
 class CourierSettlementService
 {
     /**
+     * Largest gap, in MAD, still treated as a match: absorbs centime
+     * rounding between the courier's statement and our order totals.
+     */
+    public const MATCH_TOLERANCE_MAD = 1.0;
+
+    /**
      * Sum of total_amount for orders that reached `delivered` for the
      * given delivery account within the period — UC-15's "expected" side.
      * Attribution and the delivered date both key off delivery_account_id
@@ -57,6 +63,7 @@ class CourierSettlementService
         ?string $notes = null,
     ): CourierSettlement {
         $expectedAmount = $this->computeExpected($businessId, $deliveryAccountId, $periodStart, $periodEnd);
+        $difference = round($actualAmount - $expectedAmount, 2);
 
         // updateOrCreate()'s array-based match can't use whereDate(), and
         // period_start/period_end are `date`-cast columns stored with a
@@ -77,8 +84,12 @@ class CourierSettlementService
         $settlement->fill([
             'expected_amount' => $expectedAmount,
             'actual_amount' => $actualAmount,
-            'difference_amount' => $actualAmount - $expectedAmount,
-            'status' => 'reconciled',
+            'difference_amount' => $difference,
+            // Only a match closes the period. Any real gap — short or
+            // over — stays open as disputed until the amounts agree;
+            // reconciling the same period again with the corrected
+            // amount flips it to reconciled.
+            'status' => abs($difference) < self::MATCH_TOLERANCE_MAD ? 'reconciled' : 'disputed',
             'reconciled_at' => now(),
             'reconciled_by' => $reconciledByUserId,
             'notes' => $notes,

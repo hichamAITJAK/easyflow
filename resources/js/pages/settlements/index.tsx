@@ -45,10 +45,34 @@ import type {
 
 const statusClasses: Record<CourierSettlementStatus, string> = {
     pending: 'bg-muted text-muted-foreground',
-    reconciled:
-        'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300',
-    disputed: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
+    reconciled: 'bg-[#16A08E]/10 text-[#0C7D6F]',
+    disputed: 'bg-[#D92D20]/10 text-[#B3281D]',
 };
+
+const STATUS_LABELS: Record<CourierSettlementStatus, string> = {
+    pending: 'Pending',
+    reconciled: 'Reconciled',
+    disputed: 'Disputed',
+};
+
+/** Same tolerance as CourierSettlementService::MATCH_TOLERANCE_MAD. */
+const MATCH_TOLERANCE_MAD = 1;
+
+/**
+ * Difference = received − expected. Negative: the courier paid less
+ * than it owes. Positive: it paid more.
+ */
+function differenceClass(value: string | number | null): string {
+    const diff = Number(value ?? 0);
+
+    if (Math.abs(diff) < MATCH_TOLERANCE_MAD) {
+        return 'text-[#0C7D6F]';
+    }
+
+    return diff < 0
+        ? 'font-semibold text-[#B3281D]'
+        : 'font-semibold text-[#A87110]';
+}
 
 function money(value: string | number | null): string {
     if (value === null) {
@@ -334,7 +358,13 @@ export default function SettlementsIndex({
                                                     settlement.actual_amount,
                                                 )}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell
+                                                className={`tabular-nums ${differenceClass(settlement.difference_amount)}`}
+                                            >
+                                                {Number(
+                                                    settlement.difference_amount ??
+                                                        0,
+                                                ) > 0 && '+'}
                                                 {money(
                                                     settlement.difference_amount,
                                                 )}
@@ -342,9 +372,13 @@ export default function SettlementsIndex({
                                             <TableCell>
                                                 <Badge
                                                     variant="outline"
-                                                    className={`border-transparent ${statusClasses[settlement.status]}`}
+                                                    className={`border-transparent font-semibold ${statusClasses[settlement.status]}`}
                                                 >
-                                                    {settlement.status}
+                                                    {t(
+                                                        STATUS_LABELS[
+                                                            settlement.status
+                                                        ],
+                                                    )}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
