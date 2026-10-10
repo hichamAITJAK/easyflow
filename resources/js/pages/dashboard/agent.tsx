@@ -97,6 +97,8 @@ export default function AgentDashboard({
     totals,
     tileRates,
     rateTotals,
+    confirmationRateTarget,
+    deliveryRateTarget,
     commissionEarned,
     upsells,
     bestConfirmHour,
@@ -305,8 +307,25 @@ export default function AgentDashboard({
                         </div>
                     </div>
 
-                    {/* upsells · commissions · best time */}
-                    <div className="mt-4 grid grid-cols-3 gap-3 lg:gap-4">
+                    {/* my goals · set by the admin */}
+                    <GoalsCard
+                        confirmation={rateTotals.confirmation}
+                        delivery={rateTotals.delivery}
+                        confirmationGoal={
+                            confirmationRateTarget !== null
+                                ? Number(confirmationRateTarget)
+                                : performance.goals.conf
+                        }
+                        deliveryGoal={
+                            deliveryRateTarget !== null
+                                ? Number(deliveryRateTarget)
+                                : performance.goals.deliv
+                        }
+                    />
+
+                    {/* upsells · commissions, then best time full width:
+                        three columns are too narrow for these on a phone */}
+                    <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4">
                         <KpiCard
                             icon={TrendingUp}
                             tone={TONE.plum}
@@ -325,19 +344,218 @@ export default function AgentDashboard({
                                 </>
                             }
                             label={t('Commissions')}
-                            compact
                         />
-                        <KpiCard
-                            icon={Hourglass}
-                            tone={TONE.petrol}
-                            value={bestTime}
-                            label={t('Best confirm time')}
-                            compact
-                        />
+                        <div className="col-span-2 flex items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-xs lg:col-span-1">
+                            <span
+                                className={cn(
+                                    'flex size-11 shrink-0 items-center justify-center rounded-full',
+                                    TONE.petrol,
+                                )}
+                            >
+                                <Hourglass className="size-5" />
+                            </span>
+                            <div className="min-w-0">
+                                <p className="font-mono text-2xl leading-none font-semibold tabular-nums">
+                                    {bestTime}
+                                </p>
+                                <p className="mt-1.5 text-xs font-medium text-foreground">
+                                    {t('Best confirm time')} ·{' '}
+                                    {t('when your confirmations peak')}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </section>
             </div>
         </>
+    );
+}
+
+const GOAL_COLORS = {
+    excellent: '#0C7D6F',
+    good: '#2E7389',
+    average: '#A87110',
+    low: '#B3281D',
+} as const;
+
+const GOAL_FILLS = {
+    excellent: '#16A08E',
+    good: '#468FA5',
+    average: '#EFA22C',
+    low: '#D92D20',
+} as const;
+
+type GoalLevel = keyof typeof GOAL_COLORS;
+
+/** Same thresholds as the admin's Performance track attainment status. */
+function overallLevel(pct: number): GoalLevel {
+    if (pct >= 105) {
+        return 'excellent';
+    }
+
+    if (pct >= 90) {
+        return 'good';
+    }
+
+    return pct >= 75 ? 'average' : 'low';
+}
+
+/** One metric against its goal: at goal, close, behind, far behind. */
+function metricLevel(value: number, goal: number): GoalLevel {
+    const ratio = goal > 0 ? value / goal : 1;
+
+    if (ratio >= 1) {
+        return 'excellent';
+    }
+
+    if (ratio >= 0.85) {
+        return 'good';
+    }
+
+    return ratio >= 0.7 ? 'average' : 'low';
+}
+
+const LEVEL_LABELS: Record<GoalLevel, string> = {
+    excellent: 'Excellent',
+    good: 'Good',
+    average: 'Average',
+    low: 'Low',
+};
+
+/**
+ * "My goals": the agent's two rates against the targets their admin set,
+ * with an overall ring — the mean of each rate over its goal.
+ */
+function GoalsCard({
+    confirmation,
+    delivery,
+    confirmationGoal,
+    deliveryGoal,
+}: {
+    confirmation: number | null;
+    delivery: number | null;
+    confirmationGoal: number;
+    deliveryGoal: number;
+}) {
+    const { t } = useTranslation();
+
+    const rows = [
+        {
+            label: t('Confirmation rate'),
+            value: confirmation ?? 0,
+            goal: confirmationGoal,
+        },
+        {
+            label: t('Delivery rate'),
+            value: delivery ?? 0,
+            goal: deliveryGoal,
+        },
+    ];
+
+    const parts = rows.filter((r) => r.goal > 0).map((r) => r.value / r.goal);
+    const overall = parts.length
+        ? Math.round((parts.reduce((a, b) => a + b, 0) / parts.length) * 100)
+        : 0;
+    const level = overallLevel(overall);
+
+    const R = 34;
+    const circumference = 2 * Math.PI * R;
+    const filled = Math.min(1, overall / 100) * circumference;
+
+    return (
+        <div className="mt-4 rounded-2xl border border-border bg-card p-4 shadow-xs lg:p-5">
+            <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium text-muted-foreground">
+                    {t('My goals · set by your admin')}
+                </p>
+                <span
+                    className="rounded-full px-2.5 py-1 font-mono text-xs font-semibold"
+                    style={{
+                        color: GOAL_COLORS[level],
+                        background: `${GOAL_FILLS[level]}1F`,
+                    }}
+                >
+                    {t(LEVEL_LABELS[level])}
+                </span>
+            </div>
+
+            <div className="mt-4 flex items-center gap-4">
+                <div className="relative size-[88px] shrink-0">
+                    <svg viewBox="0 0 88 88" className="size-full -rotate-90">
+                        <circle
+                            cx={44}
+                            cy={44}
+                            r={R}
+                            fill="none"
+                            stroke="var(--muted)"
+                            strokeWidth={9}
+                        />
+                        <circle
+                            cx={44}
+                            cy={44}
+                            r={R}
+                            fill="none"
+                            stroke={GOAL_FILLS[level]}
+                            strokeWidth={9}
+                            strokeLinecap="round"
+                            strokeDasharray={`${filled} ${circumference}`}
+                        />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center font-mono text-base font-semibold tabular-nums">
+                        {overall}%
+                    </span>
+                </div>
+                <div className="min-w-0">
+                    <p className="font-semibold">{t('Overall vs targets')}</p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">
+                        {t(
+                            'How close you are to the goals set for you this period.',
+                        )}
+                    </p>
+                </div>
+            </div>
+
+            <div className="mt-5 space-y-4">
+                {rows.map((row) => {
+                    const rowLevel = metricLevel(row.value, row.goal);
+
+                    return (
+                        <div key={row.label}>
+                            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+                                <span className="text-sm font-medium">
+                                    {row.label}
+                                </span>
+                                <span className="font-mono text-xs text-muted-foreground tabular-nums">
+                                    <span
+                                        className="text-sm font-semibold"
+                                        style={{ color: GOAL_COLORS[rowLevel] }}
+                                    >
+                                        {row.value}%
+                                    </span>{' '}
+                                    / {row.goal} {t('goal')}
+                                </span>
+                            </div>
+                            <div className="relative h-3 rounded-full bg-muted/60">
+                                <div
+                                    className="h-full rounded-full transition-all duration-500"
+                                    style={{
+                                        width: `${Math.min(100, row.value)}%`,
+                                        background: GOAL_FILLS[rowLevel],
+                                    }}
+                                />
+                                {/* goal marker */}
+                                <span
+                                    className="absolute -top-1 h-5 w-0.5 rounded-full bg-foreground/50"
+                                    style={{
+                                        left: `${Math.min(100, row.goal)}%`,
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
     );
 }
 
@@ -365,13 +583,11 @@ function KpiCard({
     tone,
     value,
     label,
-    compact = false,
 }: {
     icon: ComponentType<{ className?: string }>;
     tone: string;
     value: ReactNode;
     label: string;
-    compact?: boolean;
 }) {
     return (
         <div className="flex flex-col items-start rounded-2xl border border-border bg-card p-4 shadow-xs">
@@ -383,12 +599,7 @@ function KpiCard({
             >
                 <Icon className="size-[18px]" />
             </span>
-            <p
-                className={cn(
-                    'mt-3 font-mono leading-none font-semibold tabular-nums',
-                    compact ? 'text-xl lg:text-2xl' : 'text-2xl',
-                )}
-            >
+            <p className="mt-3 font-mono text-2xl leading-none font-semibold tabular-nums">
                 {value}
             </p>
             <p className="mt-1.5 text-xs font-medium text-foreground">
