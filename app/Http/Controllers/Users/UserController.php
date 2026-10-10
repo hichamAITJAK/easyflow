@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Users;
 
+use App\Enums\OrderConfirmationStatus;
+use App\Enums\OrderDeliveryStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Concerns\SyncsAgentCompensation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Models\Order;
 use App\Models\PerformanceTarget;
 use App\Models\Product;
 use App\Models\Store;
@@ -14,6 +17,7 @@ use App\Models\User;
 use App\Support\PhoneNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -41,7 +45,80 @@ class UserController extends Controller
 
         return Inertia::render('users/index', [
             'users' => $users,
+            'workload' => $this->workload($businessId, $users),
         ]);
+    }
+
+    /**
+     * What is on each agent's desk right now, keyed by user id. Two
+     * grouped queries for the whole team, never one per agent, both
+     * answered from covering indexes on orders.
+     *
+     * - Confirmation agents: their open orders (no outcome yet), split
+     *   into still to call and being followed up — the same statuses the
+     *   dashboard counts as in progress. Test orders are left out.
+     * - Fulfilment agents: parcels to prepare and returns to receive in the
+     *   stores they are granted (all stores when they have no grant),
+     *   counted exactly like their own scan app's home screen.
+     *
+     * @param  Collection<int, User>  $users
+     * @return array<int, array<string, int>>
+     */
+    private function workload(int $businessId, Collection $users): array
+    {
+        $toCall = array_map(fn (OrderConfirmationStatus $status) => $status->value, OrderConfirmationStatus::toCall());
+
+        $open = Order::where('business_id', $businessId)
+            ->where('is_test', false)
+            ->whereIn('confirmation_status', OrderConfirmationStatus::awaitingOutcome())
+            ->whereNotNull('assigned_agent_id')
+            ->groupBy('assigned_agent_id')
+            ->toBase()
+            ->selectRaw(
+                'assigned_agent_id, count(*) as total, sum(case when confirmation_status in (?, ?) then 1 else 0 end) as to_call',
+                $toCall,
+            )
+            ->get()
+            ->keyBy('assigned_agent_id');
+
+        $parcels = $users->contains('role', UserRole::FULFILMENT_AGENT)
+            ? Order::where('business_id', $businessId)
+                ->whereIn('delivery_status', [OrderDeliveryStatus::AWAITING_PICKUP, OrderDeliveryStatus::RETURNED_IN_TRANSIT])
+                ->groupBy('store_id', 'delivery_status')
+                ->toBase()
+                ->selectRaw('store_id, delivery_status, count(*) as total')
+                ->get()
+            : collect();
+
+        $workload = [];
+
+        foreach ($users as $user) {
+            if ($user->role === UserRole::CONFIRMATION_AGENT) {
+                $row = $open->get($user->id);
+                $total = (int) ($row->total ?? 0);
+                $calls = (int) ($row->to_call ?? 0);
+
+                $workload[$user->id] = ['open' => $total, 'toCall' => $calls, 'followUp' => $total - $calls];
+            } elseif ($user->role === UserRole::FULFILMENT_AGENT) {
+                // Granted stores come from the scopes already eager loaded
+                // for the Scope column; none means the whole business.
+                $storeIds = $user->agentScopes->pluck('store_id')->filter()->values();
+                $mine = $storeIds->isEmpty()
+                    ? $parcels
+                    : $parcels->filter(fn ($row) => $storeIds->contains((int) $row->store_id));
+
+                $count = fn (OrderDeliveryStatus $status) => (int) $mine
+                    ->where('delivery_status', $status->value)
+                    ->sum('total');
+
+                $workload[$user->id] = [
+                    'toPrepare' => $count(OrderDeliveryStatus::AWAITING_PICKUP),
+                    'returns' => $count(OrderDeliveryStatus::RETURNED_IN_TRANSIT),
+                ];
+            }
+        }
+
+        return $workload;
     }
 
     /**

@@ -263,15 +263,7 @@ class DashboardController extends Controller
     {
         return Order::where('business_id', $businessId)
             ->where('is_test', false)
-            ->whereIn('confirmation_status', [
-                OrderConfirmationStatus::NEW,
-                OrderConfirmationStatus::ASSIGNED,
-                OrderConfirmationStatus::CALLBACK,
-                OrderConfirmationStatus::VOICEMAIL,
-                OrderConfirmationStatus::NO_ANSWER,
-                OrderConfirmationStatus::BUSY,
-                OrderConfirmationStatus::WHATSAPP_SENT,
-            ]);
+            ->whereIn('confirmation_status', OrderConfirmationStatus::awaitingOutcome());
     }
 
     /**
@@ -1185,7 +1177,7 @@ class DashboardController extends Controller
             ->toBase()
             ->selectRaw(
                 'count(*) as total, coalesce(sum(case when confirmation_status in (?, ?) then 1 else 0 end), 0) as to_call',
-                [OrderConfirmationStatus::NEW->value, OrderConfirmationStatus::ASSIGNED->value],
+                array_map(fn (OrderConfirmationStatus $status) => $status->value, OrderConfirmationStatus::toCall()),
             )
             ->first();
 

@@ -44,6 +44,7 @@ import {
 } from '@/routes/users';
 import type { User } from '@/types';
 import { createColumns } from './columns';
+import type { AgentWorkload } from './columns';
 
 type AgentTab = 'confirmation_agent' | 'fulfilment_agent' | 'creatives_editor';
 
@@ -77,7 +78,14 @@ const ADD_LABELS: Record<AgentTab, string> = {
     creatives_editor: 'Add creatives editor',
 };
 
-export default function UsersIndex({ users }: { users: User[] }) {
+export default function UsersIndex({
+    users,
+    workload,
+}: {
+    users: User[];
+    /** Open work per agent id, live (see UserController::workload). */
+    workload: Record<number, AgentWorkload>;
+}) {
     const { t } = useTranslation();
 
     const getInitials = useInitials();
@@ -132,8 +140,9 @@ export default function UsersIndex({ users }: { users: User[] }) {
                 onEdit: handleEdit,
                 onDelete: setDeletingUser,
                 role: tab,
+                workload,
             }),
-        [getInitials, tab],
+        [getInitials, tab, workload],
     );
 
     const table = useReactTable({

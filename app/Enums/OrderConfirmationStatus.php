@@ -47,6 +47,28 @@ enum OrderConfirmationStatus: string
     }
 
     /**
+     * Statuses of an order still with an agent and without an outcome:
+     * not called yet, or being chased. The dashboard's "in progress" and
+     * the Team page's open-orders count both read this list.
+     *
+     * @return array<int, self>
+     */
+    public static function awaitingOutcome(): array
+    {
+        return [...self::toCall(), self::CALLBACK, self::VOICEMAIL, self::NO_ANSWER, self::BUSY, self::WHATSAPP_SENT];
+    }
+
+    /**
+     * The part of awaitingOutcome() nobody has called yet.
+     *
+     * @return array<int, self>
+     */
+    public static function toCall(): array
+    {
+        return [self::NEW, self::ASSIGNED];
+    }
+
+    /**
      * Get the human-readable description for the status.
      */
     public function description(): string

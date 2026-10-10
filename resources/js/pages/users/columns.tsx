@@ -28,6 +28,7 @@ import type { GetInitialsFn } from '@/hooks/use-initials';
 import { formatDateTime } from '@/lib/format';
 import type { Translator } from '@/lib/i18n';
 import { formatMoroccoPhoneForWhatsApp } from '@/lib/phone';
+import { cn } from '@/lib/utils';
 import type { User } from '@/types';
 
 const statusBadgeClasses: Record<User['status'], string> = {
@@ -42,7 +43,21 @@ const statusBadgeClasses: Record<User['status'], string> = {
  * pay rule, store scope or confirmation targets, so their table shows
  * identity, status, last login and actions only.
  */
-const AGENT_ONLY_COLUMNS = ['compensation', 'scope', 'targets'];
+const AGENT_ONLY_COLUMNS = ['workload', 'compensation', 'scope', 'targets'];
+
+/** What is on an agent's desk right now (see UserController::workload). */
+export type AgentWorkload =
+    | { open: number; toCall: number; followUp: number }
+    | { toPrepare: number; returns: number };
+
+/** The figure the Workload column sorts on. */
+function workloadTotal(workload: AgentWorkload | undefined): number {
+    if (!workload) {
+        return 0;
+    }
+
+    return 'open' in workload ? workload.open : workload.toPrepare;
+}
 
 export function createColumns({
     t,
@@ -50,14 +65,16 @@ export function createColumns({
     onEdit,
     onDelete,
     role,
+    workload = {},
 }: {
     t: Translator;
     getInitials: GetInitialsFn;
     onEdit: (user: User) => void;
     onDelete: (user: User) => void;
     role?: User['role'];
+    workload?: Record<number, AgentWorkload>;
 }): ColumnDef<User>[] {
-    const columns = allColumns({ t, getInitials, onEdit, onDelete });
+    const columns = allColumns({ t, getInitials, onEdit, onDelete, workload });
 
     return role === 'creatives_editor'
         ? columns.filter(
@@ -71,11 +88,13 @@ function allColumns({
     getInitials,
     onEdit,
     onDelete,
+    workload,
 }: {
     t: Translator;
     getInitials: GetInitialsFn;
     onEdit: (user: User) => void;
     onDelete: (user: User) => void;
+    workload: Record<number, AgentWorkload>;
 }): ColumnDef<User>[] {
     return [
         {
@@ -170,6 +189,60 @@ function allColumns({
                         />
                         {status}
                     </Badge>
+                );
+            },
+        },
+        {
+            // Confirmation agents: open orders not confirmed yet.
+            // Fulfilment agents: parcels to prepare in their stores.
+            id: 'workload',
+            accessorFn: (user) => workloadTotal(workload[user.id]),
+            header: ({ column }) => (
+                <DataTableColumnHeader column={column} title={t('Open work')} />
+            ),
+            cell: ({ row }) => {
+                const load = workload[row.original.id];
+
+                if (!load) {
+                    return (
+                        <span className="text-xs text-muted-foreground">—</span>
+                    );
+                }
+
+                const total = workloadTotal(load);
+                const detail =
+                    'open' in load
+                        ? t(':toCall to call · :followUp follow-up', {
+                              toCall: load.toCall,
+                              followUp: load.followUp,
+                          })
+                        : t(':count returns to receive', {
+                              count: load.returns,
+                          });
+
+                return (
+                    <div className="grid gap-0.5 whitespace-nowrap">
+                        <span className="text-sm">
+                            <span
+                                className={cn(
+                                    'font-mono font-semibold tabular-nums',
+                                    total > 0
+                                        ? 'text-[#A87110] dark:text-[#F3B95C]'
+                                        : 'text-muted-foreground',
+                                )}
+                            >
+                                {total}
+                            </span>{' '}
+                            <span className="text-muted-foreground">
+                                {'open' in load
+                                    ? t('not confirmed')
+                                    : t('to prepare')}
+                            </span>
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                            {detail}
+                        </span>
+                    </div>
                 );
             },
         },
