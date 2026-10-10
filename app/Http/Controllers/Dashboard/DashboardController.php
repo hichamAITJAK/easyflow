@@ -7,6 +7,7 @@ use App\Enums\OrderDeliveryStatus;
 use App\Enums\PerformanceMetric;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\CommissionRule;
 use App\Models\CourierSettlement;
 use App\Models\DailyStatsSummary;
 use App\Models\DeliveryAccount;
@@ -1110,8 +1111,10 @@ class DashboardController extends Controller
             'upsells' => [
                 'count' => $upsells,
                 'amountMad' => $upsellStats['amountMad'],
-                'rate' => $totals['confirmed'] > 0
-                    ? round(($upsells / $totals['confirmed']) * 100, 1)
+                'basis' => $upsellStats['basis'],
+                // Over the same orders the upsells are counted on.
+                'rate' => $totals[$upsellStats['basis']] > 0
+                    ? round(($upsells / $totals[$upsellStats['basis']]) * 100, 1)
                     : null,
             ],
             'bestConfirmHour' => $this->bestConfirmHour($user, $since, $until),
@@ -1121,23 +1124,48 @@ class DashboardController extends Controller
     /**
      * Orders assigned to an agent over the window whose total the agent
      * raised (upsell_amount > 0), and by how much in all. Down-sells are
-     * not counted.
+     * not counted. An upsell only counts once the order reaches the status
+     * the agent's commission is paid on (set on the user form): delivered
+     * orders for a "delivered" trigger, confirmed ones otherwise (also for
+     * salary-only agents).
      *
-     * @return array{count: int, amountMad: float}
+     * @return array{count: int, amountMad: float, basis: string}
      */
     private function upsellStats(?int $businessId, int $agentId, Carbon $since, Carbon $until): array
     {
-        $row = Order::where('business_id', $businessId)
+        $basis = CommissionRule::where('business_id', $businessId)
+            ->where('user_id', $agentId)
+            ->whereNull('store_id')
+            ->whereNull('product_id')
+            ->where('is_active', true)
+            ->value('trigger_status') === OrderDeliveryStatus::DELIVERED->value
+            ? 'delivered'
+            : 'confirmed';
+
+        $query = Order::where('business_id', $businessId)
             ->where('assigned_agent_id', $agentId)
+            ->where('is_test', false)
             ->where('upsell_amount', '>', 0)
-            ->whereBetween('created_at', [$since->copy()->startOfDay(), $until->copy()->endOfDay()])
-            ->toBase()
+            ->whereBetween('created_at', [$since->copy()->startOfDay(), $until->copy()->endOfDay()]);
+
+        if ($basis === 'delivered') {
+            $query->where('delivery_status', OrderDeliveryStatus::DELIVERED);
+        } else {
+            $query->whereIn('confirmation_status', [
+                OrderConfirmationStatus::CONFIRMED,
+                OrderConfirmationStatus::CONFIRMED_FOLLOWUP,
+                OrderConfirmationStatus::SUBMITTED_TO_COURIER,
+            ]);
+        }
+
+        $row = $query->toBase()
             ->selectRaw('count(*) as total, coalesce(sum(upsell_amount), 0) as amount')
             ->first();
 
         return [
             'count' => (int) ($row->total ?? 0),
             'amountMad' => round((float) ($row->amount ?? 0), 2),
+            'basis' => $basis,
         ];
     }
 

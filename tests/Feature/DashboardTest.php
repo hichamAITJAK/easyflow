@@ -5,6 +5,7 @@ use App\Enums\OrderDeliveryStatus;
 use App\Enums\PerformanceMetric;
 use App\Enums\PerformanceTargetPeriod;
 use App\Enums\UserRole;
+use App\Models\CommissionRule;
 use App\Models\CourierSettlement;
 use App\Models\DailyStatsSummary;
 use App\Models\DeliveryAccount;
@@ -370,7 +371,7 @@ test('the agent dashboard renders every stat/chart prop with the right shape', f
             ->has('delivery')
         )
         ->has('commissionEarned')
-        ->has('upsells', fn ($upsells) => $upsells->has('count')->has('amountMad')->has('rate'))
+        ->has('upsells', fn ($upsells) => $upsells->has('count')->has('amountMad')->has('basis')->has('rate'))
         ->has('bestConfirmHour')
         ->where('periodDays', 30)
         ->where('filters', ['period' => null, 'date_from' => null, 'date_to' => null])
@@ -644,7 +645,7 @@ test('an unusable custom range falls back to the default window', function () {
 test('the agent dashboard counts upsells and finds the best confirm hour', function () {
     $agent = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT]);
 
-    $upsold = Order::factory()->create(['business_id' => $agent->business_id, 'assigned_agent_id' => $agent->id, 'upsell_amount' => 40]);
+    $upsold = Order::factory()->create(['business_id' => $agent->business_id, 'assigned_agent_id' => $agent->id, 'upsell_amount' => 40, 'confirmation_status' => OrderConfirmationStatus::CONFIRMED]);
     $plain = Order::factory()->create(['business_id' => $agent->business_id, 'assigned_agent_id' => $agent->id, 'upsell_amount' => null]);
 
     foreach ([[$upsold, 19], [$plain, 19], [$upsold, 9]] as [$order, $hour]) {
@@ -731,9 +732,12 @@ test('the admin sees the upsells of an agent only once that agent is selected', 
     $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
     $agent = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT, 'business_id' => $admin->business_id]);
 
-    Order::factory()->create(['business_id' => $admin->business_id, 'assigned_agent_id' => $agent->id, 'upsell_amount' => 120]);
-    Order::factory()->create(['business_id' => $admin->business_id, 'assigned_agent_id' => $agent->id, 'upsell_amount' => 30.5]);
-    Order::factory()->create(['business_id' => $admin->business_id, 'assigned_agent_id' => $agent->id, 'upsell_amount' => -20]);
+    $confirmed = ['business_id' => $admin->business_id, 'assigned_agent_id' => $agent->id, 'confirmation_status' => OrderConfirmationStatus::CONFIRMED];
+    Order::factory()->create([...$confirmed, 'upsell_amount' => 120]);
+    Order::factory()->create([...$confirmed, 'upsell_amount' => 30.5]);
+    Order::factory()->create([...$confirmed, 'upsell_amount' => -20]);
+    // Still with the agent: not an upsell yet.
+    Order::factory()->create([...$confirmed, 'confirmation_status' => OrderConfirmationStatus::NO_ANSWER, 'upsell_amount' => 60]);
 
     $this->actingAs($admin)->get(route('dashboard'))
         ->assertInertia(fn ($page) => $page
@@ -746,5 +750,29 @@ test('the admin sees the upsells of an agent only once that agent is selected', 
             ->where('performance.view.type', 'agent')
             ->where('performance.view.upsells.count', 2)
             ->where('performance.view.upsells.amountMad', 150.5)
+            ->etc());
+});
+
+test('upsells follow the status the agent commission is paid on', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $agent = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT, 'business_id' => $admin->business_id]);
+    CommissionRule::factory()->onDelivery()->create(['business_id' => $admin->business_id, 'user_id' => $agent->id]);
+
+    $base = ['business_id' => $admin->business_id, 'assigned_agent_id' => $agent->id, 'confirmation_status' => OrderConfirmationStatus::SUBMITTED_TO_COURIER];
+    Order::factory()->create([...$base, 'upsell_amount' => 50, 'delivery_status' => OrderDeliveryStatus::DELIVERED]);
+    // Confirmed but not delivered yet: does not count on a delivered trigger.
+    Order::factory()->create([...$base, 'upsell_amount' => 70, 'delivery_status' => OrderDeliveryStatus::IN_TRANSIT]);
+
+    $this->actingAs($admin)->get(route('dashboard', ['agent_id' => $agent->id]))
+        ->assertInertia(fn ($page) => $page
+            ->where('performance.view.upsells.count', 1)
+            ->where('performance.view.upsells.amountMad', 50)
+            ->where('performance.view.upsells.basis', 'delivered')
+            ->etc());
+
+    $this->actingAs($agent)->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('upsells.count', 1)
+            ->where('upsells.basis', 'delivered')
             ->etc());
 });

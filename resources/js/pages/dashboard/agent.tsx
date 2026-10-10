@@ -74,7 +74,12 @@ type Props = {
         delivery: number | null;
     };
     commissionEarned: number;
-    upsells: { count: number; amountMad: number; rate: number | null };
+    upsells: {
+        count: number;
+        amountMad: number;
+        basis: 'confirmed' | 'delivered';
+        rate: number | null;
+    };
     /** Hour of day (0–23) with the most confirmations, null when none. */
     bestConfirmHour: number | null;
 };
