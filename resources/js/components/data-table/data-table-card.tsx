@@ -36,12 +36,7 @@ export function DataTableCardFilters({
     className?: string;
 }) {
     return (
-        <div
-            className={cn(
-                'flex flex-wrap items-end gap-3 p-(--card-spacing)',
-                className,
-            )}
-        >
+        <div className={cn('flex flex-wrap items-end gap-3 p-4', className)}>
             {children}
         </div>
     );
@@ -73,7 +68,23 @@ export function DataTableCardTable({
     children: ReactNode;
     className?: string;
 }) {
-    return <div className={cn('overflow-x-auto', className)}>{children}</div>;
+    // Pages that draw a plain <Table> here (settlements, commissions) get
+    // the same skin as DataTable: plain header with small muted titles,
+    // 16px cells and 24px outer gutters. Full-width colSpan cells (empty
+    // states) keep their own padding.
+    return (
+        <div
+            className={cn(
+                'overflow-x-auto',
+                '[&_thead]:bg-transparent [&_thead_tr:hover]:bg-transparent',
+                '[&_th]:h-auto [&_th]:px-4 [&_th]:py-3 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground [&_th:first-child]:pl-6 [&_th:last-child]:pr-6',
+                '[&_td:not([colspan])]:px-4 [&_td:not([colspan])]:py-4 [&_td:not([colspan]):first-child]:pl-6 [&_td:not([colspan]):last-child]:pr-6',
+                className,
+            )}
+        >
+            {children}
+        </div>
+    );
 }
 
 export function DataTableCardFooter({

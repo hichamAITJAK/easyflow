@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/table';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatDate, formatDateTime } from '@/lib/format';
+import { statusChipClass } from '@/lib/order-status';
 import { dashboard } from '@/routes';
 import type {
     CourierSettlement,
@@ -332,14 +333,14 @@ export default function SettlementsIndex({
                                 ) : (
                                     settlements.map((settlement) => (
                                         <TableRow key={settlement.id}>
-                                            <TableCell>
+                                            <TableCell className="font-medium">
                                                 {settlement.delivery_account
                                                     ? courierLabel(
                                                           settlement.delivery_account as DeliveryAccount,
                                                       )
                                                     : '—'}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">
                                                 {formatDate(
                                                     settlement.period_start,
                                                 )}{' '}
@@ -348,18 +349,18 @@ export default function SettlementsIndex({
                                                     settlement.period_end,
                                                 )}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="font-mono tabular-nums">
                                                 {money(
                                                     settlement.expected_amount,
                                                 )}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="font-mono tabular-nums">
                                                 {money(
                                                     settlement.actual_amount,
                                                 )}
                                             </TableCell>
                                             <TableCell
-                                                className={`tabular-nums ${differenceClass(settlement.difference_amount)}`}
+                                                className={`font-mono tabular-nums ${differenceClass(settlement.difference_amount)}`}
                                             >
                                                 {Number(
                                                     settlement.difference_amount ??
@@ -372,7 +373,7 @@ export default function SettlementsIndex({
                                             <TableCell>
                                                 <Badge
                                                     variant="outline"
-                                                    className={`border-transparent font-semibold ${statusClasses[settlement.status]}`}
+                                                    className={`border-transparent ${statusChipClass} ${statusClasses[settlement.status]}`}
                                                 >
                                                     {t(
                                                         STATUS_LABELS[

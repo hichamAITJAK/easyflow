@@ -61,6 +61,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { useTableFilters } from '@/hooks/use-table-filters';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatDateRange, formatDateTime } from '@/lib/format';
+import { statusChipClass } from '@/lib/order-status';
 import { dashboard } from '@/routes';
 import type {
     CommissionLedgerEntry,
@@ -98,11 +99,13 @@ const INVOICE_STATUS_OPTIONS: { value: InvoiceStatus; label: string }[] = [
     { value: 'cancelled', label: 'Cancelled' },
 ];
 
+/* Platform palette: draft muted, issued mustard (waiting), paid teal,
+   cancelled red — same hues as the order status chips. */
 const invoiceStatusClasses: Record<InvoiceStatus, string> = {
-    draft: 'bg-muted text-muted-foreground',
-    issued: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
-    paid: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300',
-    cancelled: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
+    draft: `${statusChipClass} bg-muted text-muted-foreground`,
+    issued: `${statusChipClass} bg-[#EFA22C]/12 text-[#A87110] dark:text-[#F3B95C]`,
+    paid: `${statusChipClass} bg-[#16A08E]/10 text-[#0C7D6F] dark:text-[#4CC7B4]`,
+    cancelled: `${statusChipClass} bg-[#D92D20]/10 text-[#B3281D] dark:text-[#F0766C]`,
 };
 
 function money(value: string | number): string {
@@ -704,7 +707,7 @@ export default function CommissionEntriesIndex({
                                                                 ? `#${entry.order_id}`
                                                                 : '—')}
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell className="font-mono font-semibold tabular-nums">
                                                         {money(entry.amount)}
                                                     </TableCell>
                                                     <TableCell>
@@ -720,7 +723,10 @@ export default function CommissionEntriesIndex({
                                                                 }
                                                             </Badge>
                                                         ) : (
-                                                            <Badge variant="outline">
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={`border-transparent ${statusChipClass} bg-muted text-muted-foreground`}
+                                                            >
                                                                 {t(
                                                                     'Not invoiced',
                                                                 )}
@@ -991,7 +997,7 @@ export default function CommissionEntriesIndex({
                                                             invoice.period_end,
                                                         )}
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell className="font-mono font-semibold tabular-nums">
                                                         {money(
                                                             invoice.total_amount,
                                                         )}
