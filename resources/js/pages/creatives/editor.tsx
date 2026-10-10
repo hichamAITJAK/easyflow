@@ -17,6 +17,11 @@ import {
     totalCount,
 } from '@/components/creatives/ui';
 import InputError from '@/components/input-error';
+import {
+    PILL_TABS_BADGE,
+    PILL_TABS_LIST,
+    PILL_TABS_TRIGGER,
+} from '@/components/pill-tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -752,16 +757,9 @@ export default function CreativesEditor({
     };
 
     const tab = (value: Space, label: string, badge?: number) => (
-        <TabsTrigger
-            value={value}
-            className="h-auto flex-none rounded-md border-0 px-4 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs dark:data-[state=active]:border-0 dark:data-[state=active]:bg-card"
-        >
+        <TabsTrigger value={value} className={PILL_TABS_TRIGGER}>
             {label}
-            {badge ? (
-                <span className="ml-1 rounded-full bg-[#F2602F] px-1.5 py-0.5 text-[10px] leading-none font-bold text-white">
-                    {badge}
-                </span>
-            ) : null}
+            {badge ? <span className={PILL_TABS_BADGE}>{badge}</span> : null}
         </TabsTrigger>
     );
 
@@ -785,7 +783,7 @@ export default function CreativesEditor({
                     value={space}
                     onValueChange={(v: string) => setSpace(v as Space)}
                 >
-                    <TabsList className="h-auto flex-wrap justify-start gap-0 rounded-lg border-0 bg-muted p-1">
+                    <TabsList className={PILL_TABS_LIST}>
                         {tab('products', t('My products'))}
                         {tab('requests', t('Content requests'), todo)}
                         {tab('commissions', t('My commissions'))}
@@ -889,8 +887,8 @@ export default function CreativesEditor({
                                 >
                                     <div className="flex flex-wrap items-center gap-4">
                                         <div className="min-w-0 flex-1">
-                                            <p className="flex flex-wrap items-center gap-1.5 font-semibold">
-                                                <span className="truncate">
+                                            <p className="flex min-w-0 flex-wrap items-center gap-1.5 font-semibold">
+                                                <span className="max-w-full min-w-0 truncate">
                                                     {q.product.name}
                                                 </span>
                                                 <KindTag
@@ -929,7 +927,7 @@ export default function CreativesEditor({
                                             )}
                                         </div>
                                         <span
-                                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${CHIP[q.status].cls}`}
+                                            className={`rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${CHIP[q.status].cls}`}
                                         >
                                             {t(CHIP[q.status].label)}
                                         </span>
@@ -1068,7 +1066,7 @@ export default function CreativesEditor({
                                                 )}
                                             </p>
                                         </div>
-                                        <div className="flex gap-6 text-sm text-muted-foreground">
+                                        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
                                             <span>
                                                 {t('Pending')}{' '}
                                                 <Money
@@ -1088,7 +1086,7 @@ export default function CreativesEditor({
                                         </div>
                                     </div>
                                     <div className="max-h-[420px] overflow-x-auto overflow-y-auto border-t border-border">
-                                        <table className="w-full text-sm">
+                                        <table className="w-full min-w-[560px] text-sm">
                                             <thead className="sticky top-0 z-10 bg-card">
                                                 <tr className="border-b border-border">
                                                     <Th>{t('Workload')}</Th>
@@ -1111,12 +1109,12 @@ export default function CreativesEditor({
                                                                 {c.label}
                                                             </p>
                                                         </td>
-                                                        <td className="px-4 py-4 text-muted-foreground">
+                                                        <td className="px-4 py-4 whitespace-nowrap text-muted-foreground">
                                                             {formatDate(
                                                                 c.validated_at,
                                                             )}
                                                         </td>
-                                                        <td className="px-4 py-4">
+                                                        <td className="px-4 py-4 whitespace-nowrap">
                                                             <Money
                                                                 value={c.amount}
                                                             />

@@ -33,6 +33,7 @@ import { DataTablePaginationServer } from '@/components/data-table/data-table-pa
 import { DataTablePerPageSelect } from '@/components/data-table/data-table-per-page-select';
 import { DataTableResetFiltersButton } from '@/components/data-table/data-table-reset-filters-button';
 import Heading from '@/components/heading';
+import { PILL_TABS_LIST, PILL_TABS_TRIGGER } from '@/components/pill-tabs';
 import {
     AlertDialog,
     AlertDialogCancel,
@@ -189,10 +190,8 @@ function KpiCard({
     );
 }
 
-const TAB_LIST =
-    'inline-flex h-auto w-auto flex-wrap items-center justify-start gap-1 rounded-lg border border-border bg-muted/40 p-1';
-const TAB_TRIGGER =
-    'h-8 flex-none rounded-md border-0 px-3.5 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-xs';
+const TAB_LIST = cn(PILL_TABS_LIST, 'border border-border bg-muted/40');
+const TAB_TRIGGER = PILL_TABS_TRIGGER;
 const FILTER_LABEL = 'text-sm font-medium text-foreground';
 const FIELD = 'h-9 w-full rounded-md bg-card text-sm shadow-xs';
 /** Outline row action, same on the Invoices and By agent tables. */

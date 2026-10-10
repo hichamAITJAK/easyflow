@@ -25,6 +25,11 @@ import {
     ago,
     isStale,
 } from '@/components/creatives/ui';
+import {
+    PILL_TABS_BADGE,
+    PILL_TABS_LIST,
+    PILL_TABS_TRIGGER,
+} from '@/components/pill-tabs';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -122,7 +127,7 @@ function ProductCard({
                 onGoToQueue={onGoToQueue}
             />
 
-            <div className="mt-auto flex gap-2 pt-4">
+            <div className="mt-auto flex flex-wrap gap-2 pt-4">
                 <Button
                     type="button"
                     variant="outline"
@@ -234,16 +239,9 @@ export default function CreativesAdmin({
     );
 
     const tab = (value: Space, label: string, badge?: number) => (
-        <TabsTrigger
-            value={value}
-            className="h-auto flex-none rounded-md border-0 px-4 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs dark:data-[state=active]:border-0 dark:data-[state=active]:bg-card"
-        >
+        <TabsTrigger value={value} className={PILL_TABS_TRIGGER}>
             {label}
-            {badge ? (
-                <span className="ml-1 rounded-full bg-[#F2602F] px-1.5 py-0.5 text-[10px] leading-none font-bold text-white">
-                    {badge}
-                </span>
-            ) : null}
+            {badge ? <span className={PILL_TABS_BADGE}>{badge}</span> : null}
         </TabsTrigger>
     );
 
@@ -267,7 +265,7 @@ export default function CreativesAdmin({
                     value={space}
                     onValueChange={(v: string) => setSpace(v as Space)}
                 >
-                    <TabsList className="h-auto flex-wrap justify-start gap-0 rounded-lg border-0 bg-muted p-1">
+                    <TabsList className={PILL_TABS_LIST}>
                         {tab('test', t('For test products'))}
                         {tab('active', t('Active products'))}
                         {tab('queue', t('Review queue'), returnedCount)}
@@ -349,8 +347,8 @@ export default function CreativesAdmin({
                                     className={`flex flex-wrap items-center gap-4 rounded-xl border bg-card p-5 shadow-xs ${q.status === 'returned' ? 'border-[#F2602F]/40' : 'border-border'}`}
                                 >
                                     <div className="min-w-0 flex-1">
-                                        <p className="flex flex-wrap items-center gap-1.5 font-semibold">
-                                            <span className="truncate">
+                                        <p className="flex min-w-0 flex-wrap items-center gap-1.5 font-semibold">
+                                            <span className="max-w-full min-w-0 truncate">
                                                 {q.product.name}
                                             </span>
                                             <KindTag
@@ -441,8 +439,8 @@ export default function CreativesAdmin({
                                     className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-5 shadow-xs"
                                 >
                                     <div className="min-w-0 flex-1">
-                                        <p className="flex items-center gap-1.5 font-semibold">
-                                            <span className="truncate">
+                                        <p className="flex min-w-0 items-center gap-1.5 font-semibold">
+                                            <span className="min-w-0 truncate">
                                                 {p.name}
                                             </span>
                                             <KindTag
@@ -511,7 +509,7 @@ export default function CreativesAdmin({
                                                 )}
                                             </p>
                                         </div>
-                                        <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
+                                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
                                             <span>
                                                 {t('Pending')}{' '}
                                                 <Money
@@ -543,7 +541,7 @@ export default function CreativesAdmin({
                                         </div>
                                     </div>
                                     <div className="max-h-[420px] overflow-x-auto overflow-y-auto border-t border-border">
-                                        <table className="w-full text-sm">
+                                        <table className="w-full min-w-[720px] text-sm">
                                             <thead className="sticky top-0 z-10 bg-card">
                                                 <tr className="border-b border-border">
                                                     <Th>{t('Workload')}</Th>
@@ -568,39 +566,39 @@ export default function CreativesAdmin({
                                                                 {c.label}
                                                             </p>
                                                         </td>
-                                                        <td className="px-4 py-4">
+                                                        <td className="px-4 py-4 whitespace-nowrap">
                                                             {c.editor}
                                                         </td>
-                                                        <td className="px-4 py-4 text-muted-foreground">
+                                                        <td className="px-4 py-4 whitespace-nowrap text-muted-foreground">
                                                             {formatDate(
                                                                 c.validated_at,
                                                             )}
                                                         </td>
-                                                        <td className="px-4 py-4">
+                                                        <td className="px-4 py-4 whitespace-nowrap">
                                                             <Money
                                                                 value={c.amount}
                                                             />
                                                         </td>
                                                         <td className="px-4 py-4 pr-6">
                                                             {c.paid ? (
-                                                                <span className="rounded-full bg-[#16A08E]/10 px-2.5 py-1 text-xs font-semibold text-[#0C7D6F]">
+                                                                <span className="rounded-full bg-[#16A08E]/10 px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-[#0C7D6F]">
                                                                     {t('Paid')}
                                                                 </span>
                                                             ) : c.invoice_number ? (
-                                                                <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground">
+                                                                <span className="rounded-full bg-[#468FA5]/12 px-2.5 py-1 font-mono text-xs font-semibold whitespace-nowrap text-[#2E7389]">
                                                                     {
                                                                         c.invoice_number
                                                                     }
                                                                 </span>
                                                             ) : (
-                                                                <span className="rounded-full bg-[#EFA22C]/12 px-2.5 py-1 text-xs font-semibold text-[#A87110]">
+                                                                <span className="rounded-full bg-[#EFA22C]/12 px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-[#A87110]">
                                                                     {t(
                                                                         'Pending',
                                                                     )}
                                                                 </span>
                                                             )}
                                                         </td>
-                                                        <td className="px-4 py-4 pr-6 text-right">
+                                                        <td className="px-4 py-4 pr-6 text-right whitespace-nowrap">
                                                             {!c.paid && (
                                                                 <Button
                                                                     type="button"

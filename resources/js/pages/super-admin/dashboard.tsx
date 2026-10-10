@@ -7,6 +7,7 @@ import {
 import type { DashboardFilterValues } from '@/components/dashboard/dashboard-filters';
 import { useChartTip } from '@/components/dashboard/performance-track';
 import { DataTableResetFiltersButton } from '@/components/data-table/data-table-reset-filters-button';
+import { PILL_TABS_LIST, PILL_TABS_TRIGGER } from '@/components/pill-tabs';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -234,12 +235,12 @@ function SegmentedTabs<T extends string>({
 }) {
     return (
         <Tabs value={value} onValueChange={(next) => onChange(next as T)}>
-            <TabsList className="h-auto rounded-lg bg-muted p-1">
+            <TabsList className={PILL_TABS_LIST}>
                 {options.map((option) => (
                     <TabsTrigger
                         key={option.value}
                         value={option.value}
-                        className="rounded-md px-4 py-1.5 text-sm font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+                        className={PILL_TABS_TRIGGER}
                     >
                         {option.label}
                     </TabsTrigger>
