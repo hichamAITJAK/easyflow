@@ -14,8 +14,11 @@ export default function AppLayout({
     children: React.ReactNode;
 }) {
     const { auth, toast: flashedToast } = usePage<PageProps>().props;
+    // Agents work from their phones: a top bar plus a bottom tab bar
+    // instead of the admin sidebar.
     const AppLayoutTemplate =
-        auth.user?.role === 'confirmation_agent'
+        auth.user?.role === 'confirmation_agent' ||
+        auth.user?.role === 'fulfilment_agent'
             ? AppHeaderLayout
             : AppSidebarLayout;
 

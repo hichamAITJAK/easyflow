@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { ChevronDown, Headset } from 'lucide-react';
+import { ChevronDown, Headset, PackageCheck } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { AppearanceDropdown } from '@/components/appearance-dropdown';
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -25,6 +25,22 @@ type Props = {
     breadcrumbs?: BreadcrumbItem[];
 };
 
+/** The role chip and account caption for each agent role on this shell. */
+const ROLE_CHIPS = {
+    confirmation_agent: {
+        icon: Headset,
+        label: 'Confirmation Agent',
+        caption: 'Confirmer',
+        className: 'bg-[#16A08E]/10 text-[#0C7D6F]',
+    },
+    fulfilment_agent: {
+        icon: PackageCheck,
+        label: 'Fulfilment Agent',
+        caption: 'Fulfilment',
+        className: 'bg-[#EFA22C]/12 text-[#A87110]',
+    },
+} as const;
+
 /*
   The confirmer shell per the approved preview: a top bar with the mark,
   a role chip and the account menu; the sections as underlined tabs on
@@ -40,6 +56,11 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const { isCurrentUrl } = useCurrentUrl();
     const mainNavItems = getVisibleNavItems(auth.user?.role);
     const activeNavItem = mainNavItems.find((item) => isCurrentUrl(item.href));
+    const chip =
+        auth.user?.role === 'confirmation_agent' ||
+        auth.user?.role === 'fulfilment_agent'
+            ? ROLE_CHIPS[auth.user.role]
+            : null;
 
     return (
         <>
@@ -57,10 +78,12 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         <Breadcrumbs breadcrumbs={breadcrumbs} />
                     </div>
 
-                    {auth.user?.role === 'confirmation_agent' && (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#16A08E]/10 px-2.5 py-1 text-xs font-semibold text-[#0C7D6F]">
-                            <Headset className="size-3.5" />
-                            {t('Confirmation Agent')}
+                    {chip && (
+                        <span
+                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${chip.className}`}
+                        >
+                            <chip.icon className="size-3.5" />
+                            {t(chip.label)}
                         </span>
                     )}
 
@@ -87,7 +110,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             {auth.user?.name}
                                         </span>
                                         <span className="block text-xs leading-tight text-muted-foreground">
-                                            {t('Confirmer')}
+                                            {chip ? t(chip.caption) : ''}
                                         </span>
                                     </span>
                                     <ChevronDown className="size-4 text-muted-foreground" />

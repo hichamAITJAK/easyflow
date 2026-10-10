@@ -8,7 +8,7 @@ import { ScannerView } from '@/components/fulfillment/scanner-view';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslation } from '@/hooks/use-translation';
-import FulfillmentLayout from '@/layouts/fulfillment-layout';
+import { useWakeLock } from '@/hooks/use-wake-lock';
 import { fulfillmentApi, FulfillmentApiError } from '@/lib/fulfillment-api';
 import type {
     FulfillmentActivityEvent,
@@ -31,6 +31,11 @@ export default function FulfillmentIndex({
     summary: FulfillmentSummary;
 }) {
     const { t } = useTranslation();
+
+    // A packing run is minutes of reading the screen without touching it;
+    // letting the phone sleep between parcels would mean unlocking it for
+    // every single scan.
+    useWakeLock();
 
     const [tab, setTab] = useState('scan');
     const [summary, setSummary] = useState(initialSummary);
@@ -151,7 +156,7 @@ export default function FulfillmentIndex({
     );
 
     return (
-        <FulfillmentLayout>
+        <>
             <Head title={t('Fulfilment')} />
 
             <div className="mx-auto w-full max-w-lg space-y-4 p-4">
@@ -203,7 +208,7 @@ export default function FulfillmentIndex({
                     </TabsContent>
                 </Tabs>
             </div>
-        </FulfillmentLayout>
+        </>
     );
 }
 
