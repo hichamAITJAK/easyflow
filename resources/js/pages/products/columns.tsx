@@ -8,6 +8,7 @@ import {
     Package,
     Pencil,
     Trash2,
+    TriangleAlert,
 } from 'lucide-react';
 import { markTest } from '@/actions/App/Http/Controllers/Products/ProductController';
 import { DataTableColumnHeaderServer } from '@/components/data-table/data-table-column-header-server';
@@ -21,7 +22,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { formatDate } from '@/lib/format';
 import type { Translator } from '@/lib/i18n';
+import { statusChipClass } from '@/lib/order-status';
+import { cn } from '@/lib/utils';
 import type { Product, ProductFilters } from '@/types';
+
+/** Below this many units, a product's Inventory cell warns it is running out. */
+const LOW_STOCK_THRESHOLD = 10;
 
 function toggleTest(product: Product) {
     router.patch(
@@ -127,7 +133,52 @@ export function createColumns({
                     product.variants_sum_inventory_quantity ??
                     product.inventory_quantity;
 
-                return quantity ?? '—';
+                // Untracked stock (null) has nothing to warn about.
+                if (quantity === null || quantity === undefined) {
+                    return '—';
+                }
+
+                const out = quantity <= 0;
+                const low = quantity < LOW_STOCK_THRESHOLD;
+
+                return (
+                    <div className="flex items-center gap-2 whitespace-nowrap">
+                        <span
+                            className={cn(
+                                'font-mono tabular-nums',
+                                low && 'font-semibold',
+                                out
+                                    ? 'text-[#B3281D] dark:text-[#F0766C]'
+                                    : low &&
+                                          'text-[#A87110] dark:text-[#F3B95C]',
+                            )}
+                        >
+                            {quantity}
+                        </span>
+                        {low && (
+                            <Badge
+                                variant="outline"
+                                title={
+                                    out
+                                        ? t('No units left — restock it.')
+                                        : t('Fewer than :count units left.', {
+                                              count: LOW_STOCK_THRESHOLD,
+                                          })
+                                }
+                                className={cn(
+                                    'gap-1 border-transparent',
+                                    statusChipClass,
+                                    out
+                                        ? 'bg-[#D92D20]/10 text-[#B3281D] dark:text-[#F0766C]'
+                                        : 'bg-[#EFA22C]/12 text-[#A87110] dark:text-[#F3B95C]',
+                                )}
+                            >
+                                <TriangleAlert className="size-3" />
+                                {out ? t('Out of stock') : t('Low stock')}
+                            </Badge>
+                        )}
+                    </div>
+                );
             },
         },
         {
