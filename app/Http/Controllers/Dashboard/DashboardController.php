@@ -30,9 +30,6 @@ class DashboardController extends Controller
     /** How many equal spans the KPI sparklines split the window into. */
     private const KPI_SLICES = 8;
 
-    /** Months of history the Income chart shows. */
-    private const INCOME_MONTHS = 8;
-
     /** A product delivering under this share of its confirmed orders is flagged… */
     private const LOW_DELIVERY_PCT = 50;
 
@@ -133,7 +130,7 @@ class DashboardController extends Controller
             'agents' => $agents,
             'alerts' => $this->attentionAlerts($businessId, $breakdown['products']),
             'kpis' => $this->kpis($businessId, $storeIds, $rows, $previousRows, $since, $until),
-            'income' => $this->income($businessId, $storeIds),
+            'income' => $this->income($businessId, $storeIds, $since, $until),
             'expected' => $this->expected($businessId),
             'parcels' => $this->parcels($businessId, $storeIds, $since, $until),
             'performance' => $this->performance($businessId, $agent, $rows, $since, $until, $windowDays, $goals),
@@ -369,33 +366,68 @@ class DashboardController extends Controller
     }
 
     /**
-     * Money brought in by delivered orders, month by month for the last
-     * INCOME_MONTHS months. Follows the store filter, not the period —
-     * the chart is its own longer view.
+     * Money brought in by delivered orders over the selected period, in
+     * buckets sized to the window: one per day up to a month, one per
+     * week up to four months, one per month beyond. Follows the store
+     * and period filters like the KPI tiles above it.
      *
      * @param  list<int>  $storeIds
-     * @return array{months: array<int, array{label: string, amountMad: float, ordersSettled: int}>}
+     * @return array{grain: string, totalMad: float, buckets: array<int, array{label: string, amountMad: float, ordersSettled: int}>}
      */
-    private function income(?int $businessId, array $storeIds): array
+    private function income(?int $businessId, array $storeIds, Carbon $since, Carbon $until): array
     {
-        $start = Carbon::today()->subMonthsNoOverflow(self::INCOME_MONTHS - 1)->startOfMonth();
+        $rows = $this->scopedRows($businessId, $storeIds, $since, $until)->get();
+        $byDate = $rows->groupBy(fn (DailyStatsSummary $row) => $row->stat_date->toDateString());
+        $days = (int) $since->diffInDays($until) + 1;
 
-        $byMonth = $this->scopedRows($businessId, $storeIds, $start, Carbon::today())
-            ->get()
-            ->groupBy(fn (DailyStatsSummary $row) => $row->stat_date->format('Y-m'));
+        $grain = match (true) {
+            $days <= 31 => 'day',
+            $days <= 120 => 'week',
+            default => 'month',
+        };
 
-        $months = collect(range(0, self::INCOME_MONTHS - 1))->map(function (int $offset) use ($start, $byMonth) {
-            $month = $start->copy()->addMonthsNoOverflow($offset);
-            $rows = $byMonth->get($month->format('Y-m'));
+        $buckets = [];
+        $cursor = $since->copy()->startOfDay();
+        $last = $until->copy()->startOfDay();
 
-            return [
-                'label' => $month->format('M'),
-                'amountMad' => round((float) ($rows?->sum('revenue_delivered') ?? 0), 2),
-                'ordersSettled' => (int) ($rows?->sum('delivered_count') ?? 0),
+        while ($cursor->lessThanOrEqualTo($last)) {
+            $end = match ($grain) {
+                'day' => $cursor->copy(),
+                'week' => $cursor->copy()->addDays(6),
+                default => $cursor->copy()->endOfMonth()->startOfDay(),
+            };
+
+            if ($end->greaterThan($last)) {
+                $end = $last->copy();
+            }
+
+            $amount = 0.0;
+            $settled = 0;
+
+            for ($day = $cursor->copy(); $day->lessThanOrEqualTo($end); $day->addDay()) {
+                $dayRows = $byDate->get($day->toDateString());
+                $amount += (float) ($dayRows?->sum('revenue_delivered') ?? 0);
+                $settled += (int) ($dayRows?->sum('delivered_count') ?? 0);
+            }
+
+            $buckets[] = [
+                'label' => match ($grain) {
+                    'day' => $cursor->format('M j'),
+                    'week' => $cursor->format('M j'),
+                    default => $cursor->format('M'),
+                },
+                'amountMad' => round($amount, 2),
+                'ordersSettled' => $settled,
             ];
-        })->all();
 
-        return ['months' => $months];
+            $cursor = $end->copy()->addDay();
+        }
+
+        return [
+            'grain' => $grain,
+            'totalMad' => round((float) $rows->sum('revenue_delivered'), 2),
+            'buckets' => $buckets,
+        ];
     }
 
     /**

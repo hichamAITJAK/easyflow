@@ -103,7 +103,10 @@ export interface DashboardProps {
     alerts: AlertItem[];
     kpis: KpiBlock;
     income: {
-        months: { label: string; amountMad: number; ordersSettled: number }[];
+        /** Bucket size, picked by the server from the period length. */
+        grain: 'day' | 'week' | 'month';
+        totalMad: number;
+        buckets: { label: string; amountMad: number; ordersSettled: number }[];
     };
     expected: {
         toReceiveMad: number;
@@ -582,7 +585,9 @@ function FinanceRow({
     const X1 = 586;
     const Y1 = 224;
     const Y0 = 16;
-    const months = income.months;
+    const months = income.buckets;
+    // At most ~8 x-axis labels, so a 30-day window stays readable.
+    const labelEvery = Math.max(1, Math.ceil(months.length / 8));
     const top = niceCeiling(Math.max(...months.map((m) => m.amountMad), 0));
     const X = (i: number) =>
         months.length > 1
@@ -619,6 +624,19 @@ function FinanceRow({
                     </h2>
                     <p className="mt-0.5 text-sm text-muted-foreground">
                         {t('Collected from delivered orders')}
+                    </p>
+                    <p className="mt-3">
+                        <span className="font-mono text-2xl font-semibold tabular-nums">
+                            {money(income.totalMad)}
+                        </span>{' '}
+                        <span className="text-xs text-muted-foreground">
+                            MAD ·{' '}
+                            {income.grain === 'day'
+                                ? t('per day')
+                                : income.grain === 'week'
+                                  ? t('per week')
+                                  : t('per month')}
+                        </span>
                     </p>
                     <div className="mt-6">
                         {hasIncome ? (
@@ -690,15 +708,18 @@ function FinanceRow({
                                 )}
                                 {months.map((m, i) => (
                                     <g key={`${m.label}-${i}`}>
-                                        <text
-                                            x={X(i)}
-                                            y={250}
-                                            textAnchor="middle"
-                                            fontSize={11}
-                                            fill="var(--muted-foreground)"
-                                        >
-                                            {t(m.label)}
-                                        </text>
+                                        {(i % labelEvery === 0 ||
+                                            i === months.length - 1) && (
+                                            <text
+                                                x={X(i)}
+                                                y={250}
+                                                textAnchor="middle"
+                                                fontSize={11}
+                                                fill="var(--muted-foreground)"
+                                            >
+                                                {t(m.label)}
+                                            </text>
+                                        )}
                                         <circle
                                             cx={X(i)}
                                             cy={Y(m.amountMad)}

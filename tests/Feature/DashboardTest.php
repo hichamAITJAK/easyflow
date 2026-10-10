@@ -49,7 +49,8 @@ test('the admin dashboard renders every section prop with the right shape', func
             ->has('delivered', fn ($k) => $k->has('value')->has('ratePct')->has('deltaPct')->has('trend', 8))
             ->has('returned', fn ($k) => $k->has('value')->has('ratePct')->has('deltaPct')->has('buckets', 8))
         )
-        ->has('income.months', 8)
+        ->has('income.buckets', 30)
+        ->where('income.grain', 'day')
         ->has('expected', fn ($e) => $e->has('toReceiveMad')->has('deliveredUnpaid')->has('lastSettlement'))
         ->has('parcels', fn ($p) => $p->has('total')->has('stages', 4))
         ->has('performance', fn ($perf) => $perf
@@ -134,7 +135,8 @@ test('real order activity lands in the admin dashboard props', function () {
     $response->assertInertia(fn ($page) => $page
         ->where('kpis.confirmed.value', 1)
         ->where('kpis.delivered.value', 1)
-        ->where('income.months.7.amountMad', 500)
+        ->where('income.buckets.29.amountMad', 500)
+        ->where('income.totalMad', 500)
         ->has('performance.view.agents', 1)
         ->etc()
     );
@@ -656,4 +658,18 @@ test('the agent dashboard counts upsells and finds the best confirm hour', funct
         ->assertInertia(fn ($page) => $page
             ->where('upsells.count', 1)
             ->where('bestConfirmHour', 19));
+});
+
+test('the income chart follows the selected period', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $this->actingAs($admin);
+
+    $this->get(route('dashboard', ['period' => '7d']))
+        ->assertInertia(fn ($page) => $page->has('income.buckets', 7)->where('income.grain', 'day'));
+
+    $this->get(route('dashboard', ['period' => '90d']))
+        ->assertInertia(fn ($page) => $page->has('income.buckets', 13)->where('income.grain', 'week'));
+
+    $this->get(route('dashboard', ['period' => 'custom', 'date_from' => '2026-01-01', 'date_to' => '2026-06-30']))
+        ->assertInertia(fn ($page) => $page->has('income.buckets', 6)->where('income.grain', 'month'));
 });
