@@ -698,8 +698,8 @@ test('the settlement alert shows the total gap across open settlements', functio
     $this->actingAs($admin)->get(route('dashboard'))
         ->assertInertia(fn ($page) => $page
             ->where('alerts', fn ($alerts) => collect($alerts)->contains(fn ($a) => $a['kind'] === 'settlement_difference'
-                && $a['strong'] === '−604 MAD'
-                && str_contains($a['text'], 'OzonExpress')
-                && str_contains($a['text'], '3 settlements')))
+                // Only the shortfalls: −562.53 + −102.67; the +61.49 is left out.
+                && $a['strong'] === '−665.20 MAD'
+                && $a['text'] === 'total settlement difference'))
             ->etc());
 });

@@ -210,34 +210,19 @@ class DashboardController extends Controller
             ];
         }
 
-        // Every open (disputed) settlement, netted: what couriers still owe
-        // overall, not just the latest period's gap.
-        $disputed = CourierSettlement::where('business_id', $businessId)
+        // What couriers still owe: the shortfalls on disputed settlements.
+        // Overpayments are left out, so they can't hide a missing amount.
+        $owed = round((float) CourierSettlement::where('business_id', $businessId)
             ->where('status', 'disputed')
-            ->with('deliveryAccount.courier:id,name')
-            ->get();
+            ->where('difference_amount', '<', 0)
+            ->sum('difference_amount'), 2);
 
-        $difference = round((float) $disputed->sum('difference_amount'), 2);
-
-        if ($disputed->isNotEmpty() && $difference != 0.0) {
-            $couriers = $disputed
-                ->map(fn (CourierSettlement $s) => $s->deliveryAccount?->courier?->name ?? $s->deliveryAccount?->label)
-                ->filter()
-                ->unique()
-                ->values();
-
+        if ($owed < 0) {
             $alerts[] = [
                 'severity' => 'critical',
                 'kind' => 'settlement_difference',
-                'strong' => ($difference < 0 ? '−' : '+').number_format(abs($difference), 0, '.', ',').' MAD',
-                'text' => $couriers->count() === 1
-                    ? trans_choice('total settlement difference with :courier · :count settlement|total settlement difference with :courier · :count settlements', $disputed->count(), [
-                        'courier' => $couriers->first(),
-                        'count' => $disputed->count(),
-                    ])
-                    : trans_choice('total settlement difference · :count settlement|total settlement difference · :count settlements', $disputed->count(), [
-                        'count' => $disputed->count(),
-                    ]),
+                'strong' => '−'.number_format(abs($owed), 2, '.', ',').' MAD',
+                'text' => __('total settlement difference'),
                 'action' => ['label' => __('Settle'), 'href' => route('settlements.index')],
             ];
         }
