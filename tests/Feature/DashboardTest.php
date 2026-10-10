@@ -677,7 +677,7 @@ test('the income chart follows the selected period', function () {
         ->assertInertia(fn ($page) => $page->has('income.buckets', 6)->where('income.grain', 'month'));
 });
 
-test('the settlement alert shows the total gap across open settlements', function () {
+test('the settlement alert totals the shortfalls of disputed settlements in the selected range', function () {
     $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
     $courier = DeliveryCourrier::factory()->create(['name' => 'OzonExpress']);
     $account = DeliveryAccount::factory()->create(['business_id' => $admin->business_id, 'courier_id' => $courier->id]);
@@ -695,11 +695,26 @@ test('the settlement alert shows the total gap across open settlements', functio
         ]);
     }
 
-    $this->actingAs($admin)->get(route('dashboard'))
+    $range = ['period' => 'custom', 'date_from' => '2026-01-01', 'date_to' => '2026-03-31'];
+
+    $this->actingAs($admin)->get(route('dashboard', $range))
         ->assertInertia(fn ($page) => $page
             ->where('alerts', fn ($alerts) => collect($alerts)->contains(fn ($a) => $a['kind'] === 'settlement_difference'
                 // Only the shortfalls: −562.53 + −102.67; the +61.49 is left out.
                 && $a['strong'] === '−665.20 MAD'
                 && $a['text'] === 'total settlement difference'))
+            ->etc());
+
+    // February only: just that period's shortfall.
+    $this->actingAs($admin)->get(route('dashboard', ['period' => 'custom', 'date_from' => '2026-02-01', 'date_to' => '2026-02-28']))
+        ->assertInertia(fn ($page) => $page
+            ->where('alerts', fn ($alerts) => collect($alerts)->contains(fn ($a) => $a['kind'] === 'settlement_difference'
+                && $a['strong'] === '−102.67 MAD'))
+            ->etc());
+
+    // A range with no disputed settlement: no alert.
+    $this->actingAs($admin)->get(route('dashboard', ['period' => 'custom', 'date_from' => '2026-05-01', 'date_to' => '2026-05-31']))
+        ->assertInertia(fn ($page) => $page
+            ->where('alerts', fn ($alerts) => ! collect($alerts)->contains(fn ($a) => $a['kind'] === 'settlement_difference'))
             ->etc());
 });

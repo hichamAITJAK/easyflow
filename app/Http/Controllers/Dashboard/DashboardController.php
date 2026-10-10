@@ -128,7 +128,7 @@ class DashboardController extends Controller
             ],
             'stores' => $stores,
             'agents' => $agents,
-            'alerts' => $this->attentionAlerts($businessId, $breakdown['products']),
+            'alerts' => $this->attentionAlerts($businessId, $breakdown['products'], $since, $until),
             'kpis' => $this->kpis($businessId, $storeIds, $rows, $previousRows, $since, $until),
             'income' => $this->income($businessId, $storeIds, $since, $until),
             'expected' => $this->expected($businessId),
@@ -189,7 +189,7 @@ class DashboardController extends Controller
      * @param  array<int, array<string, mixed>>  $products
      * @return array<int, array<string, mixed>>
      */
-    private function attentionAlerts(?int $businessId, array $products): array
+    private function attentionAlerts(?int $businessId, array $products, Carbon $since, Carbon $until): array
     {
         $alerts = [];
 
@@ -210,11 +210,14 @@ class DashboardController extends Controller
             ];
         }
 
-        // What couriers still owe: the shortfalls on disputed settlements.
-        // Overpayments are left out, so they can't hide a missing amount.
+        // What couriers still owe: the shortfalls on disputed settlements
+        // whose period overlaps the selected range. Overpayments are left
+        // out, so they can't hide a missing amount.
         $owed = round((float) CourierSettlement::where('business_id', $businessId)
             ->where('status', 'disputed')
             ->where('difference_amount', '<', 0)
+            ->whereDate('period_start', '<=', $until)
+            ->whereDate('period_end', '>=', $since)
             ->sum('difference_amount'), 2);
 
         if ($owed < 0) {
