@@ -148,7 +148,7 @@ class FulfillmentController extends Controller
         $scanActions = [OrderDeliveryStatus::READY_FOR_PICKUP->value, OrderDeliveryStatus::RETURN_RECEIVED->value];
 
         $events = OrderStatusEvent::query()
-            ->with(['order:id,courier_tracking_number,customer_name,customer_address'])
+            ->with(['order:id,reference,courier_tracking_number,customer_name,customer_address,customer_city,delivery_account_id', 'order.deliveryAccount.courier:id,name'])
             ->where('business_id', $request->user()->business_id)
             ->where('changed_by_user_id', $request->user()->id)
             ->whereIn('to_status', $scanActions)
@@ -183,6 +183,9 @@ class FulfillmentController extends Controller
                 'order_id' => $event->order_id,
                 'tracking_number' => $event->order?->courier_tracking_number,
                 'customer_name' => $event->order?->customer_name,
+                'reference' => $event->order?->reference,
+                'customer_city' => $event->order?->customer_city,
+                'courier' => $event->order?->deliveryAccount?->courier?->name,
                 'from_status' => $event->from_status,
                 'to_status' => $event->to_status,
                 'created_at' => $event->created_at,

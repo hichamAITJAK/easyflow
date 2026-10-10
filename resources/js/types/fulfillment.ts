@@ -54,6 +54,9 @@ export type FulfillmentActivityEvent = {
     order_id: number;
     tracking_number: string | null;
     customer_name: string | null;
+    reference: string | null;
+    customer_city: string | null;
+    courier: string | null;
     from_status: string | null;
     to_status: string;
     created_at: string;

@@ -117,6 +117,8 @@ test('the activity log lists this agent scans for today', function () {
     expect($response->json('events'))->toHaveCount(1);
     expect($response->json('events.0.tracking_number'))->toBe('TRACK-WEB-3');
     expect($response->json('events.0.can_undo'))->toBeTrue();
+    expect($response->json('events.0'))->toHaveKeys(['reference', 'customer_city', 'courier']);
+    expect($response->json('events.0.reference'))->toBe($order->reference);
 });
 
 test('undoing a scan over the web route reverts the parcel', function () {

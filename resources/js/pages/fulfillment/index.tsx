@@ -1,12 +1,12 @@
 import { Head } from '@inertiajs/react';
-import { PackageSearch, RotateCcw, ScanLine } from 'lucide-react';
+import { Package, ScanLine, Undo2 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ActivityList } from '@/components/fulfillment/activity-list';
 import { ParcelCard } from '@/components/fulfillment/parcel-card';
 import { ScannerView } from '@/components/fulfillment/scanner-view';
 import { PILL_TABS_LIST, PILL_TABS_TRIGGER } from '@/components/pill-tabs';
-import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslation } from '@/hooks/use-translation';
 import { useWakeLock } from '@/hooks/use-wake-lock';
@@ -17,6 +17,14 @@ import type {
     FulfillmentScanResult,
     FulfillmentSummary,
 } from '@/types/fulfillment';
+
+/** A counter tile narrows the Today log to the scans of its kind. */
+type TileFilter = 'prepare' | 'returns';
+
+const TILE_STATUS: Record<TileFilter, string> = {
+    prepare: 'ready_for_pickup',
+    returns: 'return_received',
+};
 
 /**
  * The fulfilment agent's entire workspace (UC-16/UC-17).
@@ -48,6 +56,7 @@ export default function FulfillmentIndex({
     const [events, setEvents] = useState<FulfillmentActivityEvent[]>([]);
     const [activityLoading, setActivityLoading] = useState(false);
     const [undoingId, setUndoingId] = useState<number | null>(null);
+    const [filter, setFilter] = useState<TileFilter | null>(null);
 
     // Guards against a second scan landing while the first is still in
     // flight — a bench scanner can fire twice on one pass of the label.
@@ -157,62 +166,108 @@ export default function FulfillmentIndex({
         [loadActivity],
     );
 
+    // A tile toggles its filter and opens the log it filters; tapping the
+    // active tile again clears it.
+    const handleTile = (kind: TileFilter) => {
+        const next = filter === kind ? null : kind;
+        setFilter(next);
+
+        if (next && tab !== 'activity') {
+            handleTabChange('activity');
+        }
+    };
+
+    const visibleEvents = filter
+        ? events.filter((event) => event.to_status === TILE_STATUS[filter])
+        : events;
+
     return (
         <>
             <Head title={t('Fulfilment')} />
 
-            <div className="mx-auto w-full max-w-lg space-y-4 p-4">
-                <div className="grid grid-cols-2 gap-3">
-                    <Counter
-                        icon={PackageSearch}
+            <div className="mx-auto w-full max-w-[600px] px-4 pt-6 pb-4 lg:pb-10">
+                <div className="grid auto-rows-fr grid-cols-2 gap-4">
+                    <Tile
+                        icon={Package}
                         label={t('To prepare')}
                         value={summary.ready_to_prepare}
+                        color="#EFA22C"
+                        text="#A87110"
+                        active={filter === 'prepare'}
+                        onClick={() => handleTile('prepare')}
                     />
-                    <Counter
-                        icon={RotateCcw}
+                    <Tile
+                        icon={Undo2}
                         label={t('Returns pending')}
                         value={summary.returns_pending}
+                        color="#D92D20"
+                        text="#B3281D"
+                        active={filter === 'returns'}
+                        onClick={() => handleTile('returns')}
                     />
                 </div>
 
-                <Tabs value={tab} onValueChange={handleTabChange}>
+                <Tabs
+                    value={tab}
+                    onValueChange={handleTabChange}
+                    className="gap-0"
+                >
                     <TabsList
                         className={cn(
                             PILL_TABS_LIST,
-                            'grid w-full max-w-none grid-cols-2',
+                            'mt-5 grid w-full max-w-none grid-cols-2 border border-border bg-muted/40',
                         )}
                     >
-                        <TabsTrigger value="scan" className={PILL_TABS_TRIGGER}>
+                        <TabsTrigger
+                            value="scan"
+                            className={cn(PILL_TABS_TRIGGER, 'h-9 py-0')}
+                        >
                             <ScanLine className="size-4" />
                             {t('Scan')}
                         </TabsTrigger>
                         <TabsTrigger
                             value="activity"
-                            className={PILL_TABS_TRIGGER}
+                            className={cn(PILL_TABS_TRIGGER, 'h-9 py-0')}
                         >
                             {t('Today')}
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="scan" className="mt-4 space-y-4">
+                    <TabsContent value="scan">
                         <ScannerView
                             onScan={handleScan}
                             busy={busy || confirming}
                         />
 
                         {result && (
-                            <ParcelCard
-                                order={result.order}
-                                action={result.action}
-                                onConfirm={handleConfirm}
-                                confirming={confirming}
-                            />
+                            <div className="mt-4">
+                                <ParcelCard
+                                    order={result.order}
+                                    action={result.action}
+                                    onConfirm={handleConfirm}
+                                    confirming={confirming}
+                                />
+                            </div>
                         )}
                     </TabsContent>
 
-                    <TabsContent value="activity" className="mt-4">
+                    <TabsContent value="activity">
+                        {filter && (
+                            <p className="mt-4 text-xs text-muted-foreground">
+                                {filter === 'prepare'
+                                    ? t('Showing parcels scanned out.')
+                                    : t('Showing returns received.')}{' '}
+                                <button
+                                    type="button"
+                                    className="font-medium text-foreground underline-offset-4 hover:underline"
+                                    onClick={() => setFilter(null)}
+                                >
+                                    {t('Show all')}
+                                </button>
+                            </p>
+                        )}
                         <ActivityList
-                            events={events}
+                            events={visibleEvents}
                             loading={activityLoading}
                             onUndo={handleUndo}
                             undoingId={undoingId}
@@ -224,29 +279,57 @@ export default function FulfillmentIndex({
     );
 }
 
-function Counter({
+/** A counter as a tappable tile: tinted icon, mono figure, coloured label. */
+function Tile({
     icon: Icon,
     label,
     value,
+    color,
+    text,
+    active,
+    onClick,
 }: {
-    icon: typeof PackageSearch;
+    icon: LucideIcon;
     label: string;
     value: number;
+    color: string;
+    text: string;
+    active: boolean;
+    onClick: () => void;
 }) {
     return (
-        <Card>
-            <CardContent className="flex items-center gap-3 p-4">
-                <Icon className="size-5 shrink-0 text-muted-foreground" />
-                <div className="min-w-0">
-                    <p className="text-2xl leading-none font-semibold tabular-nums">
-                        {value}
-                    </p>
-                    <p className="mt-1 truncate text-xs text-muted-foreground">
-                        {label}
-                    </p>
-                </div>
-            </CardContent>
-        </Card>
+        <button
+            type="button"
+            onClick={onClick}
+            aria-pressed={active}
+            className={cn(
+                'flex items-center gap-3.5 rounded-xl border bg-card p-5 text-left shadow-xs transition-colors',
+                !active && 'border-border hover:bg-muted/30',
+            )}
+            style={
+                active
+                    ? { borderColor: color, background: `${color}0a` }
+                    : undefined
+            }
+        >
+            <span
+                className="flex size-11 shrink-0 items-center justify-center rounded-full"
+                style={{ background: `${color}1a`, color: text }}
+            >
+                <Icon className="size-5" />
+            </span>
+            <span className="min-w-0">
+                <span className="block font-mono text-[28px] leading-none font-semibold tabular-nums">
+                    {value}
+                </span>
+                <span
+                    className="mt-1.5 block text-sm leading-tight font-medium"
+                    style={{ color: text }}
+                >
+                    {label}
+                </span>
+            </span>
+        </button>
     );
 }
 
