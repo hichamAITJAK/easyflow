@@ -128,9 +128,10 @@ trait SyncsAgentCompensation
      * product_id both null) from the submitted payment mode, and replace
      * their store/product overrides — rows that pay a different rate for a
      * specific store or product, on top of the default. Fulfilment agents'
-     * "per parcel" mode is stored as payment_mode = commission with a fixed
-     * trigger_status of ready_for_pickup (the fulfilment scan event), never
-     * user-selectable, and never has overrides.
+     * "per parcel" mode is stored as payment_mode = commission, a fixed
+     * amount, and a trigger_status of ready_for_pickup (paid at their scan,
+     * "shipped") or delivered (paid once the courier delivers) — and never
+     * has overrides.
      *
      * @param  array<string, mixed>  $data
      */
@@ -150,7 +151,9 @@ trait SyncsAgentCompensation
                 'salary_amount' => $isSalary ? ($data['salary_amount'] ?? null) : null,
                 'salary_period' => $isSalary ? ($data['salary_period'] ?? null) : null,
                 'trigger_status' => $isCommission
-                    ? ($isFulfilment ? 'ready_for_pickup' : ($data['trigger_status'] ?? null))
+                    ? ($isFulfilment
+                        ? (($data['trigger_status'] ?? null) === 'delivered' ? 'delivered' : 'ready_for_pickup')
+                        : ($data['trigger_status'] ?? null))
                     : null,
                 'amount_type' => $isCommission
                     ? ($isFulfilment ? 'fixed' : ($data['amount_type'] ?? null))

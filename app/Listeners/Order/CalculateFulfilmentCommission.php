@@ -9,15 +9,20 @@ use App\Events\Commission\CommissionReversed;
 use App\Events\Order\DeliveryStatusChanged;
 use App\Models\CommissionLedgerEntry;
 use App\Models\CommissionRule;
+use App\Models\OrderStatusEvent;
 use App\Models\Scopes\BusinessScope;
+use App\Models\User;
 
 /**
- * Pays a fulfilment agent their "per parcel" commission when they scan a
- * parcel as ready for pickup, and takes it back when they undo that scan.
+ * Pays a fulfilment agent their "per parcel" commission, at the moment
+ * their rule says (see SyncsAgentCompensation):
  *
- * Fulfilment agents' commission rules are stored with a fixed
- * trigger_status of ready_for_pickup (see SyncsAgentCompensation) — this
- * listener is what honours that trigger. Keyed off DeliveryStatusChanged
+ * - ready_for_pickup ("shipped"): when they scan the parcel out, taken
+ *   back when they undo that scan;
+ * - delivered: when the courier reports the parcel delivered, paid to the
+ *   agent whose scan staged it.
+ *
+ * Keyed off DeliveryStatusChanged
  * rather than ParcelReadyForPickup because only the former carries the
  * actor: the parcel belongs to the confirming agent (assigned_agent_id),
  * but the commission goes to whoever physically staged it.
@@ -30,24 +35,45 @@ class CalculateFulfilmentCommission
 {
     public function handle(DeliveryStatusChanged $event): void
     {
+        if ($event->order->is_test) {
+            return;
+        }
+
+        // Delivery comes from the courier (no actor): pay whoever staged it.
+        if ($event->toStatus === OrderDeliveryStatus::DELIVERED) {
+            $stagerId = $this->stagerOf($event);
+
+            if ($stagerId !== null) {
+                $this->pay($event, $stagerId, OrderDeliveryStatus::DELIVERED);
+            }
+
+            return;
+        }
+
         $actor = $event->actor;
 
-        if ($event->order->is_test || $actor === null || $actor->role !== UserRole::FULFILMENT_AGENT) {
+        if ($actor === null || $actor->role !== UserRole::FULFILMENT_AGENT) {
             return;
         }
 
         if ($event->toStatus === OrderDeliveryStatus::READY_FOR_PICKUP) {
-            $this->pay($event, $actor->id);
+            $this->pay($event, $actor->id, OrderDeliveryStatus::READY_FOR_PICKUP);
         } elseif ($event->fromStatus === OrderDeliveryStatus::READY_FOR_PICKUP && $event->toStatus === OrderDeliveryStatus::AWAITING_PICKUP) {
             $this->reverse($event, $actor->id);
         }
     }
 
-    private function pay(DeliveryStatusChanged $event, int $agentId): void
+    /**
+     * Pay the agent if their rule triggers on $moment. A rule saved before
+     * the trigger became selectable has none and pays at the scan, as it
+     * always did.
+     */
+    private function pay(DeliveryStatusChanged $event, int $agentId, OrderDeliveryStatus $moment): void
     {
         $order = $event->order;
 
-        $rule = CommissionRule::where('business_id', $order->business_id)
+        $rule = CommissionRule::withoutGlobalScope(BusinessScope::class)
+            ->where('business_id', $order->business_id)
             ->where('user_id', $agentId)
             ->whereNull('store_id')
             ->whereNull('product_id')
@@ -55,6 +81,12 @@ class CalculateFulfilmentCommission
             ->first();
 
         if ($rule === null || ! $rule->payment_mode->paysCommission() || $rule->amount === null) {
+            return;
+        }
+
+        $trigger = $rule->trigger_status ?? OrderDeliveryStatus::READY_FOR_PICKUP->value;
+
+        if ($trigger !== $moment->value) {
             return;
         }
 
@@ -69,7 +101,9 @@ class CalculateFulfilmentCommission
             'commission_rule_id' => $rule->id,
             'amount' => round((float) $rule->amount, 2),
             'entry_type' => 'earned',
-            'description' => __('Parcel prepared'),
+            'description' => $moment === OrderDeliveryStatus::DELIVERED
+                ? __('Parcel delivered')
+                : __('Parcel prepared'),
         ]);
 
         CommissionEarned::dispatch($entry);
@@ -98,6 +132,26 @@ class CalculateFulfilmentCommission
         ]);
 
         CommissionReversed::dispatch($reversal);
+    }
+
+    /**
+     * The fulfilment agent whose scan staged this parcel: the latest
+     * ready_for_pickup transition made by one. An undone scan is followed
+     * by a re-scan before the courier can collect, so the latest one is
+     * the scan that actually shipped.
+     */
+    private function stagerOf(DeliveryStatusChanged $event): ?int
+    {
+        return OrderStatusEvent::withoutGlobalScope(BusinessScope::class)
+            ->where('business_id', $event->order->business_id)
+            ->where('order_id', $event->order->id)
+            ->where('to_status', OrderDeliveryStatus::READY_FOR_PICKUP->value)
+            ->whereIn('changed_by_user_id', User::withoutGlobalScopes()
+                ->select('id')
+                ->where('business_id', $event->order->business_id)
+                ->where('role', UserRole::FULFILMENT_AGENT))
+            ->latest('id')
+            ->value('changed_by_user_id');
     }
 
     /**

@@ -15,6 +15,13 @@ import InputError from '@/components/input-error';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MultiCombobox } from '@/components/ui/multi-combobox';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import type { CommissionPaymentMode, SalaryPeriod, Store, User } from '@/types';
@@ -53,6 +60,16 @@ export function FulfilmentAgentForm({
         existingRule?.salary_period ?? 'monthly',
     );
     const [amount, setAmount] = useState(existingRule?.amount ?? '');
+    // When the per-parcel pay is earned: at the agent's own scan (shipped)
+    // or once the courier delivers. Older rules have no choice saved and
+    // pay at the scan.
+    const [triggerStatus, setTriggerStatus] = useState<
+        'ready_for_pickup' | 'delivered'
+    >(
+        existingRule?.trigger_status === 'delivered'
+            ? 'delivered'
+            : 'ready_for_pickup',
+    );
 
     const [storeScope, setStoreScope] = useState<'all' | 'selected'>(
         user?.agent_scopes?.some((scope) => scope.store_id !== null)
@@ -187,34 +204,93 @@ export function FulfilmentAgentForm({
                                     />
                                 )}
                                 {paysCommission && (
-                                    <div className="grid max-w-sm gap-1.5">
-                                        <Label
-                                            htmlFor="amount"
-                                            className="text-sm font-semibold"
-                                        >
-                                            {t('Amount Per Parcel')}
-                                        </Label>
-                                        <div className="relative">
-                                            <Input
-                                                id="amount"
-                                                name="amount"
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                value={amount}
-                                                onChange={(event) =>
-                                                    setAmount(
-                                                        event.target.value,
+                                    <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2">
+                                        <div className="grid gap-1.5">
+                                            <Label
+                                                htmlFor="amount"
+                                                className="text-sm font-semibold"
+                                            >
+                                                {t('Amount Per Parcel')}
+                                            </Label>
+                                            <div className="relative">
+                                                <Input
+                                                    id="amount"
+                                                    name="amount"
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    value={amount}
+                                                    onChange={(event) =>
+                                                        setAmount(
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="5.00"
+                                                    className="h-10 pr-12"
+                                                />
+                                                <span className="absolute top-1/2 right-3 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                                                    MAD
+                                                </span>
+                                            </div>
+                                            <InputError
+                                                message={errors.amount}
+                                            />
+                                        </div>
+
+                                        <div className="grid gap-1.5">
+                                            <Label
+                                                htmlFor="trigger_status"
+                                                className="text-sm font-semibold"
+                                            >
+                                                {t('Paid when the parcel is')}
+                                            </Label>
+                                            <input
+                                                type="hidden"
+                                                name="trigger_status"
+                                                value={triggerStatus}
+                                            />
+                                            <Select
+                                                value={triggerStatus}
+                                                onValueChange={(value) =>
+                                                    setTriggerStatus(
+                                                        value as
+                                                            | 'ready_for_pickup'
+                                                            | 'delivered',
                                                     )
                                                 }
-                                                placeholder="5.00"
-                                                className="h-10 pr-12"
+                                            >
+                                                <SelectTrigger
+                                                    id="trigger_status"
+                                                    className="h-10 w-full"
+                                                >
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="ready_for_pickup">
+                                                        {t(
+                                                            'Shipped (scanned out)',
+                                                        )}
+                                                    </SelectItem>
+                                                    <SelectItem value="delivered">
+                                                        {t(
+                                                            'Delivered to the customer',
+                                                        )}
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <p className="text-xs text-muted-foreground">
+                                                {triggerStatus === 'delivered'
+                                                    ? t(
+                                                          'Paid once the courier delivers a parcel this agent scanned out.',
+                                                      )
+                                                    : t(
+                                                          'Paid as soon as this agent scans the parcel out.',
+                                                      )}
+                                            </p>
+                                            <InputError
+                                                message={errors.trigger_status}
                                             />
-                                            <span className="absolute top-1/2 right-3 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
-                                                MAD
-                                            </span>
                                         </div>
-                                        <InputError message={errors.amount} />
                                     </div>
                                 )}
                             </div>

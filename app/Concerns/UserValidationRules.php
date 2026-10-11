@@ -210,6 +210,9 @@ trait UserValidationRules
             'salary_amount' => ['required_if:payment_mode,salary,salary_and_commission', 'nullable', 'numeric', 'min:0'],
             'salary_period' => ['required_if:payment_mode,salary,salary_and_commission', 'nullable', Rule::enum(SalaryPeriod::class)],
             'amount' => ['required_if:payment_mode,commission,salary_and_commission', 'nullable', 'numeric', 'min:0'],
+            // When the per-parcel pay is earned: at the agent's own scan
+            // (shipped out of the warehouse) or once the courier delivers.
+            'trigger_status' => ['nullable', Rule::in(['ready_for_pickup', 'delivered'])],
         ];
     }
 }
