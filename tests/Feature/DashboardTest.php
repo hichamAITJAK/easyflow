@@ -5,6 +5,7 @@ use App\Enums\OrderDeliveryStatus;
 use App\Enums\PerformanceMetric;
 use App\Enums\PerformanceTargetPeriod;
 use App\Enums\UserRole;
+use App\Models\CommissionLedgerEntry;
 use App\Models\CommissionRule;
 use App\Models\CourierSettlement;
 use App\Models\DailyStatsSummary;
@@ -810,6 +811,34 @@ test('the admin sees the upsells of an agent only once that agent is selected', 
             ->where('performance.view.type', 'agent')
             ->where('performance.view.upsells.count', 2)
             ->where('performance.view.upsells.amountMad', 150.5)
+            ->where('performance.view.upsells.commissionMad', 0)
+            ->etc());
+});
+
+test('the selected agent shows the commission earned on upsells', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $agent = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT, 'business_id' => $admin->business_id]);
+    $order = Order::factory()->create(['business_id' => $admin->business_id, 'assigned_agent_id' => $agent->id]);
+
+    $entry = fn (float $amount, ?string $description) => CommissionLedgerEntry::create([
+        'business_id' => $admin->business_id,
+        'user_id' => $agent->id,
+        'order_id' => $order->id,
+        'amount' => $amount,
+        'description' => $description,
+        'entry_type' => 'earned',
+    ]);
+
+    $entry(7.8, 'Upsell +78.00 MAD');
+    $entry(5, 'Upsell +50.00 MAD');
+    $entry(10, null);                                              // the order's own commission
+    // Outside the window.
+    $old = $entry(9, 'Upsell +90.00 MAD');
+    CommissionLedgerEntry::whereKey($old->id)->update(['created_at' => now()->subDays(60)]);
+
+    $this->actingAs($admin)->get(route('dashboard', ['agent_id' => $agent->id]))
+        ->assertInertia(fn ($page) => $page
+            ->where('performance.view.upsells.commissionMad', 12.8)
             ->etc());
 });
 

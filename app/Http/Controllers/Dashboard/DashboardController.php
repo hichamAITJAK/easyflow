@@ -7,6 +7,7 @@ use App\Enums\OrderDeliveryStatus;
 use App\Enums\PerformanceMetric;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\CommissionLedgerEntry;
 use App\Models\CommissionRule;
 use App\Models\CourierSettlement;
 use App\Models\DailyStatsSummary;
@@ -1147,7 +1148,10 @@ class DashboardController extends Controller
      * orders for a "delivered" trigger, confirmed ones otherwise (also for
      * salary-only agents).
      *
-     * @return array{count: int, amountMad: float, basis: string}
+     * commissionMad is what the agent earned for upsells in the window:
+     * their upsell commission entries, by the day each was paid.
+     *
+     * @return array{count: int, amountMad: float, basis: string, commissionMad: float}
      */
     private function upsellStats(?int $businessId, int $agentId, Carbon $since, Carbon $until): array
     {
@@ -1180,10 +1184,18 @@ class DashboardController extends Controller
             ->selectRaw('count(*) as total, coalesce(sum(upsell_amount), 0) as amount')
             ->first();
 
+        $commission = CommissionLedgerEntry::where('business_id', $businessId)
+            ->where('user_id', $agentId)
+            ->where('entry_type', 'earned')
+            ->where('description', 'like', 'Upsell %')
+            ->whereBetween('created_at', [$since->copy()->startOfDay(), $until->copy()->endOfDay()])
+            ->sum('amount');
+
         return [
             'count' => (int) ($row->total ?? 0),
             'amountMad' => round((float) ($row->amount ?? 0), 2),
             'basis' => $basis,
+            'commissionMad' => round((float) $commission, 2),
         ];
     }
 

@@ -56,6 +56,8 @@ export type PerfView =
               count: number;
               amountMad: number;
               basis: 'confirmed' | 'delivered';
+              /** Upsell commission paid to the agent in the window. */
+              commissionMad: number;
           };
       };
 
@@ -637,6 +639,21 @@ export function PerformanceTrack({
                                                 +{money(v.upsells.amountMad)}{' '}
                                                 MAD
                                             </span>
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between border-t border-border pt-4">
+                                        <span className="text-sm text-muted-foreground">
+                                            {t('Upsell commission')}
+                                        </span>
+                                        <span
+                                            className={cn(
+                                                'text-sm font-semibold tabular-nums',
+                                                v.upsells.commissionMad > 0
+                                                    ? 'text-[#0C7D6F]'
+                                                    : 'text-muted-foreground',
+                                            )}
+                                        >
+                                            {money(v.upsells.commissionMad)} MAD
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between border-t border-border pt-4">
