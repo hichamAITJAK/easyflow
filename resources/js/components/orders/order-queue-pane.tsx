@@ -99,6 +99,7 @@ export function OrderQueuePane({
     onStatusChanged,
     onCreateShipment,
     onEdit,
+    onShowSamePhone,
 }: {
     order: Order | null;
     loading: boolean;
@@ -111,6 +112,8 @@ export function OrderQueuePane({
     onCreateShipment?: (order: Order) => void;
     /** Not shown once the order has shipped — same edit lock the backend enforces. */
     onEdit?: (order: Order) => void;
+    /** The Duplicate tag: list every order from this phone. */
+    onShowSamePhone?: (order: Order) => void;
 }) {
     const { t } = useTranslation();
 
@@ -175,7 +178,9 @@ export function OrderQueuePane({
                     toast.error(
                         `Couldn't save "${t(confirmationStatusLabels[value])}"`,
                         {
-                            description: t('The order is unchanged. Check your connection and try again.'),
+                            description: t(
+                                'The order is unchanged. Check your connection and try again.',
+                            ),
                             action: {
                                 label: t('Retry'),
                                 onClick: () => applyStatus(value, order.id),
@@ -307,7 +312,9 @@ export function OrderQueuePane({
                     the one thing it can't: the order itself is fine, only
                     the fetch failed. */}
                 <EmptyDescription>
-                    {t("The order wasn't changed — this is a connection problem.")}
+                    {t(
+                        "The order wasn't changed — this is a connection problem.",
+                    )}
                 </EmptyDescription>
                 {onRetry && (
                     <Button type="button" variant="outline" onClick={onRetry}>
@@ -390,6 +397,7 @@ export function OrderQueuePane({
                     variant="queue"
                     showHistory={false}
                     onCreateShipment={onCreateShipment}
+                    onShowSamePhone={onShowSamePhone}
                 />
             </div>
 
@@ -490,7 +498,16 @@ export function OrderQueuePane({
                                 type="button"
                                 className="h-12 flex-1 text-base"
                                 disabled={updating}
-                                aria-label={t('Change status. Currently :status', { status: t(confirmationStatusLabels[order.confirmation_status]) })}
+                                aria-label={t(
+                                    'Change status. Currently :status',
+                                    {
+                                        status: t(
+                                            confirmationStatusLabels[
+                                                order.confirmation_status
+                                            ],
+                                        ),
+                                    },
+                                )}
                             >
                                 {updating && pendingStatus ? (
                                     <>
@@ -645,7 +662,8 @@ export function OrderQueuePane({
                                                 order.customer_phone ?? '',
                                             )
                                             .then(() =>
-                                                toast.success(t('Phone number copied'),
+                                                toast.success(
+                                                    t('Phone number copied'),
                                                 ),
                                             )
                                             .catch(() =>
@@ -704,7 +722,9 @@ export function OrderQueuePane({
                 no confirmation at all on the most consequential action here. */}
             <output aria-live="polite" className="sr-only">
                 {updating && pendingStatus
-                    ? t('Saving :status…', { status: t(confirmationStatusLabels[pendingStatus]) })
+                    ? t('Saving :status…', {
+                          status: t(confirmationStatusLabels[pendingStatus]),
+                      })
                     : `${t(confirmationStatusLabels[order.confirmation_status])} — ${order.customer_name ?? t('this order')}`}
             </output>
 
@@ -765,7 +785,9 @@ export function OrderQueuePane({
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t("Don't mark it")}</AlertDialogCancel>
+                        <AlertDialogCancel>
+                            {t("Don't mark it")}
+                        </AlertDialogCancel>
                         <AlertDialogAction
                             className={buttonVariants({
                                 variant: 'destructive',

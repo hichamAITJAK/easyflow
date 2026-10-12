@@ -237,6 +237,28 @@ export default function OrdersQueue({
         orders.data.find((order) => order.id === selectedId) ?? null;
     const displayedOrder = selectedOrder ?? optimisticSelectedOrder;
 
+    // The Duplicate tag: search the phone across every bucket. The search
+    // box shows it, and its debounced push is skipped (already sent here).
+    const showSamePhone = (order: Order) => {
+        const phone = order.customer_phone ?? '';
+
+        if (phone === '') {
+            return;
+        }
+
+        if (phone !== search) {
+            isFirstSearchRun.current = true;
+            setSearch(phone);
+        }
+
+        setKeepSelectedId(null);
+        router.get(
+            ordersIndex().url,
+            { ...filters, bucket: undefined, search: phone },
+            { preserveState: true, preserveScroll: true },
+        );
+    };
+
     const switchBucket = (bucket: OrderQueueBucket) => {
         // Changing the list is an explicit move away, so a pinned order
         // stops overriding the "first card in the new list" default.
@@ -334,7 +356,9 @@ export default function OrdersQueue({
                                         // searchable, so listing it would send
                                         // agents hunting for a customer by name
                                         // and getting nothing.
-                                        placeholder={t('Reference, tracking, or full phone…')}
+                                        placeholder={t(
+                                            'Reference, tracking, or full phone…',
+                                        )}
                                         value={search}
                                         onChange={(event) =>
                                             setSearch(event.target.value)
@@ -373,9 +397,7 @@ export default function OrdersQueue({
                                 value={filters.bucket ?? 'all'}
                                 onValueChange={(value) => {
                                     if (value) {
-                                        switchBucket(
-                                            value as OrderQueueBucket,
-                                        );
+                                        switchBucket(value as OrderQueueBucket);
                                     }
                                 }}
                                 // Negative margins let the chips bleed to the
@@ -450,11 +472,7 @@ export default function OrdersQueue({
                                                 is clear" read as a failed
                                                 search; the empty state's icon
                                                 should match its cause. */}
-                                            {search ? (
-                                                <Search />
-                                            ) : (
-                                                <Inbox />
-                                            )}
+                                            {search ? <Search /> : <Inbox />}
                                         </EmptyMedia>
                                         {/* Three distinct states, not two: a
                                             search that found nothing, an
@@ -472,11 +490,18 @@ export default function OrdersQueue({
                                         </EmptyTitle>
                                         <EmptyDescription>
                                             {search
-                                                ? t("No order matches “:search”. Reference and tracking match on any part; a phone number has to be complete, and customer names aren't searchable.", { search })
+                                                ? t(
+                                                      "No order matches “:search”. Reference and tracking match on any part; a phone number has to be complete, and customer names aren't searchable.",
+                                                      { search },
+                                                  )
                                                 : (filters.bucket ?? 'all') ===
                                                     'all'
-                                                  ? t('No orders are assigned to you right now. New ones appear here automatically.')
-                                                  : t('No orders have this status. Try another filter.')}
+                                                  ? t(
+                                                        'No orders are assigned to you right now. New ones appear here automatically.',
+                                                    )
+                                                  : t(
+                                                        'No orders have this status. Try another filter.',
+                                                    )}
                                         </EmptyDescription>
                                     </EmptyHeader>
                                     {/* A zero-result search is a dead end
@@ -531,13 +556,9 @@ export default function OrdersQueue({
                                             key={order.id}
                                             id={`queue-order-${order.id}`}
                                             order={order}
-                                            selected={
-                                                order.id === selectedId
-                                            }
+                                            selected={order.id === selectedId}
                                             onSelect={() => {
-                                                setManualSelectedId(
-                                                    order.id,
-                                                );
+                                                setManualSelectedId(order.id);
                                                 setKeepSelectedId(null);
 
                                                 // Only the stacked layout
@@ -610,9 +631,13 @@ export default function OrdersQueue({
                                     {/* "Get started" is filler on a screen
                                         the agent lives in all day. Say what
                                         the pane is for and how to fill it. */}
-                                    <EmptyTitle>{t('No order selected')}</EmptyTitle>
+                                    <EmptyTitle>
+                                        {t('No order selected')}
+                                    </EmptyTitle>
                                     <EmptyDescription>
-                                        {t('Pick an order from the queue to see its details and call the customer.')}
+                                        {t(
+                                            'Pick an order from the queue to see its details and call the customer.',
+                                        )}
                                     </EmptyDescription>
                                 </EmptyHeader>
                             </Empty>
@@ -628,6 +653,7 @@ export default function OrdersQueue({
                                 onStatusChanged={handleStatusChanged}
                                 onCreateShipment={setShipmentOrder}
                                 onEdit={setEditOrder}
+                                onShowSamePhone={showSamePhone}
                             />
                         )}
                     </div>

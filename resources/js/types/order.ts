@@ -83,6 +83,19 @@ export type OrderItem = {
     } | null;
 };
 
+/** Another order from the same phone, as OrderController::show lists it on a duplicate. */
+export type SamePhoneOrder = {
+    id: number;
+    reference: string | null;
+    total_amount: string;
+    confirmation_status: OrderConfirmationStatus;
+    delivery_status: OrderDeliveryStatus | null;
+    ordered_at: string | null;
+    created_at: string;
+    store?: { id: number; name: string } | null;
+    assigned_agent?: { id: number; name: string } | null;
+};
+
 export type Order = {
     id: number;
     reference: string | null;
@@ -117,6 +130,8 @@ export type Order = {
     return_reason_code: OrderReturnReason | null;
     notes: string | null;
     status_events?: OrderStatusEvent[];
+    /** Only on a duplicate's full detail (OrderController::show). */
+    same_phone_orders?: SamePhoneOrder[];
     is_duplicate_flagged: boolean;
     is_blacklist_flagged: boolean;
     is_test: boolean;

@@ -141,3 +141,26 @@ test('orders can be sorted by source', function () {
             ->where('filters.sort', 'source_platform')
         );
 });
+
+test('a duplicate lists the other orders from its phone, even ones held by another agent', function () {
+    $admin = makeBusinessUser();
+    $agent = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT, 'business_id' => $admin->business_id]);
+    $colleague = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT, 'business_id' => $admin->business_id]);
+
+    $first = makeOrder($admin->business_id, ['confirmation_status' => 'confirmed', 'assigned_agent_id' => $colleague->id]);
+    $duplicate = makeOrder($admin->business_id, ['assigned_agent_id' => $agent->id, 'is_duplicate_flagged' => true]);
+    makeOrder($admin->business_id, ['customer_phone' => '+212611111111', 'customer_phone_hash' => hash('sha256', '+212611111111')]);
+    makeOrder(makeBusinessUser()->business_id);
+
+    $this->actingAs($agent)->getJson(route('orders.show', $duplicate))
+        ->assertOk()
+        ->assertJsonCount(1, 'order.same_phone_orders')
+        ->assertJsonPath('order.same_phone_orders.0.id', $first->id)
+        ->assertJsonPath('order.same_phone_orders.0.assigned_agent.name', $colleague->name)
+        ->assertJsonMissingPath('order.same_phone_orders.0.customer_phone');
+
+    // A plain order carries no list.
+    $this->actingAs($colleague)->getJson(route('orders.show', $first))
+        ->assertOk()
+        ->assertJsonMissingPath('order.same_phone_orders');
+});

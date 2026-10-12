@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import {
     AlertCircle,
     Copy,
+    CopyX,
     NotebookText,
     Phone,
     Truck,
@@ -55,7 +56,7 @@ import {
 import { formatMoroccoPhoneForWhatsApp } from '@/lib/phone';
 import { cn } from '@/lib/utils';
 import type { AgentOption } from '@/pages/orders/columns';
-import type { Order } from '@/types';
+import type { Order, SamePhoneOrder } from '@/types';
 
 const UNASSIGNED = '__unassigned__';
 
@@ -227,6 +228,69 @@ function AssignedAgent({
 }
 
 /**
+ * A duplicate's other orders from the same phone, newest first, with who
+ * holds each one, so the agent on the call knows what this customer
+ * already ordered before confirming another.
+ */
+function SamePhoneOrders({ orders }: { orders: SamePhoneOrder[] }) {
+    const { t } = useTranslation();
+
+    return (
+        <Card className="gap-0 border-[#EFA22C]/40 py-0 shadow-none">
+            <div className="flex items-center gap-2 border-b border-[#EFA22C]/30 bg-[#EFA22C]/5 px-3 py-2 text-sm font-medium text-[#A87110]">
+                <CopyX className="size-4 shrink-0" />
+                {t('Other orders from this phone')}
+                <span className="ml-auto font-mono tabular-nums">
+                    {orders.length}
+                </span>
+            </div>
+            <ul className="divide-y">
+                {orders.map((other) => (
+                    <li
+                        key={other.id}
+                        className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2 text-sm"
+                    >
+                        <span className="font-mono text-xs">
+                            {other.reference ?? `#${other.id}`}
+                        </span>
+                        <Badge
+                            variant="outline"
+                            className={
+                                other.delivery_status
+                                    ? deliveryStatusColors[
+                                          other.delivery_status
+                                      ]
+                                    : confirmationStatusColors[
+                                          other.confirmation_status
+                                      ]
+                            }
+                        >
+                            {other.delivery_status
+                                ? t(deliveryStatusLabels[other.delivery_status])
+                                : t(
+                                      confirmationStatusLabels[
+                                          other.confirmation_status
+                                      ],
+                                  )}
+                        </Badge>
+                        <span className="font-mono text-xs tabular-nums">
+                            {other.total_amount} MAD
+                        </span>
+                        <span className="ml-auto truncate text-xs text-muted-foreground">
+                            {other.assigned_agent?.name ?? t('Unassigned')}
+                            {' · '}
+                            {formatDateTime(
+                                other.ordered_at ?? other.created_at,
+                            )}
+                        </span>
+                    </li>
+                ))}
+            </ul>
+        </Card>
+    );
+}
+
+/**
  * Full order detail, shared between the admin's large view dialog and the
  * confirmation agent's call-center detail pane — the two must never show
  * different information for the same order, so both render this instead of
@@ -243,6 +307,7 @@ export function OrderDetail({
     showHistory = true,
     agents,
     onAgentAssigned,
+    onShowSamePhone,
     variant = 'admin',
 }: {
     order: Order;
@@ -252,6 +317,8 @@ export function OrderDetail({
     /** Passing this (admin-only) turns the confirmation agent field into an assign control. */
     agents?: AgentOption[];
     onAgentAssigned?: () => void;
+    /** Makes the Duplicate tag a button that lists every order from this phone. */
+    onShowSamePhone?: (order: Order) => void;
     /**
      * Same facts either way — only emphasis differs. The `queue` variant
      * drops the contact buttons the pane's own action rail already owns at a
@@ -297,14 +364,33 @@ export function OrderDetail({
                 {order.is_test && (
                     <Badge variant="secondary">{t('Test')}</Badge>
                 )}
-                {order.is_duplicate_flagged && (
-                    <Badge
-                        variant="outline"
-                        className="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                    >
-                        Duplicate
-                    </Badge>
-                )}
+                {order.is_duplicate_flagged &&
+                    (onShowSamePhone && order.customer_phone ? (
+                        <Badge
+                            asChild
+                            variant="outline"
+                            className="cursor-pointer border-transparent bg-[#EFA22C]/12 font-semibold text-[#A87110] hover:bg-[#EFA22C]/20"
+                        >
+                            <button
+                                type="button"
+                                title={t(
+                                    'Show all orders from this phone number',
+                                )}
+                                onClick={() => onShowSamePhone(order)}
+                            >
+                                <CopyX />
+                                {t('Duplicate')}
+                            </button>
+                        </Badge>
+                    ) : (
+                        <Badge
+                            variant="outline"
+                            className="border-transparent bg-[#EFA22C]/12 font-semibold text-[#A87110]"
+                        >
+                            <CopyX />
+                            {t('Duplicate')}
+                        </Badge>
+                    ))}
                 {order.is_blacklist_flagged && (
                     <Badge variant="destructive">{t('Blacklisted')}</Badge>
                 )}
@@ -333,6 +419,10 @@ export function OrderDetail({
                     </span>
                 )}
             </div>
+
+            {(order.same_phone_orders?.length ?? 0) > 0 && (
+                <SamePhoneOrders orders={order.same_phone_orders ?? []} />
+            )}
 
             {order.notes && (
                 <Alert variant="warning">

@@ -185,6 +185,21 @@ class OrderController extends Controller
             'statusEvents' => fn ($query) => $query->with('changedByUser:id,name')->latest('created_at'),
         ])->makeVisible(['customer_name', 'customer_phone', 'customer_address']);
 
+        // A duplicate lists the other orders from its phone, whoever holds
+        // them: the agent on the call sees what this customer already
+        // ordered, even orders assigned to a colleague. Status only, no
+        // contact details, and no way to open or act on them from here.
+        if ($order->is_duplicate_flagged && $order->customer_phone_hash !== null) {
+            $order->setAttribute('same_phone_orders', Order::where('business_id', $order->business_id)
+                ->where('customer_phone_hash', $order->customer_phone_hash)
+                ->whereKeyNot($order->id)
+                ->with(['store:id,name', 'assignedAgent:id,name'])
+                ->latest('ordered_at')
+                ->latest('id')
+                ->limit(20)
+                ->get(['id', 'reference', 'store_id', 'assigned_agent_id', 'total_amount', 'confirmation_status', 'delivery_status', 'ordered_at', 'created_at']));
+        }
+
         return response()->json(['order' => $order]);
     }
 
