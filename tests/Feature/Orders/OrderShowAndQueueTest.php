@@ -1,7 +1,12 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Models\OrderItem;
 use App\Models\OrderStatusEvent;
+use App\Models\Product;
+use App\Models\ProductOption;
+use App\Models\ProductOptionValue;
+use App\Models\ProductVariant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -163,4 +168,27 @@ test('a duplicate lists the other orders from its phone, even ones held by anoth
     $this->actingAs($colleague)->getJson(route('orders.show', $first))
         ->assertOk()
         ->assertJsonMissingPath('order.same_phone_orders');
+});
+
+test('the order detail names each line\'s variant options', function () {
+    $admin = makeBusinessUser();
+    $businessId = $admin->business_id;
+    $product = Product::factory()->create(['business_id' => $businessId]);
+    $color = ProductOption::factory()->create(['business_id' => $businessId, 'product_id' => $product->id, 'name' => 'Color']);
+    $black = ProductOptionValue::factory()->create(['business_id' => $businessId, 'product_option_id' => $color->id, 'value' => 'Black']);
+    $variant = ProductVariant::factory()->create(['business_id' => $businessId, 'product_id' => $product->id]);
+    $variant->optionValues()->attach($black->id);
+
+    $order = makeOrder($businessId);
+    OrderItem::factory()->create([
+        'business_id' => $businessId,
+        'order_id' => $order->id,
+        'product_id' => $product->id,
+        'product_variant_id' => $variant->id,
+    ]);
+
+    $this->actingAs($admin)->getJson(route('orders.show', $order))
+        ->assertOk()
+        ->assertJsonPath('order.items.0.variant.option_values.0.value', 'Black')
+        ->assertJsonPath('order.items.0.variant.option_values.0.option.name', 'Color');
 });

@@ -560,6 +560,28 @@ export function OrderDetail({
                                                     item.product_name_snapshot
                                                 )}
                                             </ItemTitle>
+                                            {(item.variant?.option_values
+                                                ?.length ?? 0) > 0 && (
+                                                <div className="flex flex-wrap gap-1">
+                                                    {item.variant?.option_values?.map(
+                                                        (optionValue) => (
+                                                            <Badge
+                                                                key={
+                                                                    optionValue.id
+                                                                }
+                                                                variant="outline"
+                                                                className="border-[#49183C]/20 bg-[#49183C]/5 font-medium text-[#49183C] dark:text-[#E4C8DC]"
+                                                            >
+                                                                {optionValue
+                                                                    .option
+                                                                    ?.name
+                                                                    ? `${optionValue.option.name}: ${optionValue.value}`
+                                                                    : optionValue.value}
+                                                            </Badge>
+                                                        ),
+                                                    )}
+                                                </div>
+                                            )}
                                             <ItemDescription>
                                                 {t('Qty :quantity', {
                                                     quantity: item.quantity,

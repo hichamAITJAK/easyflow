@@ -180,7 +180,8 @@ class OrderController extends Controller
             'store.platform',
             'assignedAgent',
             'items.product',
-            'items.variant',
+            // Option values name the variant on each line (Color: Black…).
+            'items.variant.optionValues.option',
             'deliveryAccount.courier',
             'statusEvents' => fn ($query) => $query->with('changedByUser:id,name')->latest('created_at'),
         ])->makeVisible(['customer_name', 'customer_phone', 'customer_address']);

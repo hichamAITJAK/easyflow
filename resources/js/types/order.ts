@@ -81,6 +81,15 @@ export type OrderItem = {
         thumbnail: string | null;
         public_url: string | null;
     } | null;
+    /** On the full detail (OrderController::show): the chosen options. */
+    variant?: {
+        id: number;
+        option_values?: {
+            id: number;
+            value: string;
+            option?: { id: number; name: string } | null;
+        }[];
+    } | null;
 };
 
 /** Another order from the same phone, as OrderController::show lists it on a duplicate. */
