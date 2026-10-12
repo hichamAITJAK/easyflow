@@ -9,6 +9,7 @@ use App\Models\HourlyConfirmationStat;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Scopes\BusinessScope;
+use App\Models\Store;
 use App\Models\User;
 use App\Services\Operations\Orders\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -95,6 +96,29 @@ test('stats fan out to courier- and product-scoped rows', function () {
         ->and($courierRow->delivery_seconds_total)->toBeGreaterThan(0)
         ->and($productRow->delivered_count)->toBe(1)
         ->and((float) $productRow->revenue_delivered)->toBe(100.0);
+});
+
+test('product and courier stats are also kept per store', function () {
+    $admin = makeBusinessUser();
+    $store = Store::factory()->create(['business_id' => $admin->business_id]);
+    $account = DeliveryAccount::factory()->create(['business_id' => $admin->business_id]);
+    $product = Product::factory()->create(['business_id' => $admin->business_id]);
+
+    $order = makeOrder($admin->business_id, [
+        'store_id' => $store->id,
+        'confirmation_status' => 'submitted_to_courier',
+        'delivery_account_id' => $account->id,
+        'shipped_at' => now()->subDay(),
+    ]);
+    OrderItem::factory()->create(['business_id' => $admin->business_id, 'order_id' => $order->id, 'product_id' => $product->id]);
+
+    app(OrderService::class)->updateDeliveryStatus($order, OrderDeliveryStatus::DELIVERED);
+
+    expect(statsRow($admin->business_id, ['store_id' => $store->id, 'product_id' => $product->id])->delivered_count)->toBe(1)
+        ->and(statsRow($admin->business_id, ['store_id' => $store->id, 'delivery_account_id' => $account->id])->delivered_count)->toBe(1)
+        // The all-stores rows are unchanged.
+        ->and(statsRow($admin->business_id, ['product_id' => $product->id])->delivered_count)->toBe(1)
+        ->and(statsRow($admin->business_id, ['store_id' => $store->id])->delivered_count)->toBe(1);
 });
 
 test('commission calculation mirrors into commission_total', function () {

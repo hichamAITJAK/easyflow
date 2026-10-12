@@ -206,6 +206,16 @@ class RebuildDailyStatsCommand extends Command
             $scopes[] = ['product_id' => $productId] + $blank;
         }
 
+        if ($order->store_id !== null) {
+            if ($order->delivery_account_id !== null) {
+                $scopes[] = ['store_id' => $order->store_id, 'delivery_account_id' => $order->delivery_account_id] + $blank;
+            }
+
+            foreach ($productIds as $productId) {
+                $scopes[] = ['store_id' => $order->store_id, 'product_id' => $productId] + $blank;
+            }
+        }
+
         return $scopes;
     }
 

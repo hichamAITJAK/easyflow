@@ -108,6 +108,18 @@ trait IncrementsDailyStats
             $scopes[] = ['product_id' => $productId] + $blank;
         }
 
+        // The same courier and product rows again per store, so the
+        // dashboard breakdown can follow its store filter.
+        if ($order->store_id !== null) {
+            if ($order->delivery_account_id !== null) {
+                $scopes[] = ['store_id' => $order->store_id, 'delivery_account_id' => $order->delivery_account_id] + $blank;
+            }
+
+            foreach ($productIds as $productId) {
+                $scopes[] = ['store_id' => $order->store_id, 'product_id' => $productId] + $blank;
+            }
+        }
+
         return $scopes;
     }
 

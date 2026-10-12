@@ -114,7 +114,11 @@ class DashboardController extends Controller
 
         $stores = Store::where('business_id', $businessId)->orderBy('name')->get(['id', 'name']);
 
-        $breakdown = $this->breakdown($businessId, $since, $until);
+        $breakdown = $this->breakdown($businessId, $storeIds, $since, $until);
+        // The weak-product alert keeps watching every store.
+        $alertProducts = $storeIds === []
+            ? $breakdown['products']
+            : $this->breakdown($businessId, [], $since, $until)['products'];
         $goals = $this->goals($businessId);
 
         return Inertia::render('dashboard/admin', [
@@ -130,7 +134,7 @@ class DashboardController extends Controller
             ],
             'stores' => $stores,
             'agents' => $agents,
-            'alerts' => $this->attentionAlerts($businessId, $breakdown['products'], $since, $until),
+            'alerts' => $this->attentionAlerts($businessId, $alertProducts, $since, $until),
             'kpis' => $this->kpis($businessId, $storeIds, $rows, $previousRows, $since, $until),
             'income' => $this->income($businessId, $storeIds, $since, $until),
             'expected' => $this->expected($businessId),
@@ -699,11 +703,12 @@ class DashboardController extends Controller
      * {name, img, orders, conf, deliv, ret} with [count, ratePct] pairs.
      * conf is null for couriers, who only ever see confirmed orders.
      *
+     * @param  list<int>  $storeIds
      * @return array<string, array<int, array<string, mixed>>>
      */
-    private function breakdown(?int $businessId, Carbon $since, Carbon $until): array
+    private function breakdown(?int $businessId, array $storeIds, Carbon $since, Carbon $until): array
     {
-        $table = $this->performanceTable($businessId, $since, $until);
+        $table = $this->performanceTable($businessId, $storeIds, $since, $until);
 
         $map = fn (array $row): array => [
             'name' => $row['name'],
@@ -898,17 +903,27 @@ class DashboardController extends Controller
     }
 
     /**
-     * Ranked store / product / courier rows. These read their own
-     * dimension rows (store-, product-, courier-scoped), which carry no
-     * second store dimension — so the page's store filter doesn't apply
-     * here; the tabs themselves are the breakdown.
+     * Ranked store / product / courier rows, read from their own
+     * dimension rows. With stores picked, the stores tab lists only those
+     * and the product and courier tabs read their per-store rows.
      *
+     * @param  list<int>  $storeIds
      * @return array<string, array<int, array<string, mixed>>>
      */
-    private function performanceTable(?int $businessId, Carbon $since, Carbon $until): array
+    private function performanceTable(?int $businessId, array $storeIds, Carbon $since, Carbon $until): array
     {
         $dimensionRows = fn (string $column) => DailyStatsSummary::where('business_id', $businessId)
             ->whereNotNull($column)
+            ->whereNull('agent_id')
+            // Each row is exactly one dimension (plus, for products and
+            // couriers, maybe a store), so nothing is counted twice.
+            ->when($column !== 'product_id', fn ($query) => $query->whereNull('product_id'))
+            ->when($column !== 'delivery_account_id', fn ($query) => $query->whereNull('delivery_account_id'))
+            ->when(
+                $storeIds !== [],
+                fn ($query) => $query->whereIn('store_id', $storeIds),
+                fn ($query) => $query->when($column !== 'store_id', fn ($query) => $query->whereNull('store_id')),
+            )
             ->whereBetween('stat_date', [$since, $until])
             ->get()
             ->groupBy($column);

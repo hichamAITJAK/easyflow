@@ -14,6 +14,7 @@ use App\Models\Order;
 use App\Models\OrderStatusEvent;
 use App\Models\PerformanceTarget;
 use App\Models\Product;
+use App\Models\Store;
 use App\Models\User;
 use App\Services\Operations\Orders\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -316,6 +317,54 @@ test('a product delivering under half of its confirmed orders raises the low-del
             ->where('breakdown.products.0.deliv', [10, 40])
             ->etc()
         );
+});
+
+test('the breakdown shows only the selected stores', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    [$casa, $rabat] = Store::factory()->count(2)->sequence(['name' => 'Casa'], ['name' => 'Rabat'])
+        ->create(['business_id' => $admin->business_id]);
+    $serum = Product::factory()->create(['business_id' => $admin->business_id, 'name' => 'Serum']);
+    $pillow = Product::factory()->create(['business_id' => $admin->business_id, 'name' => 'Pillow']);
+    $courier = DeliveryCourrier::factory()->create();
+    $account = DeliveryAccount::factory()->create(['business_id' => $admin->business_id, 'courier_id' => $courier->id, 'label' => 'Ozon']);
+
+    $row = fn (array $scope, int $orders) => DailyStatsSummary::factory()->create([
+        'business_id' => $admin->business_id,
+        'stat_date' => today()->subDay(),
+        'orders_count' => $orders,
+        'confirmed_count' => $orders,
+        'submitted_to_courier_count' => $orders,
+        ...$scope,
+    ]);
+
+    // All-stores rows.
+    $row(['store_id' => $casa->id], 10);
+    $row(['store_id' => $rabat->id], 4);
+    $row(['product_id' => $serum->id], 10);
+    $row(['product_id' => $pillow->id], 4);
+    $row(['delivery_account_id' => $account->id], 14);
+    // Per-store rows: Casa sold only Serum, Rabat only Pillow.
+    $row(['store_id' => $casa->id, 'product_id' => $serum->id], 10);
+    $row(['store_id' => $rabat->id, 'product_id' => $pillow->id], 4);
+    $row(['store_id' => $casa->id, 'delivery_account_id' => $account->id], 10);
+    $row(['store_id' => $rabat->id, 'delivery_account_id' => $account->id], 4);
+
+    $this->actingAs($admin)->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->has('breakdown.stores', 2)
+            ->has('breakdown.products', 2)
+            ->where('breakdown.couriers.0.orders', 14)
+            ->etc());
+
+    $this->actingAs($admin)->get(route('dashboard', ['store_ids' => (string) $casa->id]))
+        ->assertInertia(fn ($page) => $page
+            ->has('breakdown.stores', 1)
+            ->where('breakdown.stores.0.name', 'Casa')
+            ->has('breakdown.products', 1)
+            ->where('breakdown.products.0.name', 'Serum')
+            ->where('breakdown.products.0.orders', 10)
+            ->where('breakdown.couriers.0.orders', 10)
+            ->etc());
 });
 
 test('goal attainment averages each rate over its goal and grades it', function () {
