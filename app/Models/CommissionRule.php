@@ -25,13 +25,15 @@ use Illuminate\Support\Carbon;
  * @property string|null $trigger_status
  * @property CommissionAmountType|null $amount_type
  * @property float|null $amount
+ * @property CommissionAmountType|null $upsell_amount_type
+ * @property float|null $upsell_amount
  * @property float|null $salary_amount
  * @property SalaryPeriod|null $salary_period
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['business_id', 'user_id', 'payment_mode', 'store_id', 'product_id', 'trigger_status', 'amount_type', 'amount', 'salary_amount', 'salary_period', 'is_active'])]
+#[Fillable(['business_id', 'user_id', 'payment_mode', 'store_id', 'product_id', 'trigger_status', 'amount_type', 'amount', 'upsell_amount_type', 'upsell_amount', 'salary_amount', 'salary_period', 'is_active'])]
 #[ScopedBy([BusinessScope::class])]
 class CommissionRule extends Model
 {
@@ -44,6 +46,8 @@ class CommissionRule extends Model
             'payment_mode' => CommissionPaymentMode::class,
             'amount_type' => CommissionAmountType::class,
             'amount' => 'decimal:2',
+            'upsell_amount_type' => CommissionAmountType::class,
+            'upsell_amount' => 'decimal:2',
             'salary_amount' => 'decimal:2',
             'salary_period' => SalaryPeriod::class,
             'is_active' => 'boolean',

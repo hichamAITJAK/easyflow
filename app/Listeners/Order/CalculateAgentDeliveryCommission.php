@@ -7,6 +7,7 @@ use App\Enums\OrderDeliveryStatus;
 use App\Events\Commission\CommissionEarned;
 use App\Events\Order\OrderDelivered;
 use App\Listeners\Order\Concerns\IncrementsDailyStats;
+use App\Listeners\Order\Concerns\PaysUpsellCommission;
 use App\Models\CommissionLedgerEntry;
 use App\Models\CommissionRule;
 use App\Models\OrderItem;
@@ -26,6 +27,7 @@ use App\Models\Scopes\BusinessScope;
 class CalculateAgentDeliveryCommission
 {
     use IncrementsDailyStats;
+    use PaysUpsellCommission;
 
     public function handle(OrderDelivered $event): void
     {
@@ -102,6 +104,10 @@ class CalculateAgentDeliveryCommission
             ]);
 
             CommissionEarned::dispatch($entry);
+        }
+
+        if ($defaultRule->trigger_status === OrderDeliveryStatus::DELIVERED->value) {
+            $orderCommission += $this->payUpsellCommission($order, $defaultRule);
         }
 
         if ($orderCommission > 0) {

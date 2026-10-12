@@ -111,6 +111,17 @@ trait UserValidationRules
                 $this->percentageCapRule('amount_type'),
             ],
 
+            // Optional upsell commission: a fixed amount per upsold order,
+            // or a percentage of the upsell. Blank type means none.
+            'upsell_amount_type' => ['nullable', Rule::enum(CommissionAmountType::class)],
+            'upsell_amount' => [
+                'required_with:upsell_amount_type',
+                'nullable',
+                'numeric',
+                'min:0',
+                $this->percentageCapRule('upsell_amount_type'),
+            ],
+
             // Overrides only apply when the agent earns commission — a specific store or
             // product earns a different rate than the agent's default above.
             'overrides' => ['nullable', 'array'],

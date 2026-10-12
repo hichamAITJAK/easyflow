@@ -141,6 +141,9 @@ trait SyncsAgentCompensation
         $mode = CommissionPaymentMode::from($data['payment_mode']);
         $isCommission = $mode->paysCommission();
         $isSalary = $mode->paysSalary();
+        $hasUpsell = $isCommission && ! $isFulfilment
+            && ($data['upsell_amount_type'] ?? null) !== null
+            && ($data['upsell_amount'] ?? null) !== null;
 
         CommissionRule::updateOrCreate(
             ['business_id' => $user->business_id, 'user_id' => $user->id, 'store_id' => null, 'product_id' => null],
@@ -159,6 +162,9 @@ trait SyncsAgentCompensation
                     ? ($isFulfilment ? 'fixed' : ($data['amount_type'] ?? null))
                     : null,
                 'amount' => $isCommission ? ($data['amount'] ?? null) : null,
+                // Upsell commission: confirmation agents on commission only.
+                'upsell_amount_type' => $hasUpsell ? $data['upsell_amount_type'] : null,
+                'upsell_amount' => $hasUpsell ? $data['upsell_amount'] : null,
                 'is_active' => true,
             ],
         );

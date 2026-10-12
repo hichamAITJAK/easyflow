@@ -163,6 +163,12 @@ export function ConfirmationAgentForm({
     const [triggerStatus, setTriggerStatus] = useState(
         existingRule?.trigger_status ?? 'confirmed',
     );
+    const [upsellType, setUpsellType] = useState<CommissionAmountType | 'none'>(
+        existingRule?.upsell_amount_type ?? 'none',
+    );
+    const [upsellAmount, setUpsellAmount] = useState(
+        existingRule?.upsell_amount ?? '',
+    );
 
     const [storeScope, setStoreScope] = useState<'all' | 'selected'>(
         user?.agent_scopes?.some((scope) => scope.store_id !== null)
@@ -389,6 +395,13 @@ export function ConfirmationAgentForm({
                                 name="trigger_status"
                                 value={triggerStatus}
                             />
+                            {upsellType !== 'none' && (
+                                <input
+                                    type="hidden"
+                                    name="upsell_amount_type"
+                                    value={upsellType}
+                                />
+                            )}
                         </>
                     )}
                     <input
@@ -738,6 +751,133 @@ export function ConfirmationAgentForm({
                                                 />
                                             </div>
                                         </div>
+
+                                        <Card className="shadow-none">
+                                            <CardContent className="space-y-4">
+                                                <div>
+                                                    <h4 className="text-sm font-medium">
+                                                        {t('Upsell commission')}
+                                                    </h4>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {t(
+                                                            'Extra pay when the agent raises the order total, paid at the same trigger event.',
+                                                        )}
+                                                    </p>
+                                                </div>
+                                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                                    <div className="grid gap-1.5">
+                                                        <Label
+                                                            htmlFor="upsell_amount_type"
+                                                            className="text-sm font-semibold"
+                                                        >
+                                                            {t('Upsell pay')}
+                                                        </Label>
+                                                        <Select
+                                                            value={upsellType}
+                                                            onValueChange={(
+                                                                v,
+                                                            ) =>
+                                                                setUpsellType(
+                                                                    v as
+                                                                        | CommissionAmountType
+                                                                        | 'none',
+                                                                )
+                                                            }
+                                                        >
+                                                            <SelectTrigger
+                                                                id="upsell_amount_type"
+                                                                className="h-10 w-full"
+                                                            >
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="none">
+                                                                    {t(
+                                                                        'No upsell commission',
+                                                                    )}
+                                                                </SelectItem>
+                                                                <SelectItem value="fixed">
+                                                                    {t(
+                                                                        'Fixed amount per upsold order',
+                                                                    )}
+                                                                </SelectItem>
+                                                                <SelectItem value="percentage">
+                                                                    {t(
+                                                                        'Percentage of the upsell',
+                                                                    )}
+                                                                </SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <InputError
+                                                            message={
+                                                                errors.upsell_amount_type
+                                                            }
+                                                        />
+                                                    </div>
+                                                    {upsellType !== 'none' && (
+                                                        <div className="grid gap-1.5">
+                                                            <Label
+                                                                htmlFor="upsell_amount"
+                                                                className="text-sm font-semibold"
+                                                            >
+                                                                {upsellType ===
+                                                                'percentage'
+                                                                    ? t(
+                                                                          'Percentage Rate',
+                                                                      )
+                                                                    : t(
+                                                                          'Amount per upsell',
+                                                                      )}
+                                                            </Label>
+                                                            <InputGroup>
+                                                                <InputGroupInput
+                                                                    id="upsell_amount"
+                                                                    name="upsell_amount"
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    min="0"
+                                                                    max={
+                                                                        upsellType ===
+                                                                        'percentage'
+                                                                            ? 100
+                                                                            : undefined
+                                                                    }
+                                                                    value={
+                                                                        upsellAmount
+                                                                    }
+                                                                    onChange={(
+                                                                        event,
+                                                                    ) =>
+                                                                        setUpsellAmount(
+                                                                            event
+                                                                                .target
+                                                                                .value,
+                                                                        )
+                                                                    }
+                                                                    placeholder={
+                                                                        upsellType ===
+                                                                        'percentage'
+                                                                            ? '10'
+                                                                            : '5.00'
+                                                                    }
+                                                                />
+                                                                <InputGroupAddon align="inline-end">
+                                                                    {upsellType ===
+                                                                    'percentage'
+                                                                        ? '%'
+                                                                        : 'MAD'}
+                                                                </InputGroupAddon>
+                                                            </InputGroup>
+                                                            <InputError
+                                                                message={
+                                                                    errors.upsell_amount
+                                                                }
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
 
                                         <Card className="shadow-none">
                                             <CardContent className="space-y-0">

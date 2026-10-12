@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\OrderConfirmationStatus;
+use App\Enums\OrderDeliveryStatus;
 use App\Events\Order\OrderConfirmed;
 use App\Listeners\Order\CalculateAgentCommission;
 use App\Models\CommissionLedgerEntry;
@@ -143,4 +144,58 @@ test('an agent on salary only earns no commission', function () {
     app(OrderService::class)->updateStatus($order, $admin, OrderConfirmationStatus::CONFIRMED);
 
     expect(earnedEntriesFor($order->id))->toBe(0);
+});
+
+function upsellEntryFor(int $orderId): ?CommissionLedgerEntry
+{
+    return CommissionLedgerEntry::withoutGlobalScope(BusinessScope::class)
+        ->where('order_id', $orderId)
+        ->where('description', 'like', 'Upsell%')
+        ->first();
+}
+
+test('a fixed upsell commission is paid once per upsold order at confirmation', function () {
+    [$admin, , $order] = makeCommissionableOrder(['upsell_amount' => 150], ['upsell_amount_type' => 'fixed', 'upsell_amount' => 20]);
+    $service = app(OrderService::class);
+
+    $service->updateStatus($order, $admin, OrderConfirmationStatus::CONFIRMED);
+    $service->updateStatus($order, $admin, OrderConfirmationStatus::NO_ANSWER);
+    $service->updateStatus($order, $admin, OrderConfirmationStatus::CONFIRMED);
+
+    expect((float) upsellEntryFor($order->id)->amount)->toBe(20.0)
+        ->and(earnedEntriesFor($order->id))->toBe(2);
+});
+
+test('a percentage upsell commission is a share of the upsell only', function () {
+    [$admin, , $order] = makeCommissionableOrder(['upsell_amount' => 150], ['upsell_amount_type' => 'percentage', 'upsell_amount' => 10]);
+
+    app(OrderService::class)->updateStatus($order, $admin, OrderConfirmationStatus::CONFIRMED);
+
+    expect((float) upsellEntryFor($order->id)->amount)->toBe(15.0);
+});
+
+test('no upsell commission without an upsell, or for a down-sell', function () {
+    foreach ([null, 0, -40] as $upsell) {
+        [$admin, , $order] = makeCommissionableOrder(['upsell_amount' => $upsell], ['upsell_amount_type' => 'fixed', 'upsell_amount' => 20]);
+
+        app(OrderService::class)->updateStatus($order, $admin, OrderConfirmationStatus::CONFIRMED);
+
+        expect(upsellEntryFor($order->id))->toBeNull()
+            ->and(earnedEntriesFor($order->id))->toBe(1);
+    }
+});
+
+test('an agent paid on delivery earns the upsell commission on delivery', function () {
+    [$admin, , $order] = makeCommissionableOrder(
+        ['upsell_amount' => 100],
+        ['trigger_status' => 'delivered', 'upsell_amount_type' => 'fixed', 'upsell_amount' => 12],
+    );
+    $service = app(OrderService::class);
+
+    $service->updateStatus($order, $admin, OrderConfirmationStatus::CONFIRMED);
+    expect(upsellEntryFor($order->id))->toBeNull();
+
+    $service->updateDeliveryStatus($order->fresh(), OrderDeliveryStatus::DELIVERED);
+
+    expect((float) upsellEntryFor($order->id)->amount)->toBe(12.0);
 });

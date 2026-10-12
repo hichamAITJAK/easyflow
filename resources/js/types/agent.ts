@@ -34,6 +34,9 @@ export type CommissionRule = {
     trigger_status: string | null;
     amount_type: CommissionAmountType | null;
     amount: string | null;
+    /** Default rule only: extra pay for an upsold order. */
+    upsell_amount_type: CommissionAmountType | null;
+    upsell_amount: string | null;
     salary_amount: string | null;
     salary_period: SalaryPeriod | null;
     is_active: boolean;

@@ -7,6 +7,7 @@ use App\Enums\OrderConfirmationStatus;
 use App\Events\Commission\CommissionEarned;
 use App\Events\Order\OrderConfirmed;
 use App\Listeners\Order\Concerns\IncrementsDailyStats;
+use App\Listeners\Order\Concerns\PaysUpsellCommission;
 use App\Models\CommissionLedgerEntry;
 use App\Models\CommissionRule;
 use App\Models\OrderItem;
@@ -39,6 +40,7 @@ use App\Models\Scopes\BusinessScope;
 class CalculateAgentCommission
 {
     use IncrementsDailyStats;
+    use PaysUpsellCommission;
 
     public function handle(OrderConfirmed $event): void
     {
@@ -109,6 +111,11 @@ class CalculateAgentCommission
             ]);
 
             CommissionEarned::dispatch($entry);
+        }
+
+        // The upsell commission rides the agent's own trigger.
+        if ($defaultRule->trigger_status === OrderConfirmationStatus::CONFIRMED->value) {
+            $orderCommission += $this->payUpsellCommission($order, $defaultRule);
         }
 
         // Mirror the ledger into the pre-computed dashboard stats (the

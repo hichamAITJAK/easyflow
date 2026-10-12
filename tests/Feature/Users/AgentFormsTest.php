@@ -372,6 +372,50 @@ test('switching an agent from both to commission only clears the salary', functi
     expect((float) $rule->amount)->toBe(8.0);
 });
 
+test('admin sets an upsell commission on a confirmation agent, and salary mode clears it', function () {
+    [$admin] = makeAdminWithStoreAndProduct();
+
+    $fields = [
+        'name' => 'Upsell Agent',
+        'email' => 'upsell-agent@example.com',
+        'role' => 'confirmation_agent',
+        'status' => 'active',
+        'password' => 'Password123!',
+        'password_confirmation' => 'Password123!',
+        'payment_mode' => 'commission',
+        'trigger_status' => 'confirmed',
+        'amount_type' => 'fixed',
+        'amount' => 10,
+        'upsell_amount_type' => 'percentage',
+        'upsell_amount' => 8,
+    ];
+
+    $this->actingAs($admin)->post(route('users.store'), $fields)->assertSessionHasNoErrors();
+
+    $agent = User::where('email', 'upsell-agent@example.com')->firstOrFail();
+    $rule = CommissionRule::where('user_id', $agent->id)->firstOrFail();
+    expect($rule->upsell_amount_type->value)->toBe('percentage')
+        ->and((float) $rule->upsell_amount)->toBe(8.0);
+
+    // Over 100% is refused; a type without an amount too.
+    $this->actingAs($admin)->put(route('users.update', $agent), [...$fields, 'upsell_amount' => 120])
+        ->assertSessionHasErrors('upsell_amount');
+    $this->actingAs($admin)->put(route('users.update', $agent), [...$fields, 'upsell_amount' => null])
+        ->assertSessionHasErrors('upsell_amount');
+
+    $this->actingAs($admin)->put(route('users.update', $agent), [
+        ...$fields,
+        'password' => null,
+        'password_confirmation' => null,
+        'payment_mode' => 'salary',
+        'salary_amount' => 3000,
+        'salary_period' => 'monthly',
+    ])->assertSessionHasNoErrors();
+
+    expect($rule->fresh()->upsell_amount_type)->toBeNull()
+        ->and($rule->fresh()->upsell_amount)->toBeNull();
+});
+
 test('a confirmation agent missing amount fields for commission mode is rejected', function () {
     [$admin] = makeAdminWithStoreAndProduct();
 
