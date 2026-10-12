@@ -656,14 +656,6 @@ export function PerformanceTrack({
                                             {money(v.upsells.commissionMad)} MAD
                                         </span>
                                     </div>
-                                    <div className="flex items-center justify-between border-t border-border pt-4">
-                                        <span className="text-sm text-muted-foreground">
-                                            {t('Commissions earned')}
-                                        </span>
-                                        <span className="text-sm font-semibold tabular-nums">
-                                            {money(v.commissionsMad)} MAD
-                                        </span>
-                                    </div>
                                 </>
                             )}
                         </div>
