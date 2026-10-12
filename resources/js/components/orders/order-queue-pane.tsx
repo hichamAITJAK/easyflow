@@ -513,16 +513,16 @@ export function OrderQueuePane({
                                     <>
                                         <Loader2 className="animate-spin" />
                                         {t('Saving')}{' '}
-                                        {
+                                        {t(
                                             confirmationStatusLabels[
                                                 pendingStatus
-                                            ]
-                                        }
+                                            ],
+                                        )}
                                         …
                                     </>
                                 ) : (
                                     <>
-                                        Change status
+                                        {t('Change status')}
                                         <ChevronDown aria-hidden />
                                     </>
                                 )}
@@ -541,7 +541,7 @@ export function OrderQueuePane({
                                     {CONFIRMATION_STATUS_GROUPS.map((group) => (
                                         <CommandGroup
                                             key={group.label}
-                                            heading={group.label}
+                                            heading={t(group.label)}
                                         >
                                             {group.statuses.map((status) => {
                                                 const isCurrent =
@@ -595,11 +595,11 @@ export function OrderQueuePane({
                                                                     'font-medium',
                                                             )}
                                                         >
-                                                            {
+                                                            {t(
                                                                 confirmationStatusLabels[
                                                                     status
-                                                                ]
-                                                            }
+                                                                ],
+                                                            )}
                                                         </span>
                                                         <span className="ml-auto flex shrink-0 items-center gap-1.5">
                                                             {QUICK_SHORTCUT_BY_STATUS[
@@ -801,7 +801,7 @@ export function OrderQueuePane({
                                 }
                             }}
                         >
-                            Mark fake
+                            {t('Mark fake')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

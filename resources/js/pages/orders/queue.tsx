@@ -521,7 +521,7 @@ export default function OrdersQueue({
                                             size="sm"
                                             onClick={() => setSearch('')}
                                         >
-                                            Clear search
+                                            {t('Clear search')}
                                         </Button>
                                     ) : (
                                         <Button

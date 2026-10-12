@@ -72,7 +72,9 @@ export function CancelOrderDialog({
                             {order.customer_name ?? t('this order')}
                         </span>
                         {order.reference ? ` · ${order.reference}` : ''}.{' '}
-                        {t('Choose why — the reason is recorded on the order and shows in its history.')}
+                        {t(
+                            'Choose why — the reason is recorded on the order and shows in its history.',
+                        )}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -107,7 +109,7 @@ export function CancelOrderDialog({
                                             className="grid gap-2"
                                         >
                                             <span className="text-xs font-medium text-muted-foreground">
-                                                {group.label}
+                                                {t(group.label)}
                                             </span>
                                             {group.reasons.map((value) => (
                                                 <div
@@ -122,11 +124,11 @@ export function CancelOrderDialog({
                                                         htmlFor={`cancel-reason-${value}`}
                                                         className="font-normal"
                                                     >
-                                                        {
+                                                        {t(
                                                             cancellationReasonLabels[
                                                                 value
-                                                            ]
-                                                        }
+                                                            ],
+                                                        )}
                                                     </Label>
                                                 </div>
                                             ))}
@@ -155,7 +157,9 @@ export function CancelOrderDialog({
                                     <Textarea
                                         id="cancellation_note"
                                         name="cancellation_note"
-                                        placeholder={t('e.g. Client asked to reorder next month')}
+                                        placeholder={t(
+                                            'e.g. Client asked to reorder next month',
+                                        )}
                                         required
                                     />
                                     <InputError
