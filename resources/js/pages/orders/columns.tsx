@@ -384,6 +384,7 @@ export function createColumns({
     onCancel,
     onBlacklist,
     onEdit,
+    onShowSamePhone,
     filters,
     routeUrl,
     isAdmin,
@@ -397,6 +398,8 @@ export function createColumns({
     onCancel: (order: Order) => void;
     onBlacklist: (order: Order) => void;
     onEdit: (order: Order) => void;
+    /** Lists every order placed from this order's phone number. */
+    onShowSamePhone: (order: Order) => void;
     filters: OrderFilters;
     routeUrl: string;
     isAdmin: boolean;
@@ -501,14 +504,23 @@ export function createColumns({
                             <CopyShippingDetailsButton order={order} />
                             {order.is_duplicate_flagged && (
                                 <Badge
+                                    asChild
                                     variant="outline"
-                                    className="shrink-0 rounded-full border-transparent bg-[#EFA22C]/12 px-2 font-semibold text-[#A87110]"
-                                    title={t(
-                                        'Matches a recent order from the same phone number',
-                                    )}
+                                    className="shrink-0 cursor-pointer rounded-full border-transparent bg-[#EFA22C]/12 px-2 font-semibold text-[#A87110] hover:bg-[#EFA22C]/20"
                                 >
-                                    <CopyX />
-                                    {t('Duplicate')}
+                                    <button
+                                        type="button"
+                                        title={t(
+                                            'Show all orders from this phone number',
+                                        )}
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            onShowSamePhone(order);
+                                        }}
+                                    >
+                                        <CopyX />
+                                        {t('Duplicate')}
+                                    </button>
                                 </Badge>
                             )}
                             {order.is_blacklist_flagged && (

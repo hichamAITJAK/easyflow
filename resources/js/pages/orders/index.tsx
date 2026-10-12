@@ -427,11 +427,13 @@ export default function OrdersIndex({
 
     const [search, setSearch] = useState(filters.search ?? '');
     const debouncedSearch = useDebouncedValue(search, 300);
-    const isFirstSearchRun = useRef(true);
+    // Skips the next debounced push: on first render, and after a search
+    // that was already sent to the server along with other filters.
+    const skipSearchSync = useRef(true);
 
     useEffect(() => {
-        if (isFirstSearchRun.current) {
-            isFirstSearchRun.current = false;
+        if (skipSearchSync.current) {
+            skipSearchSync.current = false;
 
             return;
         }
@@ -444,6 +446,36 @@ export default function OrdersIndex({
         setSearch('');
         resetFilters();
     };
+
+    // The Duplicate tag: every order from that phone, whatever its status,
+    // store, agent or date, so the other filters are cleared too.
+    const showSamePhone = (order: Order) => {
+        const phone = order.customer_phone ?? '';
+
+        if (phone !== search) {
+            skipSearchSync.current = true;
+            setSearch(phone);
+        }
+
+        updateFilters({
+            search: phone || undefined,
+            confirmation_status: undefined,
+            delivery_status: undefined,
+            store_ids: undefined,
+            assigned_agent_id: undefined,
+            date_from: undefined,
+            date_to: undefined,
+            bucket: undefined,
+        });
+    };
+
+    // The columns are memoised; reading the handler through a ref keeps
+    // it on the current filters without rebuilding them every render.
+    const showSamePhoneRef = useRef(showSamePhone);
+
+    useEffect(() => {
+        showSamePhoneRef.current = showSamePhone;
+    });
 
     const loadOrders = (storeId: number | null) => {
         setLoadingOrders(true);
@@ -471,6 +503,7 @@ export default function OrdersIndex({
                 onCancel: setCancelOrder,
                 onBlacklist: setBlacklistOrder,
                 onEdit: setEditOrder,
+                onShowSamePhone: (order) => showSamePhoneRef.current(order),
                 filters,
                 routeUrl: ordersIndex().url,
                 isAdmin,
