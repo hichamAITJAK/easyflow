@@ -14,6 +14,7 @@ import {
     Package,
     Store,
     TrendingDown,
+    PackageMinus,
     TriangleAlert,
     Wallet,
 } from 'lucide-react';
@@ -51,8 +52,7 @@ import type { PageProps } from '@/types';
 
 export interface AlertItem {
     severity: 'warning' | 'critical';
-    kind:
-        'stale_in_progress' | 'settlement_difference' | 'low_delivery_product';
+    kind: 'stale_in_progress' | 'low_stock' | 'low_delivery_product';
     strong: string;
     text: string;
     action: { label: string; href: string };
@@ -238,10 +238,12 @@ function AlertsStrip({ alerts }: { alerts: AlertItem[] }) {
     const icon = (a: AlertItem) =>
         a.kind === 'stale_in_progress' ? (
             <Clock className="size-4 shrink-0" style={{ color: C.amberText }} />
-        ) : a.kind === 'settlement_difference' ? (
-            <TriangleAlert
+        ) : a.kind === 'low_stock' ? (
+            <PackageMinus
                 className="size-4 shrink-0"
-                style={{ color: C.redText }}
+                style={{
+                    color: a.severity === 'warning' ? C.amberText : C.redText,
+                }}
             />
         ) : (
             <TrendingDown

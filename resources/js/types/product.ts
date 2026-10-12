@@ -67,4 +67,6 @@ export type ProductFilters = {
     store_ids?: string;
     price_min?: string;
     price_max?: string;
+    /** `low`: only products under the low-stock line. */
+    stock?: string;
 };

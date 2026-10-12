@@ -29,6 +29,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MultiCombobox } from '@/components/ui/multi-combobox';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useTableFilters } from '@/hooks/use-table-filters';
 import { useTranslation } from '@/hooks/use-translation';
@@ -60,6 +67,7 @@ const FILTER_KEYS: (keyof ProductFilters)[] = [
     'store_ids',
     'price_min',
     'price_max',
+    'stock',
 ];
 
 export default function ProductsIndex({
@@ -322,6 +330,36 @@ export default function ProductsIndex({
                                     setPriceMax(event.target.value)
                                 }
                             />
+                        </div>
+
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="products-stock-filter">
+                                {t('Stock')}
+                            </Label>
+                            <Select
+                                value={draft.stock ?? 'all'}
+                                onValueChange={(value) =>
+                                    updateFilters({
+                                        stock:
+                                            value === 'all' ? undefined : value,
+                                    })
+                                }
+                            >
+                                <SelectTrigger
+                                    id="products-stock-filter"
+                                    className="w-48"
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        {t('Any stock')}
+                                    </SelectItem>
+                                    <SelectItem value="low">
+                                        {t('Low stock (active)')}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         {hasActiveFilters && (

@@ -679,7 +679,7 @@ test('the income chart follows the selected period', function () {
         ->assertInertia(fn ($page) => $page->has('income.buckets', 6)->where('income.grain', 'month'));
 });
 
-test('the settlement alert totals the shortfalls of disputed settlements in the selected range', function () {
+test('the last settlement card shows the latest shortfall', function () {
     $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
     $courier = DeliveryCourrier::factory()->create(['name' => 'OzonExpress']);
     $account = DeliveryAccount::factory()->create(['business_id' => $admin->business_id, 'courier_id' => $courier->id]);
@@ -697,35 +697,46 @@ test('the settlement alert totals the shortfalls of disputed settlements in the 
         ]);
     }
 
-    $range = ['period' => 'custom', 'date_from' => '2026-01-01', 'date_to' => '2026-03-31'];
-
-    $this->actingAs($admin)->get(route('dashboard', $range))
-        ->assertInertia(fn ($page) => $page
-            ->where('alerts', fn ($alerts) => collect($alerts)->contains(fn ($a) => $a['kind'] === 'settlement_difference'
-                // Only the shortfalls: −562.53 + −102.67; the +61.49 is left out.
-                && $a['strong'] === '−665.20 MAD'
-                && $a['text'] === 'total settlement difference'))
-            ->etc());
-
-    // Last settlement: March's +61.49 is skipped; February's shortfall shows.
+    // March's +61.49 is skipped; February's shortfall shows.
     $this->actingAs($admin)->get(route('dashboard'))
         ->assertInertia(fn ($page) => $page
             ->where('expected.lastSettlement.status', 'difference')
             ->where('expected.lastSettlement.differenceMad', -102.67)
-            ->etc());
-
-    // February only: just that period's shortfall.
-    $this->actingAs($admin)->get(route('dashboard', ['period' => 'custom', 'date_from' => '2026-02-01', 'date_to' => '2026-02-28']))
-        ->assertInertia(fn ($page) => $page
-            ->where('alerts', fn ($alerts) => collect($alerts)->contains(fn ($a) => $a['kind'] === 'settlement_difference'
-                && $a['strong'] === '−102.67 MAD'))
-            ->etc());
-
-    // A range with no disputed settlement: no alert.
-    $this->actingAs($admin)->get(route('dashboard', ['period' => 'custom', 'date_from' => '2026-05-01', 'date_to' => '2026-05-31']))
-        ->assertInertia(fn ($page) => $page
             ->where('alerts', fn ($alerts) => ! collect($alerts)->contains(fn ($a) => $a['kind'] === 'settlement_difference'))
             ->etc());
+});
+
+test('the dashboard warns about active products low on stock', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $product = fn (array $attributes) => Product::factory()->create(['business_id' => $admin->business_id, 'is_active' => true, ...$attributes]);
+
+    $product(['name' => 'Plenty', 'inventory_quantity' => 50]);
+    $product(['name' => 'Untracked', 'inventory_quantity' => null]);
+    $product(['name' => 'Paused', 'inventory_quantity' => 0, 'is_active' => false]);
+    $product(['name' => 'Glow Serum', 'inventory_quantity' => 3]);
+
+    $this->actingAs($admin)->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('alerts', fn ($alerts) => collect($alerts)->contains(fn ($a) => $a['kind'] === 'low_stock'
+                && $a['severity'] === 'warning'
+                && $a['strong'] === 'Glow Serum'
+                && $a['text'] === 'has only 3 units left'))
+            ->etc());
+
+    // A second one, out of stock: counted together, and the alert turns red.
+    $product(['name' => 'Neck Pillow', 'inventory_quantity' => 0]);
+
+    $this->actingAs($admin)->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('alerts', fn ($alerts) => collect($alerts)->contains(fn ($a) => $a['kind'] === 'low_stock'
+                && $a['severity'] === 'critical'
+                && $a['strong'] === '2 products'
+                && str_contains($a['action']['href'], 'stock=low')))
+            ->etc());
+
+    // And the alert's link lists exactly those two.
+    $this->actingAs($admin)->get(route('products.index', ['stock' => 'low']))
+        ->assertInertia(fn ($page) => $page->where('products.total', 2)->etc());
 });
 
 test('the admin sees the upsells of an agent only once that agent is selected', function () {

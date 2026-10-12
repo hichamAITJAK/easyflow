@@ -56,7 +56,10 @@ class ProductController extends Controller
             ->withSum('variants', 'inventory_quantity')
             ->when($this->resolveIdList($request, 'store_ids', 'store_id'), fn ($query, array $storeIds) => $query->whereIn('store_id', $storeIds))
             ->when($request->input('price_min'), fn ($query, $price) => $query->where('price', '>=', $price))
-            ->when($request->input('price_max'), fn ($query, $price) => $query->where('price', '<=', $price));
+            ->when($request->input('price_max'), fn ($query, $price) => $query->where('price', '<=', $price))
+            // Same set as the dashboard's low-stock alert: active products
+            // under the line (a paused product running out isn't urgent).
+            ->when($request->input('stock') === 'low', fn ($query) => $query->where('is_active', true)->lowStock());
 
         $query = $this->applySearch($query, $request, self::SEARCHABLE);
         $query = $this->applySort($query, $request, self::SORTABLE, default: 'created_at');
@@ -72,7 +75,7 @@ class ProductController extends Controller
                 'test' => $scopedProducts()->where('is_test', true)->count(),
             ],
             'filters' => [
-                ...$request->only(['search', 'sort', 'direction', 'per_page', 'price_min', 'price_max']),
+                ...$request->only(['search', 'sort', 'direction', 'per_page', 'price_min', 'price_max', 'stock']),
                 'store_ids' => $this->idListParam($request, 'store_ids', 'store_id'),
             ],
             // connection_status rides along so the sync picker can say which

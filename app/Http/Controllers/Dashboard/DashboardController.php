@@ -184,8 +184,8 @@ class DashboardController extends Controller
 
     /**
      * Needs-attention strip. Three rules, each a current-state check:
-     * orders sitting with an agent for over a day, a settlement that
-     * did not match, and products delivering under half of what they
+     * orders sitting with an agent for over a day, active products running
+     * out of stock, and products delivering under half of what they
      * confirmed. Empty when nothing needs attention.
      *
      * @param  array<int, array<string, mixed>>  $products
@@ -212,23 +212,33 @@ class DashboardController extends Controller
             ];
         }
 
-        // What couriers still owe: the shortfalls on disputed settlements
-        // whose period overlaps the selected range. Overpayments are left
-        // out, so they can't hide a missing amount.
-        $owed = round((float) CourierSettlement::where('business_id', $businessId)
-            ->where('status', 'disputed')
-            ->where('difference_amount', '<', 0)
-            ->whereDate('period_start', '<=', $until)
-            ->whereDate('period_end', '>=', $since)
-            ->sum('difference_amount'), 2);
+        // Active products under the low-stock line, same rule as the
+        // products table. Red as soon as one is out of stock entirely.
+        $lowStock = fn () => Product::where('business_id', $businessId)
+            ->where('is_active', true)
+            ->lowStock();
 
-        if ($owed < 0) {
+        $lowCount = $lowStock()->count();
+
+        if ($lowCount > 0) {
+            $lowest = $lowStock()
+                ->selectRaw('products.name, '.Product::STOCK_SQL.' as stock')
+                ->orderByRaw(Product::STOCK_SQL)
+                ->first();
+            $outOfStock = $lowStock()->whereRaw(Product::STOCK_SQL.' <= 0')->exists();
+
             $alerts[] = [
-                'severity' => 'critical',
-                'kind' => 'settlement_difference',
-                'strong' => '−'.number_format(abs($owed), 2, '.', ',').' MAD',
-                'text' => __('total settlement difference'),
-                'action' => ['label' => __('Settle'), 'href' => route('settlements.index')],
+                'severity' => $outOfStock ? 'critical' : 'warning',
+                'kind' => 'low_stock',
+                'strong' => $lowCount === 1
+                    ? $lowest->name
+                    : trans_choice(':count product|:count products', $lowCount, ['count' => $lowCount]),
+                'text' => $lowCount === 1
+                    ? ((int) $lowest->stock <= 0
+                        ? __('is out of stock')
+                        : trans_choice('has only :count unit left|has only :count units left', (int) $lowest->stock, ['count' => (int) $lowest->stock]))
+                    : __('low on stock (under :count units)', ['count' => Product::LOW_STOCK_THRESHOLD]),
+                'action' => ['label' => __('Restock'), 'href' => route('products.index', ['stock' => 'low'])],
             ];
         }
 

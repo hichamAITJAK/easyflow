@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Models\Scopes\BusinessScope;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -40,6 +42,25 @@ class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
     use HasFactory, SoftDeletes;
+
+    /** Below this many units a product is low on stock (products page, dashboard). */
+    public const LOW_STOCK_THRESHOLD = 10;
+
+    /**
+     * Units on hand, as the products table shows them: the variants' total
+     * when it has variants, else its own count. Null when stock is not
+     * tracked, which never counts as low.
+     */
+    public const STOCK_SQL = 'coalesce((select sum(pv.inventory_quantity) from product_variants pv where pv.product_id = products.id), products.inventory_quantity)';
+
+    /**
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function lowStock(Builder $query): void
+    {
+        $query->whereRaw(self::STOCK_SQL.' < ?', [self::LOW_STOCK_THRESHOLD]);
+    }
 
     protected function casts(): array
     {
