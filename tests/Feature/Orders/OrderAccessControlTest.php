@@ -212,20 +212,31 @@ test('an admin can assign an order', function () {
     expect($order->fresh()->assigned_agent_id)->toBe($agent->id);
 });
 
-test('the orders page counts orders submitted to the courier', function () {
+test('the orders page cards count not assigned, in progress, confirmed and delivered', function () {
     $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $agent = makeBusinessUser(['role' => UserRole::CONFIRMATION_AGENT, 'business_id' => $admin->business_id]);
 
-    makeOrder($admin->business_id, ['confirmation_status' => 'submitted_to_courier']);
-    makeOrder($admin->business_id, ['confirmation_status' => 'submitted_to_courier']);
-    makeOrder($admin->business_id, ['confirmation_status' => 'confirmed']);
+    makeOrder($admin->business_id, ['confirmation_status' => 'new']);
+    makeOrder($admin->business_id, ['confirmation_status' => 'new']);
+    makeOrder($admin->business_id, ['confirmation_status' => 'assigned', 'assigned_agent_id' => $agent->id]);
+    makeOrder($admin->business_id, ['confirmation_status' => 'no_answer', 'assigned_agent_id' => $agent->id]);
+    makeOrder($admin->business_id, ['confirmation_status' => 'confirmed', 'assigned_agent_id' => $agent->id]);
+    makeOrder($admin->business_id, ['confirmation_status' => 'submitted_to_courier', 'delivery_status' => 'delivered']);
+    makeOrder($admin->business_id, ['confirmation_status' => 'cancelled']);
 
     $this->actingAs($admin)
         ->get(route('orders.index'))
         ->assertInertia(fn ($page) => $page
-            ->where('metrics.submitted_to_courier', 2)
-            ->where('metrics.confirmed', 1)
+            ->where('metrics', ['unassigned' => 2, 'in_progress' => 2, 'confirmed' => 2, 'delivered' => 1])
             ->etc()
         );
+
+    // Each card's filter lists exactly the orders it counts.
+    foreach (['unassigned' => 2, 'in_progress' => 2, 'confirmed_all' => 2] as $bucket => $count) {
+        $this->actingAs($admin)
+            ->get(route('orders.index', ['bucket' => $bucket]))
+            ->assertInertia(fn ($page) => $page->where('orders.total', $count)->etc());
+    }
 });
 
 test('a user cannot hand-set an order to submitted_to_courier', function () {

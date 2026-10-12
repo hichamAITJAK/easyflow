@@ -59,6 +59,17 @@ enum OrderConfirmationStatus: string
     }
 
     /**
+     * Every status meaning the customer said yes: confirmed, confirmed but
+     * flagged for a follow-up call, and already handed to the courier.
+     *
+     * @return array<int, self>
+     */
+    public static function confirmedByCustomer(): array
+    {
+        return [self::CONFIRMED, self::CONFIRMED_FOLLOWUP, self::SUBMITTED_TO_COURIER];
+    }
+
+    /**
      * The part of awaitingOutcome() nobody has called yet.
      *
      * @return array<int, self>

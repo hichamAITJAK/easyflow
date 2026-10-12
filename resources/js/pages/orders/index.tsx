@@ -8,13 +8,12 @@ import {
     CloudDownload,
     Download,
     Filter,
-    PackageCheck,
     Plus,
     Trash2,
     Truck,
     Users,
+    UserX,
     X,
-    XCircle,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -48,10 +47,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import {
-    Collapsible,
-    CollapsibleContent,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -101,9 +97,14 @@ const FILTER_KEYS: (keyof OrderFilters)[] = [
     'assigned_agent_id',
     'date_from',
     'date_to',
+    'bucket',
 ];
 
-function exportOrdersToCsv(orders: Order[], selectedIds: number[], t: Translator) {
+function exportOrdersToCsv(
+    orders: Order[],
+    selectedIds: number[],
+    t: Translator,
+) {
     const toExport =
         selectedIds.length > 0
             ? orders.filter((order) => selectedIds.includes(order.id))
@@ -160,8 +161,16 @@ function exportOrdersToCsv(orders: Order[], selectedIds: number[], t: Translator
     document.body.removeChild(link);
 }
 
-type OrderMetricField = 'confirmation_status' | 'delivery_status';
+type OrderMetricField = 'bucket' | 'delivery_status';
 
+const VALUE_CLASS =
+    'mt-3 font-mono text-[26px] leading-none font-semibold tabular-nums';
+
+/*
+ * One card per stage of an order's life, coloured like its status chips:
+ * mustard waiting for an agent, plum with an agent, orange confirmed,
+ * teal delivered. Each card filters the table to exactly what it counts.
+ */
 const METRIC_CARDS: {
     key: keyof OrderMetrics;
     field: OrderMetricField;
@@ -175,43 +184,43 @@ const METRIC_CARDS: {
     valueClass: string;
 }[] = [
     {
-        key: 'new',
-        field: 'confirmation_status',
-        filterValue: 'new',
-        label: 'New',
-        icon: Clock,
+        key: 'unassigned',
+        field: 'bucket',
+        filterValue: 'unassigned',
+        label: 'Not assigned',
+        icon: UserX,
         hoverBorder: 'hover:bg-muted/30',
         selected: 'border-[#EFA22C]/60 bg-[#EFA22C]/5 ring-1 ring-[#EFA22C]/60',
         labelClass: 'text-sm font-medium text-[#A87110]',
-        iconClass: 'size-8 shrink-0 rounded-full bg-[#EFA22C]/10 p-[7px] text-[#A87110]',
-        valueClass:
-            'mt-3 font-mono text-[26px] leading-none font-semibold tabular-nums',
+        iconClass:
+            'size-8 shrink-0 rounded-full bg-[#EFA22C]/10 p-[7px] text-[#A87110]',
+        valueClass: VALUE_CLASS,
+    },
+    {
+        key: 'in_progress',
+        field: 'bucket',
+        filterValue: 'in_progress',
+        label: 'In progress',
+        icon: Clock,
+        hoverBorder: 'hover:bg-muted/30',
+        selected: 'border-[#49183C]/50 bg-[#49183C]/5 ring-1 ring-[#49183C]/50',
+        labelClass: 'text-sm font-medium text-[#49183C] dark:text-[#E4C8DC]',
+        iconClass:
+            'size-8 shrink-0 rounded-full bg-[#49183C]/10 p-[7px] text-[#49183C] dark:text-[#E4C8DC]',
+        valueClass: VALUE_CLASS,
     },
     {
         key: 'confirmed',
-        field: 'confirmation_status',
-        filterValue: 'confirmed',
+        field: 'bucket',
+        filterValue: 'confirmed_all',
         label: 'Confirmed',
         icon: CheckCircle2,
         hoverBorder: 'hover:bg-muted/30',
         selected: 'border-[#F2602F]/60 bg-[#F2602F]/5 ring-1 ring-[#F2602F]/60',
         labelClass: 'text-sm font-medium text-[#C24A1A]',
-        iconClass: 'size-8 shrink-0 rounded-full bg-[#F2602F]/10 p-[7px] text-[#C24A1A]',
-        valueClass:
-            'mt-3 font-mono text-[26px] leading-none font-semibold tabular-nums',
-    },
-    {
-        key: 'submitted_to_courier',
-        field: 'confirmation_status',
-        filterValue: 'submitted_to_courier',
-        label: 'Submitted to courier',
-        icon: PackageCheck,
-        hoverBorder: 'hover:bg-muted/30',
-        selected: 'border-[#468FA5]/60 bg-[#468FA5]/5 ring-1 ring-[#468FA5]/60',
-        labelClass: 'text-sm font-medium text-[#2E7389]',
-        iconClass: 'size-8 shrink-0 rounded-full bg-[#468FA5]/10 p-[7px] text-[#2E7389]',
-        valueClass:
-            'mt-3 font-mono text-[26px] leading-none font-semibold tabular-nums',
+        iconClass:
+            'size-8 shrink-0 rounded-full bg-[#F2602F]/10 p-[7px] text-[#C24A1A]',
+        valueClass: VALUE_CLASS,
     },
     {
         key: 'delivered',
@@ -222,22 +231,9 @@ const METRIC_CARDS: {
         hoverBorder: 'hover:bg-muted/30',
         selected: 'border-[#16A08E]/60 bg-[#16A08E]/5 ring-1 ring-[#16A08E]/60',
         labelClass: 'text-sm font-medium text-[#0C7D6F]',
-        iconClass: 'size-8 shrink-0 rounded-full bg-[#16A08E]/10 p-[7px] text-[#0C7D6F]',
-        valueClass:
-            'mt-3 font-mono text-[26px] leading-none font-semibold tabular-nums',
-    },
-    {
-        key: 'cancelled',
-        field: 'confirmation_status',
-        filterValue: 'cancelled',
-        label: 'Cancelled',
-        icon: XCircle,
-        hoverBorder: 'hover:bg-muted/30',
-        selected: 'border-[#D92D20]/60 bg-[#D92D20]/5 ring-1 ring-[#D92D20]/60',
-        labelClass: 'text-sm font-medium text-[#B3281D]',
-        iconClass: 'size-8 shrink-0 rounded-full bg-[#D92D20]/10 p-[7px] text-[#B3281D]',
-        valueClass:
-            'mt-3 font-mono text-[26px] leading-none font-semibold tabular-nums',
+        iconClass:
+            'size-8 shrink-0 rounded-full bg-[#16A08E]/10 p-[7px] text-[#0C7D6F]',
+        valueClass: VALUE_CLASS,
     },
 ];
 
@@ -337,7 +333,21 @@ export default function OrdersIndex({
             list.push({
                 key: 'confirmation_status',
                 label: `${t('Status')}: ${t(confirmationStatusLabels[draft.confirmation_status as keyof typeof confirmationStatusLabels]) ?? draft.confirmation_status}`,
-                onRemove: () => updateFilters({ confirmation_status: undefined }),
+                onRemove: () =>
+                    updateFilters({ confirmation_status: undefined }),
+            });
+        }
+
+        const bucketCard = METRIC_CARDS.find(
+            (card) =>
+                card.field === 'bucket' && card.filterValue === draft.bucket,
+        );
+
+        if (bucketCard) {
+            list.push({
+                key: 'bucket',
+                label: t(bucketCard.label),
+                onRemove: () => updateFilters({ bucket: undefined }),
             });
         }
 
@@ -380,11 +390,13 @@ export default function OrdersIndex({
             if (draft.assigned_agent_id === '__unassigned__') {
                 agentLabel = 'Unassigned';
             } else {
-                const agentObj = agents.find((a) => String(a.id) === String(draft.assigned_agent_id));
+                const agentObj = agents.find(
+                    (a) => String(a.id) === String(draft.assigned_agent_id),
+                );
 
                 if (agentObj) {
-agentLabel = agentObj.name;
-}
+                    agentLabel = agentObj.name;
+                }
             }
 
             list.push({
@@ -491,7 +503,7 @@ agentLabel = agentObj.name;
                     description={t('Track and manage your customer orders.')}
                 />
 
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                     {METRIC_CARDS.map((metric) => {
                         const selected =
                             draft[metric.field] === metric.filterValue;
@@ -502,8 +514,12 @@ agentLabel = agentObj.name;
                                 metric={metric}
                                 count={metrics[metric.key]}
                                 selected={selected}
+                                // One card at a time: picking one clears
+                                // whatever another card had applied.
                                 onToggle={() =>
                                     updateFilters({
+                                        bucket: undefined,
+                                        delivery_status: undefined,
                                         [metric.field]: selected
                                             ? undefined
                                             : metric.filterValue,
@@ -523,7 +539,9 @@ agentLabel = agentObj.name;
                             <Input
                                 id="search"
                                 className="h-9 w-full rounded-md border-input bg-card text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20 sm:w-80"
-                                placeholder={t('Search reference, tracking number, or exact phone…')}
+                                placeholder={t(
+                                    'Search reference, tracking number, or exact phone…',
+                                )}
                                 value={search}
                                 onChange={(event) =>
                                     setSearch(event.target.value)
@@ -534,15 +552,16 @@ agentLabel = agentObj.name;
                                 size="sm"
                                 onClick={() => setFiltersOpen(!filtersOpen)}
                                 className={cn(
-                                    'h-9 gap-2 rounded-md border-input bg-card px-3 text-sm font-medium shadow-xs hover:bg-accent hover:text-accent-foreground cursor-pointer',
-                                    (filtersOpen || activeFiltersList.length > 0) &&
+                                    'h-9 cursor-pointer gap-2 rounded-md border-input bg-card px-3 text-sm font-medium shadow-xs hover:bg-accent hover:text-accent-foreground',
+                                    (filtersOpen ||
+                                        activeFiltersList.length > 0) &&
                                         'border-primary/60 bg-primary/5 font-medium text-primary shadow-2xs',
                                 )}
                             >
                                 <Filter className="size-4" />
                                 <span>{t('Filters')}</span>
                                 {activeFiltersList.length > 0 && (
-                                    <Badge className="ml-0.5 size-5 flex items-center justify-center rounded-full p-0 text-[11px] font-semibold">
+                                    <Badge className="ml-0.5 flex size-5 items-center justify-center rounded-full p-0 text-[11px] font-semibold">
                                         {activeFiltersList.length}
                                     </Badge>
                                 )}
@@ -560,7 +579,10 @@ agentLabel = agentObj.name;
                                                 type="button"
                                                 variant="ghost"
                                                 size="icon-xs"
-                                                aria-label={t('Remove filter: :label', { label: item.label })}
+                                                aria-label={t(
+                                                    'Remove filter: :label',
+                                                    { label: item.label },
+                                                )}
                                                 onClick={item.onRemove}
                                                 className="-mr-1 size-4 text-muted-foreground hover:bg-transparent hover:text-foreground"
                                             >
@@ -572,7 +594,7 @@ agentLabel = agentObj.name;
                                         variant="ghost"
                                         size="sm"
                                         onClick={handleReset}
-                                        className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive cursor-pointer"
+                                        className="h-7 cursor-pointer px-2 text-xs text-muted-foreground hover:text-destructive"
                                     >
                                         Reset all
                                     </Button>
@@ -617,9 +639,7 @@ agentLabel = agentObj.name;
                                         variant="outline"
                                         size="sm"
                                         className="h-8 gap-1.5 px-2.5"
-                                        onClick={() =>
-                                            setBulkStatusOpen(true)
-                                        }
+                                        onClick={() => setBulkStatusOpen(true)}
                                     >
                                         <CheckSquare className="size-3.5" />
                                         <span className="hidden sm:inline">
@@ -687,23 +707,37 @@ agentLabel = agentObj.name;
                         </div>
                     </DataTableCardToolbar>
 
-                    <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-                        <CollapsibleContent className="animate-in slide-in-from-top-1 fade-in-50 duration-200">
+                    <Collapsible
+                        open={filtersOpen}
+                        onOpenChange={setFiltersOpen}
+                    >
+                        <CollapsibleContent className="animate-in duration-200 fade-in-50 slide-in-from-top-1">
                             <div className="border-y bg-muted/30 p-4">
-                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 items-end">
+                                <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
                                     <div className="grid gap-1.5">
-                                        <Label className="text-xs font-semibold text-muted-foreground">{t('Confirmation status')}</Label>
+                                        <Label className="text-xs font-semibold text-muted-foreground">
+                                            {t('Confirmation status')}
+                                        </Label>
                                         <Select
-                                            value={draft.confirmation_status ?? NONE}
+                                            value={
+                                                draft.confirmation_status ??
+                                                NONE
+                                            }
                                             onValueChange={(value) =>
                                                 updateFilters({
                                                     confirmation_status:
-                                                        value === NONE ? undefined : value,
+                                                        value === NONE
+                                                            ? undefined
+                                                            : value,
                                                 })
                                             }
                                         >
-                                            <SelectTrigger className="w-full h-9">
-                                                <SelectValue placeholder={t('All statuses')} />
+                                            <SelectTrigger className="h-9 w-full">
+                                                <SelectValue
+                                                    placeholder={t(
+                                                        'All statuses',
+                                                    )}
+                                                />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value={NONE}>
@@ -712,7 +746,10 @@ agentLabel = agentObj.name;
                                                 {Object.entries(
                                                     confirmationStatusLabels,
                                                 ).map(([value, label]) => (
-                                                    <SelectItem key={value} value={value}>
+                                                    <SelectItem
+                                                        key={value}
+                                                        value={value}
+                                                    >
                                                         {label}
                                                     </SelectItem>
                                                 ))}
@@ -721,18 +758,28 @@ agentLabel = agentObj.name;
                                     </div>
 
                                     <div className="grid gap-1.5">
-                                        <Label className="text-xs font-semibold text-muted-foreground">{t('Delivery status')}</Label>
+                                        <Label className="text-xs font-semibold text-muted-foreground">
+                                            {t('Delivery status')}
+                                        </Label>
                                         <Select
-                                            value={draft.delivery_status ?? NONE}
+                                            value={
+                                                draft.delivery_status ?? NONE
+                                            }
                                             onValueChange={(value) =>
                                                 updateFilters({
                                                     delivery_status:
-                                                        value === NONE ? undefined : value,
+                                                        value === NONE
+                                                            ? undefined
+                                                            : value,
                                                 })
                                             }
                                         >
-                                            <SelectTrigger className="w-full h-9">
-                                                <SelectValue placeholder={t('All statuses')} />
+                                            <SelectTrigger className="h-9 w-full">
+                                                <SelectValue
+                                                    placeholder={t(
+                                                        'All statuses',
+                                                    )}
+                                                />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value={NONE}>
@@ -741,7 +788,10 @@ agentLabel = agentObj.name;
                                                 {Object.entries(
                                                     deliveryStatusLabels,
                                                 ).map(([value, label]) => (
-                                                    <SelectItem key={value} value={value}>
+                                                    <SelectItem
+                                                        key={value}
+                                                        value={value}
+                                                    >
                                                         {label}
                                                     </SelectItem>
                                                 ))}
@@ -780,9 +830,14 @@ agentLabel = agentObj.name;
 
                                     {isAdmin && (
                                         <div className="grid gap-1.5">
-                                            <Label className="text-xs font-semibold text-muted-foreground">{t('Agent')}</Label>
+                                            <Label className="text-xs font-semibold text-muted-foreground">
+                                                {t('Agent')}
+                                            </Label>
                                             <Select
-                                                value={draft.assigned_agent_id ?? NONE}
+                                                value={
+                                                    draft.assigned_agent_id ??
+                                                    NONE
+                                                }
                                                 onValueChange={(value) =>
                                                     updateFilters({
                                                         assigned_agent_id:
@@ -792,8 +847,12 @@ agentLabel = agentObj.name;
                                                     })
                                                 }
                                             >
-                                                <SelectTrigger className="w-full h-9">
-                                                    <SelectValue placeholder={t('All agents')} />
+                                                <SelectTrigger className="h-9 w-full">
+                                                    <SelectValue
+                                                        placeholder={t(
+                                                            'All agents',
+                                                        )}
+                                                    />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value={NONE}>
@@ -805,7 +864,9 @@ agentLabel = agentObj.name;
                                                     {agents.map((agent) => (
                                                         <SelectItem
                                                             key={agent.id}
-                                                            value={String(agent.id)}
+                                                            value={String(
+                                                                agent.id,
+                                                            )}
                                                         >
                                                             {agent.name}
                                                         </SelectItem>
@@ -816,26 +877,40 @@ agentLabel = agentObj.name;
                                     )}
 
                                     <div className="grid gap-1.5">
-                                        <Label htmlFor="date_from" className="text-xs font-semibold text-muted-foreground">{t('From')}</Label>
+                                        <Label
+                                            htmlFor="date_from"
+                                            className="text-xs font-semibold text-muted-foreground"
+                                        >
+                                            {t('From')}
+                                        </Label>
                                         <DatePicker
                                             value={draft.date_from}
                                             onChange={(value) =>
-                                                updateFilters({ date_from: value })
+                                                updateFilters({
+                                                    date_from: value,
+                                                })
                                             }
                                             placeholder={t('Any date')}
-                                            className="w-full h-9"
+                                            className="h-9 w-full"
                                         />
                                     </div>
 
                                     <div className="grid gap-1.5">
-                                        <Label htmlFor="date_to" className="text-xs font-semibold text-muted-foreground">{t('To')}</Label>
+                                        <Label
+                                            htmlFor="date_to"
+                                            className="text-xs font-semibold text-muted-foreground"
+                                        >
+                                            {t('To')}
+                                        </Label>
                                         <DatePicker
                                             value={draft.date_to}
                                             onChange={(value) =>
-                                                updateFilters({ date_to: value })
+                                                updateFilters({
+                                                    date_to: value,
+                                                })
                                             }
                                             placeholder={t('Any date')}
-                                            className="w-full h-9"
+                                            className="h-9 w-full"
                                         />
                                     </div>
                                 </div>

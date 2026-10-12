@@ -39,6 +39,13 @@ trait FiltersOrdersByBucket
             ]),
             'confirmed' => $query->where('confirmation_status', OrderConfirmationStatus::CONFIRMED->value),
             'shipped' => $query->where('confirmation_status', OrderConfirmationStatus::SUBMITTED_TO_COURIER->value),
+            // The admin orders page's cards: no outcome yet and nobody on
+            // it / an agent on it, and every order the customer confirmed.
+            'unassigned' => $query->whereIn('confirmation_status', OrderConfirmationStatus::awaitingOutcome())
+                ->whereNull('assigned_agent_id'),
+            'in_progress' => $query->whereIn('confirmation_status', OrderConfirmationStatus::awaitingOutcome())
+                ->whereNotNull('assigned_agent_id'),
+            'confirmed_all' => $query->whereIn('confirmation_status', OrderConfirmationStatus::confirmedByCustomer()),
             default => $query,
         };
     }

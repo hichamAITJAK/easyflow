@@ -145,12 +145,12 @@ export type Order = {
     [key: string]: unknown;
 };
 
+/** The admin orders page cards (see OrderController::index). */
 export type OrderMetrics = {
-    new: number;
+    unassigned: number;
+    in_progress: number;
     confirmed: number;
-    submitted_to_courier: number;
     delivered: number;
-    cancelled: number;
 };
 
 export type OrderFilters = {

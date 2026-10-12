@@ -101,6 +101,14 @@ class OrderController extends Controller
             ->where('delivery_status', OrderDeliveryStatus::DELIVERED->value)
             ->count();
 
+        // Orders with no outcome yet, split by whether an agent has them.
+        $open = $this->applyOrderAssignmentScope(Order::query(), $user)
+            ->where('business_id', $businessId)
+            ->whereIn('confirmation_status', OrderConfirmationStatus::awaitingOutcome())
+            ->toBase()
+            ->selectRaw('coalesce(sum(case when assigned_agent_id is null then 1 else 0 end), 0) as unassigned, count(assigned_agent_id) as in_progress')
+            ->first();
+
         $bucketCounts = $this->orderBucketCounts(
             $this->applyOrderAssignmentScope(Order::query(), $user)->where('business_id', $businessId)
         );
@@ -117,14 +125,15 @@ class OrderController extends Controller
 
         return Inertia::render($component, [
             'orders' => $orders,
+            // The four cards on the admin orders page; each one's click
+            // applies the matching `bucket` (or delivery_status) filter, so
+            // a card's number is exactly what the table then lists.
             'metrics' => [
-                'new' => (int) ($confirmationMetrics[OrderConfirmationStatus::NEW->value] ?? 0),
-                'confirmed' => (int) ($confirmationMetrics[OrderConfirmationStatus::CONFIRMED->value] ?? 0),
-                // Reads off the same grouped count as the others — it's a
-                // confirmation status, not a delivery one, so no extra query.
-                'submitted_to_courier' => (int) ($confirmationMetrics[OrderConfirmationStatus::SUBMITTED_TO_COURIER->value] ?? 0),
+                'unassigned' => (int) ($open->unassigned ?? 0),
+                'in_progress' => (int) ($open->in_progress ?? 0),
+                'confirmed' => (int) collect(OrderConfirmationStatus::confirmedByCustomer())
+                    ->sum(fn (OrderConfirmationStatus $status) => $confirmationMetrics[$status->value] ?? 0),
                 'delivered' => $deliveredCount,
-                'cancelled' => (int) ($confirmationMetrics[OrderConfirmationStatus::CANCELLED->value] ?? 0),
             ],
             // store_ids is normalised rather than echoed raw so a legacy
             // ?store_id=3 link comes back as the plural param the picker
