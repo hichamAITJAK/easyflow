@@ -86,7 +86,7 @@ export const deliveryStatusVariants: Record<
  */
 /*
  * The platform's status palette, one hue per meaning: plum (with an agent),
- * mustard (waiting / to retry), orange (confirmed), petrol (with the
+ * mustard (waiting / to retry), green (confirmed), petrol (with the
  * courier), teal (delivered), red (lost). Tints are the hue at ~10%.
  */
 const badgeColors = {
@@ -95,6 +95,8 @@ const badgeColors = {
     warning:
         'border-transparent bg-[#EFA22C]/12 text-[#A87110] dark:text-[#F3B95C]',
     orange: 'border-transparent bg-[#F2602F]/10 text-[#C24A1A] dark:text-[#F7875F]',
+    approved:
+        'border-transparent bg-[#1F9D55]/10 text-[#15803D] dark:text-[#4ADE80]',
     info: 'border-transparent bg-[#468FA5]/12 text-[#2E7389] dark:text-[#7DB5C7]',
     success:
         'border-transparent bg-[#16A08E]/10 text-[#0C7D6F] dark:text-[#4CC7B4]',
@@ -151,6 +153,7 @@ const dotColors = {
     info: 'bg-[#468FA5]',
     warning: 'bg-[#EFA22C]',
     orange: 'bg-[#F2602F]',
+    approved: 'bg-[#1F9D55]',
     success: 'bg-[#16A08E]',
     danger: 'bg-[#D92D20]',
     returned: 'bg-[#D92D20]',
@@ -163,7 +166,7 @@ export const confirmationStatusDotColors: Record<
 > = {
     new: dotColors.warning,
     assigned: dotColors.plum,
-    confirmed: dotColors.orange,
+    confirmed: dotColors.approved,
     confirmed_followup: dotColors.warning,
     callback: dotColors.warning,
     fake: dotColors.danger,
@@ -180,7 +183,7 @@ export const confirmationStatusColors: Record<OrderConfirmationStatus, string> =
     {
         new: badgeColors.warning,
         assigned: badgeColors.plum,
-        confirmed: badgeColors.orange,
+        confirmed: badgeColors.approved,
         confirmed_followup: badgeColors.warning,
         callback: badgeColors.warning,
         fake: badgeColors.danger,

@@ -168,7 +168,7 @@ const VALUE_CLASS =
 
 /*
  * One card per stage of an order's life, coloured like its status chips:
- * mustard waiting for an agent, plum with an agent, orange confirmed,
+ * mustard waiting for an agent, plum with an agent, green confirmed,
  * teal delivered. Each card filters the table to exactly what it counts.
  */
 const METRIC_CARDS: {
@@ -216,10 +216,10 @@ const METRIC_CARDS: {
         label: 'Confirmed',
         icon: CheckCircle2,
         hoverBorder: 'hover:bg-muted/30',
-        selected: 'border-[#F2602F]/60 bg-[#F2602F]/5 ring-1 ring-[#F2602F]/60',
-        labelClass: 'text-sm font-medium text-[#C24A1A]',
+        selected: 'border-[#1F9D55]/60 bg-[#1F9D55]/5 ring-1 ring-[#1F9D55]/60',
+        labelClass: 'text-sm font-medium text-[#15803D]',
         iconClass:
-            'size-8 shrink-0 rounded-full bg-[#F2602F]/10 p-[7px] text-[#C24A1A]',
+            'size-8 shrink-0 rounded-full bg-[#1F9D55]/10 p-[7px] text-[#15803D]',
         valueClass: VALUE_CLASS,
     },
     {
