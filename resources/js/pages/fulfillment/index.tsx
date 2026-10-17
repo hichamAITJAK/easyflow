@@ -11,10 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslation } from '@/hooks/use-translation';
 import { useWakeLock } from '@/hooks/use-wake-lock';
 import { fulfillmentApi, FulfillmentApiError } from '@/lib/fulfillment-api';
+import type { Translator } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type {
     FulfillmentActivityEvent,
     FulfillmentScanResult,
+    FulfillmentStockChange,
     FulfillmentSummary,
 } from '@/types/fulfillment';
 
@@ -25,6 +27,34 @@ const TILE_STATUS: Record<TileFilter, string> = {
     prepare: 'ready_for_pickup',
     returns: 'return_received',
 };
+
+/**
+ * One line per product whose stock moved, e.g. "Serum · Black: 12 → 10 (−2)".
+ * Says so plainly when nothing tracked moved.
+ */
+function describeStock(changes: FulfillmentStockChange[], t: Translator) {
+    if (changes.length === 0) {
+        return t('No tracked stock changed');
+    }
+
+    return (
+        <ul className="grid gap-0.5">
+            {changes.map((c, index) => {
+                const name = c.variant
+                    ? `${c.product} · ${c.variant}`
+                    : c.product;
+                const sign = c.change > 0 ? '+' : c.change < 0 ? '−' : '';
+
+                return (
+                    <li key={index} className="tabular-nums">
+                        {name}: {c.before} → {c.after} ({sign}
+                        {Math.abs(c.change)})
+                    </li>
+                );
+            })}
+        </ul>
+    );
+}
 
 /**
  * The fulfilment agent's entire workspace (UC-16/UC-17).
@@ -113,10 +143,13 @@ export default function FulfillmentIndex({
         setConfirming(true);
 
         try {
-            const { order } = await fulfillmentApi.confirm(result.order.id);
+            const { order, stock_changes } = await fulfillmentApi.confirm(
+                result.order.id,
+            );
             buzz('ok');
             toast.success(
                 `${order.courier_tracking_number ?? 'Parcel'} updated`,
+                { description: describeStock(stock_changes, t) },
             );
 
             // Clear the card immediately so the next parcel starts from a
@@ -137,8 +170,10 @@ export default function FulfillmentIndex({
             setUndoingId(eventId);
 
             try {
-                await fulfillmentApi.undo(eventId);
-                toast.success(t('Scan undone'));
+                const { stock_changes } = await fulfillmentApi.undo(eventId);
+                toast.success(t('Scan undone'), {
+                    description: describeStock(stock_changes, t),
+                });
                 await Promise.all([loadActivity(), refreshSummary()]);
             } catch (error) {
                 toast.error(errorMessage(error));

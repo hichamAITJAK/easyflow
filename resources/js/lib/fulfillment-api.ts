@@ -2,6 +2,7 @@ import type {
     FulfillmentActivityEvent,
     FulfillmentOrder,
     FulfillmentScanResult,
+    FulfillmentStockChange,
     FulfillmentSummary,
 } from '@/types/fulfillment';
 
@@ -47,7 +48,10 @@ function csrfToken(): string {
     return match ? decodeURIComponent(match[1]) : '';
 }
 
-async function request<T>(url: string, body?: Record<string, unknown>): Promise<T> {
+async function request<T>(
+    url: string,
+    body?: Record<string, unknown>,
+): Promise<T> {
     let response: Response;
 
     try {
@@ -57,7 +61,10 @@ async function request<T>(url: string, body?: Record<string, unknown>): Promise<
                 Accept: 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
                 ...(body
-                    ? { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': csrfToken() }
+                    ? {
+                          'Content-Type': 'application/json',
+                          'X-XSRF-TOKEN': csrfToken(),
+                      }
                     : {}),
             },
             credentials: 'same-origin',
@@ -89,7 +96,9 @@ async function request<T>(url: string, body?: Record<string, unknown>): Promise<
 
     try {
         const parsed = (await response.json()) as ValidationErrorBody;
-        const firstError = parsed.errors ? Object.values(parsed.errors)[0]?.[0] : undefined;
+        const firstError = parsed.errors
+            ? Object.values(parsed.errors)[0]?.[0]
+            : undefined;
         message = firstError ?? parsed.message ?? message;
     } catch {
         // Non-JSON error body (an HTML error page from the host, say) —
@@ -104,15 +113,25 @@ export const fulfillmentApi = {
 
     /** Read-only preview. Never mutates — see FulfillmentController::scan(). */
     scan: (qrValue: string) =>
-        request<FulfillmentScanResult>('/fulfillment/scan', { qr_value: qrValue }),
+        request<FulfillmentScanResult>('/fulfillment/scan', {
+            qr_value: qrValue,
+        }),
 
     /** Commits the action the server re-derives from the parcel's current status. */
     confirm: (orderId: number) =>
-        request<{ order: FulfillmentOrder }>('/fulfillment/confirm', { order_id: orderId }),
+        request<{
+            order: FulfillmentOrder;
+            stock_changes: FulfillmentStockChange[];
+        }>('/fulfillment/confirm', { order_id: orderId }),
 
     activity: () =>
-        request<{ events: FulfillmentActivityEvent[] }>('/fulfillment/activity'),
+        request<{ events: FulfillmentActivityEvent[] }>(
+            '/fulfillment/activity',
+        ),
 
     undo: (eventId: number) =>
-        request<{ order: FulfillmentOrder }>('/fulfillment/undo', { event_id: eventId }),
+        request<{
+            order: FulfillmentOrder;
+            stock_changes: FulfillmentStockChange[];
+        }>('/fulfillment/undo', { event_id: eventId }),
 };

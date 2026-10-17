@@ -14,14 +14,15 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int $business_id
- * @property int $product_variant_id
+ * @property int|null $product_id
+ * @property int|null $product_variant_id
  * @property int|null $order_item_id
  * @property string $type
  * @property int $quantity_change
  * @property string|null $note
  * @property Carbon|null $created_at
  */
-#[Fillable(['business_id', 'product_variant_id', 'order_item_id', 'type', 'quantity_change', 'note'])]
+#[Fillable(['business_id', 'product_id', 'product_variant_id', 'order_item_id', 'type', 'quantity_change', 'note'])]
 #[ScopedBy([BusinessScope::class])]
 class StockMovement extends Model
 {
@@ -42,6 +43,12 @@ class StockMovement extends Model
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);
+    }
+
+    /** @return BelongsTo<Product, $this> */
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
 
     /** @return BelongsTo<ProductVariant, $this> */

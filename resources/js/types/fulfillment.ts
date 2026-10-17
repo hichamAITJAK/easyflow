@@ -39,6 +39,18 @@ export type FulfillmentAction = Extract<
     'ready_for_pickup' | 'return_received'
 > | null;
 
+/** One product's stock move from a scan-out or its undo (OrderStockService). */
+export type FulfillmentStockChange = {
+    product: string;
+    variant: string | null;
+    sku: string | null;
+    ordered: number;
+    /** Negative when stock left, positive when it came back. */
+    change: number;
+    before: number;
+    after: number;
+};
+
 export type FulfillmentScanResult = {
     order: FulfillmentOrder;
     action: FulfillmentAction;

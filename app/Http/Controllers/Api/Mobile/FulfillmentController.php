@@ -8,9 +8,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderStatusEvent;
 use App\Services\Operations\Orders\OrderService;
+use App\Services\Operations\Products\OrderStockService;
 use App\Support\TrackingNumberExtractor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Log;
 
@@ -44,7 +46,10 @@ class FulfillmentController extends Controller
 {
     use ScopesAgentAccess;
 
-    public function __construct(private readonly OrderService $orders) {}
+    public function __construct(
+        private readonly OrderService $orders,
+        private readonly OrderStockService $stock,
+    ) {}
 
     /**
      * Two counters for the Home screen: parcels ready to prepare
@@ -123,9 +128,15 @@ class FulfillmentController extends Controller
             ]);
         }
 
-        $order = $this->orders->updateDeliveryStatus($order, $action, $request->user());
+        // Scanning a parcel out takes its items out of stock; both happen
+        // together or not at all. stock_changes lists exactly what moved.
+        [$order, $stockChanges] = DB::transaction(function () use ($order, $action, $request) {
+            $order = $this->orders->updateDeliveryStatus($order, $action, $request->user());
 
-        return response()->json(['order' => $this->orderPayload($order)]);
+            return [$order, $action === OrderDeliveryStatus::READY_FOR_PICKUP ? $this->stock->deductForOrder($order) : []];
+        });
+
+        return response()->json(['order' => $this->orderPayload($order), 'stock_changes' => $stockChanges]);
     }
 
     /**
@@ -233,9 +244,14 @@ class FulfillmentController extends Controller
             ? OrderDeliveryStatus::AWAITING_PICKUP
             : OrderDeliveryStatus::RETURNED_IN_TRANSIT;
 
-        $order = $this->orders->updateDeliveryStatus($order, $revertTo, $request->user());
+        // Undoing a scan-out puts its items back in stock.
+        [$order, $stockChanges] = DB::transaction(function () use ($order, $revertTo, $request) {
+            $order = $this->orders->updateDeliveryStatus($order, $revertTo, $request->user());
 
-        return response()->json(['order' => $this->orderPayload($order)]);
+            return [$order, $revertTo === OrderDeliveryStatus::AWAITING_PICKUP ? $this->stock->restoreForOrder($order) : []];
+        });
+
+        return response()->json(['order' => $this->orderPayload($order), 'stock_changes' => $stockChanges]);
     }
 
     /**
