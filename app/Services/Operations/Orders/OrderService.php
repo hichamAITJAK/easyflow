@@ -19,6 +19,7 @@ use App\Events\Order\OrderReturnedInTransit;
 use App\Events\Order\OrderSubmittedToCourier;
 use App\Events\Order\ParcelReadyForPickup;
 use App\Events\Order\ParcelReturnReceived;
+use App\Jobs\RebuildBusinessStatsJob;
 use App\Models\DeleveryCourrierCity;
 use App\Models\DeliveryAccount;
 use App\Models\Order;
@@ -500,11 +501,13 @@ class OrderService
     }
 
     /**
-     * Soft-delete an order.
+     * Soft-delete an order, then recount the dashboard stats without it.
      */
     public function destroy(Order $order): void
     {
         $order->delete();
+
+        RebuildBusinessStatsJob::dispatch($order->business_id);
     }
 
     /**
@@ -515,9 +518,15 @@ class OrderService
      */
     public function bulkDestroy(int $businessId, array $ids): int
     {
-        return Order::where('business_id', $businessId)
+        $count = Order::where('business_id', $businessId)
             ->whereIn('id', $ids)
             ->delete();
+
+        if ($count > 0) {
+            RebuildBusinessStatsJob::dispatch($businessId);
+        }
+
+        return $count;
     }
 
     /**
