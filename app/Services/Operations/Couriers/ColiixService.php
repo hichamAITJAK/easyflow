@@ -6,13 +6,15 @@ use App\DTOs\Coliix\ColiixNewParcelDTO;
 use App\DTOs\Coliix\ColiixParcelDTO;
 use App\Enums\OrderDeliveryStatus;
 use App\Interfaces\DeliveryCourierInterface;
+use App\Interfaces\ProvidesTrackingHistory;
 use App\Models\DeleveryCourrierCity;
 use App\Models\DeliveryAccount;
 use App\Models\Order;
 use App\Services\Connectivity\Coliix\ColiixClient;
+use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
-class ColiixService implements DeliveryCourierInterface
+class ColiixService implements DeliveryCourierInterface, ProvidesTrackingHistory
 {
     public function __construct(private readonly ?DeliveryAccount $account = null) {}
 
@@ -130,6 +132,57 @@ class ColiixService implements DeliveryCourierInterface
         }
 
         return end($history)['status'] ?? null;
+    }
+
+    /**
+     * Every step of the parcel's journey from track()'s "msg" array, oldest
+     * first: the status label (trimmed), Coliix's own time for the step,
+     * and the payment state it reports alongside ("Payé" / "Non Payé").
+     *
+     * @return list<array{status: string, happened_at: Carbon|null, payment_state: string|null}>
+     */
+    public function getTrackingHistory(string $trackingNumber): array
+    {
+        $history = $this->track($trackingNumber)['msg'] ?? [];
+
+        if (! is_array($history)) {
+            return [];
+        }
+
+        $steps = [];
+
+        foreach ($history as $step) {
+            if (! is_array($step) || trim((string) ($step['status'] ?? '')) === '') {
+                continue;
+            }
+
+            $steps[] = [
+                'status' => trim((string) $step['status']),
+                'happened_at' => $this->parseTime($step['time'] ?? null),
+                'payment_state' => isset($step['etat']) ? trim((string) $step['etat']) : null,
+            ];
+        }
+
+        return $steps;
+    }
+
+    /**
+     * Coliix writes times as "2026-10-15 15:11 :22" (a stray space before
+     * the seconds); null when the value can't be read.
+     */
+    private function parseTime(mixed $value): ?Carbon
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        $normalised = preg_replace('/\s*:\s*/', ':', trim($value));
+
+        try {
+            return Carbon::createFromFormat('Y-m-d H:i:s', $normalised);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

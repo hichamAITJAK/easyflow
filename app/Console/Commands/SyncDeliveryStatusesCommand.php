@@ -4,6 +4,9 @@ namespace App\Console\Commands;
 
 use App\Enums\OrderDeliveryStatus;
 use App\Enums\OrderReturnReason;
+use App\Interfaces\DeliveryCourierInterface;
+use App\Interfaces\ProvidesTrackingHistory;
+use App\Models\CourierTrackingEvent;
 use App\Models\Order;
 use App\Services\Operations\IntegrationManagerService;
 use App\Services\Operations\Orders\OrderService;
@@ -52,8 +55,11 @@ class SyncDeliveryStatusesCommand extends Command
     {
         $businessId = $this->option('business');
 
+        // Parcels still on their way, plus orders that carry a tracking
+        // number but have no delivery status yet (a parcel created outside
+        // EasyFlow): those take the courier's status on their first sync.
         $orders = Order::query()
-            ->where('is_delivery_active', true)
+            ->where(fn ($query) => $query->where('is_delivery_active', true)->orWhereNull('delivery_status'))
             ->whereNotNull('courier_tracking_number')
             ->whereNotNull('delivery_account_id')
             ->when($businessId, fn ($query) => $query->where('business_id', $businessId))
@@ -77,13 +83,9 @@ class SyncDeliveryStatusesCommand extends Command
                 $checked++;
 
                 try {
-                    $rawStatus = $courier->getCurrentStatus($order->courier_tracking_number);
-
-                    if ($rawStatus === null) {
-                        continue;
-                    }
-
-                    $newStatus = $courier->mapDeliveryStatus($rawStatus);
+                    $newStatus = $courier instanceof ProvidesTrackingHistory
+                        ? $this->syncHistory($order, $courier)
+                        : $this->currentStatus($order, $courier);
 
                     if ($newStatus !== null && $newStatus !== $order->delivery_status) {
                         // Couriers only ever give us a raw status label, never
@@ -111,5 +113,66 @@ class SyncDeliveryStatusesCommand extends Command
         }
 
         return $failures > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * The courier's latest status for a courier that only reports that.
+     */
+    private function currentStatus(Order $order, DeliveryCourierInterface $courier): ?OrderDeliveryStatus
+    {
+        $rawStatus = $courier->getCurrentStatus($order->courier_tracking_number);
+
+        return $rawStatus === null ? null : $courier->mapDeliveryStatus($rawStatus);
+    }
+
+    /**
+     * Saves every step of the parcel's journey (new steps only; the unique
+     * key skips the ones already stored) and returns the status the order
+     * should take.
+     *
+     * An order already tracked follows the latest step, as before. An order
+     * with no delivery status yet takes the latest step that means a status
+     * (a note like "Client intéressé" maps to none), and "awaiting pickup"
+     * when the parcel only exists at the courier so far.
+     */
+    private function syncHistory(Order $order, DeliveryCourierInterface&ProvidesTrackingHistory $courier): ?OrderDeliveryStatus
+    {
+        $steps = $courier->getTrackingHistory($order->courier_tracking_number);
+
+        if ($steps === []) {
+            return null;
+        }
+
+        $mapped = array_map(function (array $step) use ($courier) {
+            try {
+                return $courier->mapDeliveryStatus($step['status']);
+            } catch (InvalidArgumentException) {
+                return null;
+            }
+        }, $steps);
+
+        CourierTrackingEvent::withoutGlobalScopes()->insertOrIgnore(array_map(fn (array $step, ?OrderDeliveryStatus $status) => [
+            'business_id' => $order->business_id,
+            'order_id' => $order->id,
+            'status' => $step['status'],
+            'delivery_status' => $status?->value,
+            'payment_state' => $step['payment_state'],
+            'happened_at' => $step['happened_at'],
+            'created_at' => now(),
+        ], $steps, $mapped));
+
+        if ($order->delivery_status !== null) {
+            // Same rule as before: the latest step decides; an unknown
+            // label still surfaces as an error for this parcel.
+            return $courier->mapDeliveryStatus($steps[array_key_last($steps)]['status']);
+        }
+
+        foreach (array_reverse($mapped) as $status) {
+            if ($status !== null) {
+                return $status;
+            }
+        }
+
+        return OrderDeliveryStatus::AWAITING_PICKUP;
     }
 }

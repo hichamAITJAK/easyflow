@@ -135,6 +135,16 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    /**
+     * The parcel's journey as the courier reported it, oldest first.
+     *
+     * @return HasMany<CourierTrackingEvent, $this>
+     */
+    public function courierTrackingEvents(): HasMany
+    {
+        return $this->hasMany(CourierTrackingEvent::class)->orderBy('happened_at')->orderBy('id');
+    }
+
     /** @return HasMany<OrderStatusEvent, $this> */
     public function statusEvents(): HasMany
     {

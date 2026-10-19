@@ -335,6 +335,8 @@ export function OrderDetail({
         : null;
     const items = order.items ?? [];
     const events = [...(order.status_events ?? [])].reverse();
+    // The courier's own steps, newest first, so the current one leads.
+    const tracking = [...(order.courier_tracking_events ?? [])].reverse();
 
     return (
         <div className="space-y-4">
@@ -684,6 +686,65 @@ export function OrderDetail({
                               t(returnReasonLabels[order.return_reason_code])}
                     </AlertDescription>
                 </Alert>
+            )}
+
+            {tracking.length > 0 && (
+                <div>
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium">
+                            {t('Courier tracking')}
+                        </span>
+                        {tracking[0].payment_state && (
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    'border-transparent font-semibold',
+                                    tracking[0].payment_state === 'Payé'
+                                        ? 'bg-[#16A08E]/10 text-[#0C7D6F]'
+                                        : 'bg-[#EFA22C]/12 text-[#A87110]',
+                                )}
+                            >
+                                {tracking[0].payment_state}
+                            </Badge>
+                        )}
+                    </div>
+                    <ol className="space-y-3">
+                        {tracking.map((step, index) => (
+                            <li key={step.id} className="flex gap-3">
+                                <div className="flex flex-col items-center">
+                                    <span
+                                        className={cn(
+                                            'mt-1 shrink-0 rounded-full',
+                                            index === 0
+                                                ? 'size-2.5 bg-primary ring-4 ring-primary/15'
+                                                : 'size-2 border-2 border-muted-foreground/40 bg-background',
+                                        )}
+                                    />
+                                    {index < tracking.length - 1 && (
+                                        <div className="my-1 w-px flex-1 bg-border" />
+                                    )}
+                                </div>
+                                <div className="grid flex-1 gap-0.5 pb-1 leading-tight">
+                                    <span
+                                        className={cn(
+                                            'text-sm',
+                                            index === 0
+                                                ? 'font-semibold'
+                                                : 'font-medium text-muted-foreground',
+                                        )}
+                                    >
+                                        {step.status}
+                                    </span>
+                                    {step.happened_at && (
+                                        <span className="text-xs text-muted-foreground">
+                                            {formatDateTime(step.happened_at)}
+                                        </span>
+                                    )}
+                                </div>
+                            </li>
+                        ))}
+                    </ol>
+                </div>
             )}
 
             {showHistory && (

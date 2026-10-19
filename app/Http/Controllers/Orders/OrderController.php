@@ -184,6 +184,7 @@ class OrderController extends Controller
             'items.variant.optionValues.option',
             'deliveryAccount.courier',
             'statusEvents' => fn ($query) => $query->with('changedByUser:id,name')->latest('created_at'),
+            'courierTrackingEvents',
         ])->makeVisible(['customer_name', 'customer_phone', 'customer_address']);
 
         // A duplicate lists the other orders from its phone, whoever holds

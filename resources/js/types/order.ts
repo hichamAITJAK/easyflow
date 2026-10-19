@@ -92,6 +92,15 @@ export type OrderItem = {
     } | null;
 };
 
+/** One step of the parcel's journey as the courier reported it. */
+export type CourierTrackingEvent = {
+    id: number;
+    status: string;
+    delivery_status: OrderDeliveryStatus | null;
+    payment_state: string | null;
+    happened_at: string | null;
+};
+
 /** Another order from the same phone, as OrderController::show lists it on a duplicate. */
 export type SamePhoneOrder = {
     id: number;
@@ -141,6 +150,8 @@ export type Order = {
     status_events?: OrderStatusEvent[];
     /** Only on a duplicate's full detail (OrderController::show). */
     same_phone_orders?: SamePhoneOrder[];
+    /** On the full detail: the courier's own tracking steps, oldest first. */
+    courier_tracking_events?: CourierTrackingEvent[];
     is_duplicate_flagged: boolean;
     is_blacklist_flagged: boolean;
     is_test: boolean;
