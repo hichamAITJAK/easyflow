@@ -179,9 +179,18 @@ class SyncDeliveryStatusesCommand extends Command
         ], $steps, $mapped));
 
         if ($order->delivery_status !== null) {
-            // Same rule as before: the latest step decides; an unknown
-            // label still surfaces as an error for this parcel.
-            return $courier->mapDeliveryStatus($steps[array_key_last($steps)]['status']);
+            // The latest step decides. A label we don't know is kept in
+            // the history exactly as the courier wrote it, and the order's
+            // status is left as it is rather than failing the parcel.
+            $last = $steps[array_key_last($steps)]['status'];
+
+            try {
+                return $courier->mapDeliveryStatus($last);
+            } catch (InvalidArgumentException) {
+                $this->warn("Order #{$order->id} [{$order->reference}]: unknown courier status [{$last}] kept in the history; status unchanged.");
+
+                return null;
+            }
         }
 
         foreach (array_reverse($mapped) as $status) {

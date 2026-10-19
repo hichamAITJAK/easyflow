@@ -150,3 +150,19 @@ test('a postponed step carrying the new date still maps to postponed', function 
     expect($order->fresh()->delivery_status)->toBe(OrderDeliveryStatus::POSTPONED)
         ->and(CourierTrackingEvent::withoutGlobalScopes()->where('order_id', $order->id)->latest('id')->value('status'))->toBe('Reporté 2026-10-20');
 });
+
+test('a status we do not know is kept in the history as the courier wrote it, and the order keeps its status', function () {
+    Http::fake(['my.coliix.com/*' => Http::response(coliixTrackAnswer(['Ramassé ', 'Statut Inconnu Coliix ']))]);
+    $admin = makeBusinessUser();
+    $order = makeOrder($admin->business_id, [
+        'delivery_account_id' => coliixAccount($admin->business_id)->id,
+        'courier_tracking_number' => 'KMG1026134224GI',
+        'delivery_status' => OrderDeliveryStatus::IN_TRANSIT,
+        'is_delivery_active' => true,
+    ]);
+
+    $this->artisan('orders:sync-delivery-statuses')->assertSuccessful();
+
+    expect($order->fresh()->delivery_status)->toBe(OrderDeliveryStatus::IN_TRANSIT)
+        ->and(CourierTrackingEvent::withoutGlobalScopes()->where('order_id', $order->id)->latest('id')->value('status'))->toBe('Statut Inconnu Coliix');
+});
