@@ -78,7 +78,11 @@ class ColiixService implements DeliveryCourierInterface, ProvidesTrackingHistory
      */
     public function mapDeliveryStatus(string $status): ?OrderDeliveryStatus
     {
-        return match (trim($status)) {
+        // "Reporté" comes with the new delivery date appended
+        // ("Reporté 2026-10-20"); the label is what we match on.
+        $label = trim(preg_replace('/\s+\d{4}-\d{2}-\d{2}\s*$/', '', $status) ?? $status);
+
+        return match ($label) {
             'Nouveau Colis', 'Attente De Ramassage', 'Programmé',
             'Client intéressé', 'Client pas intéressé', 'CLIENT PAS COMMENDE',
             'Confirmer par le livreur', 'En cours', 'Boite Vocal',
