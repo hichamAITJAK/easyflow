@@ -23,7 +23,9 @@ class SyncDeliveryStatusesCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'orders:sync-delivery-statuses {--business= : Only sync orders for this business ID}';
+    protected $signature = 'orders:sync-delivery-statuses
+        {--business= : Only sync orders for this business ID}
+        {--history : Also fetch the courier history of finished parcels (delivered, cancelled…), without changing their status}';
 
     /**
      * The console command description.
@@ -59,7 +61,10 @@ class SyncDeliveryStatusesCommand extends Command
         // number but have no delivery status yet (a parcel created outside
         // EasyFlow): those take the courier's status on their first sync.
         $orders = Order::query()
-            ->where(fn ($query) => $query->where('is_delivery_active', true)->orWhereNull('delivery_status'))
+            ->when(
+                ! $this->option('history'),
+                fn ($query) => $query->where(fn ($query) => $query->where('is_delivery_active', true)->orWhereNull('delivery_status')),
+            )
             ->whereNotNull('courier_tracking_number')
             ->whereNotNull('delivery_account_id')
             ->when($businessId, fn ($query) => $query->where('business_id', $businessId))
@@ -82,10 +87,22 @@ class SyncDeliveryStatusesCommand extends Command
             foreach ($accountOrders as $order) {
                 $checked++;
 
+                // A finished parcel (only reached with --history) gets its
+                // history filled in; its status is left exactly as it is.
+                $finished = ! $order->is_delivery_active && $order->delivery_status !== null;
+
+                if ($finished && ! $courier instanceof ProvidesTrackingHistory) {
+                    continue;
+                }
+
                 try {
                     $newStatus = $courier instanceof ProvidesTrackingHistory
                         ? $this->syncHistory($order, $courier)
                         : $this->currentStatus($order, $courier);
+
+                    if ($finished) {
+                        continue;
+                    }
 
                     if ($newStatus !== null && $newStatus !== $order->delivery_status) {
                         // Couriers only ever give us a raw status label, never

@@ -14,6 +14,16 @@ import { statusEventLabel } from '@/lib/order-status';
 import { cn } from '@/lib/utils';
 import type { Order } from '@/types';
 
+/** One row of the trail: our own status change, or a courier step. */
+type TrailItem = {
+    key: string;
+    at: string | null;
+    title: string;
+    by: string;
+    note: string | null;
+    fromCourier: boolean;
+};
+
 /**
  * A parcel's status trail, read from the order_status_events audit rows
  * written on every transition. Status events are never eager-loaded on the
@@ -98,9 +108,34 @@ export function ParcelHistoryDialog({
     // this one resolves.
     const current = order && detail?.id === order.id ? detail.order : null;
 
-    // Oldest first, so the trail reads top-to-bottom in the order the parcel
-    // actually moved. The endpoint returns newest first.
-    const events = [...(current?.status_events ?? [])].reverse();
+    // One trail, oldest first: our own status changes plus every step the
+    // courier reported (its own wording and time), interleaved by time so
+    // the parcel's journey reads top-to-bottom as it actually happened.
+    const courierName =
+        current?.delivery_account?.courier?.name ?? t('Courier');
+    const events: TrailItem[] = [
+        ...(current?.status_events ?? []).map((event) => ({
+            key: `status-${event.id}`,
+            at: event.created_at,
+            title: event.from_status
+                ? `${t(statusEventLabel(event.from_status))} → ${t(statusEventLabel(event.to_status))}`
+                : t(statusEventLabel(event.to_status)),
+            // Courier-driven transitions have no human actor.
+            by: event.changed_by_user?.name ?? t('Courier'),
+            note: event.note,
+            fromCourier: false,
+        })),
+        ...(current?.courier_tracking_events ?? []).map((step) => ({
+            key: `courier-${step.id}`,
+            at: step.happened_at,
+            title: step.status,
+            by: courierName,
+            note: null,
+            fromCourier: true,
+        })),
+    ].sort(
+        (a, b) => (a.at ? Date.parse(a.at) : 0) - (b.at ? Date.parse(b.at) : 0),
+    );
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -109,8 +144,13 @@ export function ParcelHistoryDialog({
                     <DialogTitle>{t('Parcel history')}</DialogTitle>
                     <DialogDescription>
                         {order?.reference
-                            ? t('Every recorded status change for :reference.', { reference: order.reference })
-                            : t('Every recorded status change for this parcel.')}
+                            ? t(
+                                  'Every recorded status change for :reference.',
+                                  { reference: order.reference },
+                              )
+                            : t(
+                                  'Every recorded status change for this parcel.',
+                              )}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -119,7 +159,9 @@ export function ParcelHistoryDialog({
                     flash "No status changes recorded yet." */}
                 {loading || (!current && !failed) ? (
                     <div className="space-y-4" aria-live="polite">
-                        <span className="sr-only">{t('Loading parcel history…')}</span>
+                        <span className="sr-only">
+                            {t('Loading parcel history…')}
+                        </span>
                         {[0, 1, 2].map((key) => (
                             <div key={key} className="flex gap-3">
                                 <Skeleton className="mt-1 size-2.5 shrink-0 rounded-full" />
@@ -132,7 +174,9 @@ export function ParcelHistoryDialog({
                     </div>
                 ) : failed ? (
                     <p className="py-6 text-center text-sm text-muted-foreground">
-                        {t('Couldn’t load this parcel’s history. Close and try again.')}
+                        {t(
+                            'Couldn’t load this parcel’s history. Close and try again.',
+                        )}
                     </p>
                 ) : events.length === 0 ? (
                     <p className="py-6 text-center text-sm text-muted-foreground">
@@ -144,14 +188,16 @@ export function ParcelHistoryDialog({
                             const isCurrent = index === events.length - 1;
 
                             return (
-                                <li key={event.id} className="flex gap-3">
+                                <li key={event.key} className="flex gap-3">
                                     <div className="flex flex-col items-center">
                                         <span
                                             className={cn(
                                                 'mt-1 shrink-0 rounded-full',
                                                 isCurrent
                                                     ? 'size-2.5 bg-primary ring-4 ring-primary/15'
-                                                    : 'size-2 border-2 border-muted-foreground/40 bg-background',
+                                                    : event.fromCourier
+                                                      ? 'size-2 border-2 border-[#468FA5]/60 bg-background'
+                                                      : 'size-2 border-2 border-muted-foreground/40 bg-background',
                                             )}
                                         />
                                         {index < events.length - 1 && (
@@ -167,22 +213,12 @@ export function ParcelHistoryDialog({
                                                     : 'font-medium text-muted-foreground',
                                             )}
                                         >
-                                            {event.from_status
-                                                ? `${t(statusEventLabel(event.from_status))} → ${t(statusEventLabel(event.to_status))}`
-                                                : statusEventLabel(
-                                                      event.to_status,
-                                                  )}
+                                            {event.title}
                                         </span>
                                         <span className="text-xs text-muted-foreground">
-                                            {event.created_at &&
-                                                formatDateTime(
-                                                    event.created_at,
-                                                )}
-                                            {/* Courier-driven transitions
-                                                have no human actor. */}
-                                            {event.changed_by_user
-                                                ? ` · ${event.changed_by_user.name}`
-                                                : t('· Courier')}
+                                            {event.at
+                                                ? `${formatDateTime(event.at)} · ${event.by}`
+                                                : event.by}
                                         </span>
                                         {event.note && (
                                             <p className="mt-1 text-sm text-muted-foreground">

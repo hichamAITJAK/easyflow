@@ -113,3 +113,24 @@ test('a parcel Coliix has only registered so far puts the order on awaiting pick
     expect($order->fresh()->delivery_status)->toBe(OrderDeliveryStatus::AWAITING_PICKUP)
         ->and($order->fresh()->is_delivery_active)->toBeTrue();
 });
+
+test('--history fills in a finished parcel\'s journey without touching its status', function () {
+    Http::fake(['my.coliix.com/*' => Http::response(coliixTrackAnswer(['Ramassé ', 'Retourné ']))]);
+    $admin = makeBusinessUser();
+    $order = makeOrder($admin->business_id, [
+        'delivery_account_id' => coliixAccount($admin->business_id)->id,
+        'courier_tracking_number' => 'ODA1026134228RO',
+        // Back in the warehouse: further along than Coliix's "Retourné".
+        'delivery_status' => OrderDeliveryStatus::RETURN_RECEIVED,
+        'is_delivery_active' => false,
+    ]);
+
+    // The hourly run leaves finished parcels alone.
+    $this->artisan('orders:sync-delivery-statuses');
+    expect(CourierTrackingEvent::withoutGlobalScopes()->count())->toBe(0);
+
+    $this->artisan('orders:sync-delivery-statuses', ['--history' => true])->assertSuccessful();
+
+    expect(CourierTrackingEvent::withoutGlobalScopes()->where('order_id', $order->id)->count())->toBe(2)
+        ->and($order->fresh()->delivery_status)->toBe(OrderDeliveryStatus::RETURN_RECEIVED);
+});
