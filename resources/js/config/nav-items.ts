@@ -19,7 +19,10 @@ import { index as creativesIndex } from '@/routes/creatives';
 import { index as customersIndex } from '@/routes/customers';
 import { index as deliveryIndex } from '@/routes/delivery';
 import { index as deliveryCouriersIndex } from '@/routes/delivery-couriers';
-import { index as fulfillmentIndex } from '@/routes/fulfillment';
+import {
+    index as fulfillmentIndex,
+    local as fulfillmentLocal,
+} from '@/routes/fulfillment';
 import { index as ordersIndex } from '@/routes/orders';
 import { index as parcelsIndex } from '@/routes/parcels';
 import { index as productsIndex } from '@/routes/products';
@@ -148,6 +151,11 @@ const FULFILMENT_NAV_ITEMS: NavItem[] = [
         title: 'Fulfilment',
         href: fulfillmentIndex(),
         icon: ScanLine,
+    },
+    {
+        title: 'Local delivery',
+        href: fulfillmentLocal(),
+        icon: Truck,
     },
     {
         title: 'Parcels',

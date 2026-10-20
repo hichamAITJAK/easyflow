@@ -13,6 +13,7 @@ use App\Http\Controllers\Delivery\DeliveryController;
 use App\Http\Controllers\DeliveryCouriers\DeliveryAccountController;
 use App\Http\Controllers\DeliveryCouriers\DeliveryCourrierConnectionController;
 use App\Http\Controllers\Fulfillment\FulfillmentWebController;
+use App\Http\Controllers\Fulfillment\LocalDeliveryController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Orders\OrderController;
 use App\Http\Controllers\Orders\ParcelController;
@@ -188,6 +189,10 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
         Route::post('/confirm', [FulfillmentWebController::class, 'confirm'])->name('confirm');
         Route::get('/activity', [FulfillmentWebController::class, 'activity'])->name('activity');
         Route::post('/undo', [FulfillmentWebController::class, 'undo'])->name('undo');
+
+        // Own delivery: the parcels going out with the delivery guys, and their labels.
+        Route::get('/local', [LocalDeliveryController::class, 'index'])->name('local');
+        Route::get('/local/tickets', [LocalDeliveryController::class, 'tickets'])->name('tickets');
     });
 
     // Own delivery: the delivery guy's parcels.

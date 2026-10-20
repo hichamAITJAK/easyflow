@@ -10,6 +10,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "bacon/bacon-qr-code": "^3.1",
         "barryvdh/laravel-dompdf": "^3.1",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/chisel": "^0.1.0",
@@ -19,6 +20,7 @@
         "laravel/socialite": "^5.29",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
+        "picqer/php-barcode-generator": "^3.3",
         "posthog/posthog-php": "^4.12",
         "predis/predis": "^3.6"
     },
