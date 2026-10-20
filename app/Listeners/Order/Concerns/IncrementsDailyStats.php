@@ -79,52 +79,63 @@ trait IncrementsDailyStats
     }
 
     /**
-     * @return list<array{store_id: int|null, agent_id: int|null, product_id: int|null, delivery_account_id: int|null}>
+     * @return list<array{store_id: int|null, agent_id: int|null, product_id: int|null, delivery_account_id: int|null, source_platform: string|null}>
      */
     private function dailyStatScopes(Order $order): array
     {
-        $blank = ['store_id' => null, 'agent_id' => null, 'product_id' => null, 'delivery_account_id' => null];
-
-        $scopes = [$blank];
-
-        if ($order->store_id !== null) {
-            $scopes[] = ['store_id' => $order->store_id] + $blank;
-        }
-
-        if ($order->assigned_agent_id !== null) {
-            $scopes[] = ['agent_id' => $order->assigned_agent_id] + $blank;
-        }
-
-        if ($order->delivery_account_id !== null) {
-            $scopes[] = ['delivery_account_id' => $order->delivery_account_id] + $blank;
-        }
-
         $productIds = OrderItem::where('order_id', $order->id)
             ->whereNotNull('product_id')
             ->distinct()
             ->pluck('product_id');
 
-        foreach ($productIds as $productId) {
-            $scopes[] = ['product_id' => $productId] + $blank;
+        $blank = ['store_id' => null, 'agent_id' => null, 'product_id' => null, 'delivery_account_id' => null, 'source_platform' => null];
+
+        // Where the order sits — business-wide, its store, its source
+        // (platform or channel), and the store × source pair — each on its
+        // own and again with its courier or each of its products, so the
+        // dashboard's Store and Source filters narrow every tab the same way.
+        $where = [[]];
+
+        if ($order->store_id !== null) {
+            $where[] = ['store_id' => $order->store_id];
         }
 
-        // The same courier and product rows again per store, so the
-        // dashboard breakdown can follow its store filter.
-        if ($order->store_id !== null) {
-            if ($order->delivery_account_id !== null) {
-                $scopes[] = ['store_id' => $order->store_id, 'delivery_account_id' => $order->delivery_account_id] + $blank;
-            }
+        if ($order->source_platform !== null) {
+            $where[] = ['source_platform' => $order->source_platform];
+        }
 
-            foreach ($productIds as $productId) {
-                $scopes[] = ['store_id' => $order->store_id, 'product_id' => $productId] + $blank;
+        if ($order->store_id !== null && $order->source_platform !== null) {
+            $where[] = ['store_id' => $order->store_id, 'source_platform' => $order->source_platform];
+        }
+
+        $what = [[]];
+
+        if ($order->delivery_account_id !== null) {
+            $what[] = ['delivery_account_id' => $order->delivery_account_id];
+        }
+
+        foreach ($productIds as $productId) {
+            $what[] = ['product_id' => $productId];
+        }
+
+        $scopes = [];
+
+        foreach ($where as $place) {
+            foreach ($what as $thing) {
+                $scopes[] = $place + $thing + $blank;
             }
+        }
+
+        // Agent rows carry no other dimension: the agent is the question.
+        if ($order->assigned_agent_id !== null) {
+            $scopes[] = ['agent_id' => $order->assigned_agent_id] + $blank;
         }
 
         return $scopes;
     }
 
     /**
-     * @param  array{store_id: int|null, agent_id: int|null, product_id: int|null, delivery_account_id: int|null}  $scope
+     * @param  array{store_id: int|null, agent_id: int|null, product_id: int|null, delivery_account_id: int|null, source_platform: string|null}  $scope
      */
     private function resolveDailyStatRow(int $businessId, string $statDate, array $scope): DailyStatsSummary
     {
@@ -138,6 +149,7 @@ trait IncrementsDailyStats
             ->where('agent_id', $scope['agent_id'])
             ->where('product_id', $scope['product_id'])
             ->where('delivery_account_id', $scope['delivery_account_id'])
+            ->where('source_platform', $scope['source_platform'])
             ->first();
 
         $row = $find();

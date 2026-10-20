@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Enums\OrderConfirmationStatus;
 use App\Enums\OrderDeliveryStatus;
+use App\Enums\OrderSource;
 use App\Enums\PerformanceMetric;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
@@ -28,6 +29,13 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    /**
+     * The admin page's Source filter: a platform slug (Shopify…) or a
+     * manual channel (whatsapp…). Null means every source. Read by the
+     * stats and order queries below, like the store filter they also take.
+     */
+    private ?string $source = null;
+
     private const PERIOD_DAYS = 30;
 
     /** How many equal spans the KPI sparklines split the window into. */
@@ -87,6 +95,12 @@ class DashboardController extends Controller
                 ->all(),
         );
 
+        // Only a source this business can actually have; anything else
+        // is ignored rather than producing an empty page.
+        $sources = $this->sourceOptions($businessId);
+        $requested = $request->string('source')->toString();
+        $this->source = collect($sources)->contains('value', $requested) ? $requested : null;
+
         $period = $request->string('period')->toString() ?: '30d';
         [$since, $until] = $this->resolvePeriod($period, $request);
         $windowDays = (int) $since->diffInDays($until) + 1;
@@ -125,6 +139,7 @@ class DashboardController extends Controller
         return Inertia::render('dashboard/admin', [
             'filters' => [
                 'store_ids' => $storeIds !== [] ? implode(',', $storeIds) : null,
+                'source' => $this->source,
                 'period' => $period !== '30d' ? $period : null,
                 'agent_id' => $agent?->id !== null ? (string) $agent->id : null,
                 // Echoed from the resolved window, not the raw params, so
@@ -134,6 +149,7 @@ class DashboardController extends Controller
                 'date_to' => $period === 'custom' ? $until->toDateString() : null,
             ],
             'stores' => $stores,
+            'sources' => $sources,
             'agents' => $agents,
             'alerts' => $this->attentionAlerts($businessId, $alertProducts, $since, $until),
             'kpis' => $this->kpis($businessId, $storeIds, $rows, $previousRows, $since, $until),
@@ -162,6 +178,11 @@ class DashboardController extends Controller
                 fn ($query) => $query->whereIn('store_id', $storeIds),
                 fn ($query) => $query->whereNull('store_id'),
             )
+            ->when(
+                $this->source !== null,
+                fn ($query) => $query->where('source_platform', $this->source),
+                fn ($query) => $query->whereNull('source_platform'),
+            )
             ->whereNull('agent_id')
             ->whereNull('product_id')
             ->whereNull('delivery_account_id')
@@ -181,6 +202,7 @@ class DashboardController extends Controller
         return DailyStatsSummary::where('business_id', $businessId)
             ->where('agent_id', $agentId)
             ->whereNull('store_id')
+            ->whereNull('source_platform')
             ->whereNull('product_id')
             ->whereNull('delivery_account_id')
             ->whereBetween('stat_date', [$since, $until])
@@ -278,6 +300,7 @@ class DashboardController extends Controller
     {
         return Order::where('business_id', $businessId)
             ->where('is_test', false)
+            ->when($this->source !== null, fn ($query) => $query->where('source_platform', $this->source))
             ->whereIn('confirmation_status', OrderConfirmationStatus::awaitingOutcome());
     }
 
@@ -533,6 +556,7 @@ class DashboardController extends Controller
         $teamRows = DailyStatsSummary::where('business_id', $businessId)
             ->whereNotNull('agent_id')
             ->whereNull('store_id')
+            ->whereNull('source_platform')
             ->whereNull('product_id')
             ->whereNull('delivery_account_id')
             ->whereBetween('stat_date', [$since, $until])
@@ -724,6 +748,7 @@ class DashboardController extends Controller
 
         return [
             'stores' => array_map($map, $table['stores']),
+            'sources' => array_map($map, $table['sources']),
             'products' => array_map($map, $table['products']),
             'couriers' => array_map(fn (array $row) => [
                 ...$map($row),
@@ -871,6 +896,7 @@ class DashboardController extends Controller
             ->whereNotNull('delivery_status')
             ->whereBetween('created_at', [$since->copy()->startOfDay(), $until->copy()->endOfDay()])
             ->when($storeIds !== [], fn ($query) => $query->whereIn('store_id', $storeIds))
+            ->when($this->source !== null, fn ($query) => $query->where('source_platform', $this->source))
             ->toBase()
             ->selectRaw('delivery_status, count(*) as aggregate')
             ->groupBy('delivery_status')
@@ -920,6 +946,11 @@ class DashboardController extends Controller
             // couriers, maybe a store), so nothing is counted twice.
             ->when($column !== 'product_id', fn ($query) => $query->whereNull('product_id'))
             ->when($column !== 'delivery_account_id', fn ($query) => $query->whereNull('delivery_account_id'))
+            ->when(
+                $this->source !== null,
+                fn ($query) => $query->where('source_platform', $this->source),
+                fn ($query) => $query->when($column !== 'source_platform', fn ($query) => $query->whereNull('source_platform')),
+            )
             ->when(
                 $storeIds !== [],
                 fn ($query) => $query->whereIn('store_id', $storeIds),
@@ -1027,11 +1058,49 @@ class DashboardController extends Controller
             ];
         })->filter()->values();
 
+        // Where the orders came from: a platform (Shopify…) or, for
+        // manual orders, the channel (WhatsApp, Instagram…).
+        $labels = collect($this->sourceOptions($businessId))->pluck('label', 'value')->put('manual', __('Manual'));
+
+        $sources = $dimensionRows('source_platform')
+            ->map(fn (Collection $rows, string $source) => [
+                'name' => $labels[$source] ?? $source,
+                'image' => null,
+                ...$mapCommon($rows),
+            ])
+            ->sortByDesc('orders')
+            ->values();
+
         return [
             'stores' => $stores->all(),
+            'sources' => $sources->all(),
             'products' => $products->all(),
             'couriers' => $couriers->all(),
         ];
+    }
+
+    /**
+     * What the Source filter can be set to: the platforms behind this
+     * business's stores, then the channels a manual order can come from.
+     *
+     * @return list<array{value: string, label: string}>
+     */
+    private function sourceOptions(?int $businessId): array
+    {
+        $platforms = Store::where('business_id', $businessId)
+            ->with('platform:id,name,slug')
+            ->get()
+            ->pluck('platform')
+            ->filter()
+            ->unique('slug')
+            ->reject(fn ($platform) => $platform->slug === 'manual')
+            ->sortBy('name')
+            ->map(fn ($platform) => ['value' => $platform->slug, 'label' => $platform->name]);
+
+        $channels = collect(OrderSource::cases())
+            ->map(fn (OrderSource $source) => ['value' => $source->value, 'label' => __($source->label())]);
+
+        return $platforms->concat($channels)->values()->all();
     }
 
     private function agentDashboard(User $user, Request $request): Response

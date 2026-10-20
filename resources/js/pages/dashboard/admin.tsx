@@ -24,6 +24,7 @@ import { DashboardFilters } from '@/components/dashboard/dashboard-filters';
 import type {
     DashboardFilterValues,
     SimpleOption,
+    SourceOption,
 } from '@/components/dashboard/dashboard-filters';
 import {
     C,
@@ -99,6 +100,7 @@ export interface BreakdownRow {
 export interface DashboardProps {
     filters: DashboardFilterValues;
     stores: SimpleOption[];
+    sources: SourceOption[];
     agents: SimpleOption[];
     alerts: AlertItem[];
     kpis: KpiBlock;
@@ -129,6 +131,7 @@ export interface DashboardProps {
     performance: PerformanceTrackData;
     breakdown: {
         stores: BreakdownRow[];
+        sources: BreakdownRow[];
         products: BreakdownRow[];
         couriers: BreakdownRow[];
     };
@@ -136,6 +139,7 @@ export interface DashboardProps {
 
 const FILTER_KEYS: (keyof DashboardFilterValues)[] = [
     'store_ids',
+    'source',
     'period',
     'date_from',
     'date_to',
@@ -919,7 +923,7 @@ function FinanceRow({
 }
 
 /* ---------- breakdown ---------- */
-type BdTab = 'stores' | 'products' | 'couriers';
+type BdTab = 'stores' | 'sources' | 'products' | 'couriers';
 type SortKey = 'name' | 'orders' | 'conf' | 'deliv' | 'ret';
 
 function Metric({ cell, color }: { cell: Pair | null; color: string }) {
@@ -1050,6 +1054,7 @@ export function BreakdownSection({
 
     const tabLabels: Record<BdTab, string> = {
         stores: t('Stores'),
+        sources: t('Sources'),
         products: t('Products'),
         couriers: t('Couriers'),
     };
@@ -1075,25 +1080,30 @@ export function BreakdownSection({
                         className="flex rounded-full bg-muted p-1"
                         role="tablist"
                     >
-                        {(['stores', 'products', 'couriers'] as BdTab[]).map(
-                            (tb) => (
-                                <button
-                                    key={tb}
-                                    type="button"
-                                    role="tab"
-                                    aria-selected={tab === tb}
-                                    onClick={() => setTab(tb)}
-                                    className={cn(
-                                        'rounded-full px-4 py-1.5 text-sm font-medium',
-                                        tab === tb
-                                            ? 'bg-card text-foreground shadow-xs'
-                                            : 'text-muted-foreground',
-                                    )}
-                                >
-                                    {tabLabels[tb]}
-                                </button>
-                            ),
-                        )}
+                        {(
+                            [
+                                'stores',
+                                'sources',
+                                'products',
+                                'couriers',
+                            ] as BdTab[]
+                        ).map((tb) => (
+                            <button
+                                key={tb}
+                                type="button"
+                                role="tab"
+                                aria-selected={tab === tb}
+                                onClick={() => setTab(tb)}
+                                className={cn(
+                                    'rounded-full px-4 py-1.5 text-sm font-medium',
+                                    tab === tb
+                                        ? 'bg-card text-foreground shadow-xs'
+                                        : 'text-muted-foreground',
+                                )}
+                            >
+                                {tabLabels[tb]}
+                            </button>
+                        ))}
                     </div>
                 </div>
                 <div className="overflow-x-auto">
@@ -1231,6 +1241,7 @@ export default function AdminDashboard(props: DashboardProps) {
 
                     <DashboardFilters
                         stores={props.stores}
+                        sources={props.sources}
                         draft={draft}
                         onChange={updateFilters}
                         onReset={resetFilters}

@@ -13,7 +13,7 @@ function dashboardOrdersCount(int $businessId): int
 {
     return (int) DailyStatsSummary::withoutGlobalScopes()
         ->where('business_id', $businessId)
-        ->whereNull('store_id')->whereNull('agent_id')->whereNull('product_id')->whereNull('delivery_account_id')
+        ->whereNull('store_id')->whereNull('agent_id')->whereNull('product_id')->whereNull('delivery_account_id')->whereNull('source_platform')
         ->sum('orders_count');
 }
 

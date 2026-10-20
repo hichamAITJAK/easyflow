@@ -31,6 +31,8 @@ class PlatformController extends Controller
     public function index(): Response
     {
         $platforms = EcommercePlatform::query()
+            // The Manual platform has no service behind it to configure.
+            ->where('slug', '!=', 'manual')
             ->withCount('stores')
             ->orderBy('name')
             ->get(['id', 'name', 'slug', 'description', 'logo_url', 'created_at']);

@@ -69,7 +69,7 @@ test('the admin dashboard renders every section prop with the right shape', func
             ->has('view.agents')
             ->etc()
         )
-        ->has('breakdown', fn ($b) => $b->has('stores')->has('products')->has('couriers'))
+        ->has('breakdown', fn ($b) => $b->has('stores')->has('sources')->has('products')->has('couriers'))
     );
 });
 
@@ -366,6 +366,56 @@ test('the breakdown shows only the selected stores', function () {
             ->where('breakdown.products.0.orders', 10)
             ->where('breakdown.couriers.0.orders', 10)
             ->etc());
+});
+
+test('the source filter narrows the dashboard to orders from one platform or channel', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $faizat = makeStore($admin->business_id, ['name' => 'Faizat']);
+    $shopify = $faizat->platform->slug;
+
+    $row = fn (array $scope, int $orders) => DailyStatsSummary::factory()->create([
+        'business_id' => $admin->business_id,
+        'stat_date' => today()->subDay(),
+        'orders_count' => $orders,
+        'confirmed_count' => $orders,
+        ...$scope,
+    ]);
+
+    // Business-wide: 10 orders; 7 from the website, 3 from WhatsApp.
+    $row([], 10);
+    $row(['store_id' => $faizat->id], 10);
+    $row(['source_platform' => $shopify], 7);
+    $row(['source_platform' => 'whatsapp'], 3);
+    $row(['store_id' => $faizat->id, 'source_platform' => $shopify], 7);
+    $row(['store_id' => $faizat->id, 'source_platform' => 'whatsapp'], 3);
+
+    $this->actingAs($admin)->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('filters.source', null)
+            ->where('sources', fn ($sources) => collect($sources)->pluck('value')->contains('whatsapp')
+                && collect($sources)->pluck('value')->contains($shopify))
+            ->where('kpis.received.value', 10)
+            ->has('breakdown.sources', 2)
+            ->where('breakdown.sources.0.orders', 7)
+            ->where('breakdown.sources.1.name', 'WhatsApp')
+            ->where('breakdown.stores.0.orders', 10)
+            ->etc());
+
+    $this->actingAs($admin)->get(route('dashboard', ['source' => 'whatsapp']))
+        ->assertInertia(fn ($page) => $page
+            ->where('filters.source', 'whatsapp')
+            ->where('kpis.received.value', 3)
+            ->has('breakdown.sources', 1)
+            ->where('breakdown.stores.0.orders', 3)
+            ->etc());
+
+    // With a store too.
+    $this->actingAs($admin)->get(route('dashboard', ['source' => $shopify, 'store_ids' => (string) $faizat->id]))
+        ->assertInertia(fn ($page) => $page->where('kpis.received.value', 7)->etc());
+
+    // A source this business can't have is ignored.
+    $this->actingAs($admin)->get(route('dashboard', ['source' => 'nope']))
+        ->assertInertia(fn ($page) => $page->where('filters.source', null)->where('kpis.received.value', 10)->etc());
 });
 
 test('goal attainment averages each rate over its goal and grades it', function () {

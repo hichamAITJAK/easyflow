@@ -37,7 +37,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $delivery_seconds_total
  * @property Carbon|null $created_at
  */
-#[Fillable(['business_id', 'store_id', 'store_name', 'product_id', 'agent_id', 'delivery_account_id', 'stat_date', 'orders_count', 'assigned_count', 'confirmed_count', 'submitted_to_courier_count', 'delivered_count', 'returned_count', 'cancelled_count', 'refused_count', 'confirmation_rate', 'delivery_success_rate', 'revenue_confirmed', 'revenue_delivered', 'commission_total', 'confirm_seconds_total', 'delivery_seconds_total'])]
+#[Fillable(['business_id', 'store_id', 'store_name', 'product_id', 'agent_id', 'delivery_account_id', 'source_platform', 'stat_date', 'orders_count', 'assigned_count', 'confirmed_count', 'submitted_to_courier_count', 'delivered_count', 'returned_count', 'cancelled_count', 'refused_count', 'confirmation_rate', 'delivery_success_rate', 'revenue_confirmed', 'revenue_delivered', 'commission_total', 'confirm_seconds_total', 'delivery_seconds_total'])]
 #[ScopedBy([BusinessScope::class])]
 class DailyStatsSummary extends Model
 {

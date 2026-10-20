@@ -50,34 +50,9 @@ class ColiixService implements DeliveryCourierInterface, ProvidesTrackingHistory
         );
     }
 
-    /**
-     * Translate one of Coliix's own delivery status labels — the french
-     * "status" field seen both in a track() response's history entries and
-     * in Coliix's own status filter dropdown — into our OrderDeliveryStatus.
-     *
-     * Real track() responses carry a trailing space on every status label
-     * (e.g. "Nouveau Colis ", "Livré ") — trim() first so entries match
-     * regardless of whether that's present.
-     *
-     * "Nouveau Colis"/"Attente De Ramassage"/"Programmé" are pre-pickup —
-     * the parcel isn't with the courier's network yet, so there's nothing
-     * here for us to reflect; they map to null rather than a status, for
-     * the same reason Sendit/OzonExpress's own pre-pickup statuses do.
-     *
-     * "Client intéressé"/"Client pas intéressé"/"Client pas commandé"/
-     * "Confirmer par le livreur"/"En cours"/"Boite Vocal"/"Relancé nouveau
-     * client" are informational notes logged mid-delivery-attempt rather
-     * than a status transition of their own, so they also map to null —
-     * same reasoning as OzonExpress's "client intéressé".
-     *
-     * Coliix has no status corresponding to OrderDeliveryStatus::CHANGED,
-     * ::READY_FOR_PICKUP, or ::RETURN_RECEIVED — this courier just doesn't
-     * report those concepts, so no code below produces them.
-     *
-     * @throws InvalidArgumentException if $status isn't one Coliix reports.
-     */
     public function mapDeliveryStatus(string $status): ?OrderDeliveryStatus
     {
+
         // "Reporté" comes with the new delivery date appended
         // ("Reporté 2026-10-20"); the label is what we match on.
         $label = trim(preg_replace('/\s+\d{4}-\d{2}-\d{2}\s*$/', '', $status) ?? $status);
@@ -118,15 +93,6 @@ class ColiixService implements DeliveryCourierInterface, ProvidesTrackingHistory
         return $this->client()->track($trackingNumber);
     }
 
-    /**
-     * Fetch this parcel's current status straight from Coliix, by its
-     * courier_tracking_number ("code d'envoi") — the last entry in
-     * track()'s "msg" history array. Feed the result straight into
-     * mapDeliveryStatus() — untranslated, same raw french "status" label
-     * Coliix itself reports (e.g. "Livré ", trailing space and all).
-     *
-     * Returns null when "msg" is empty (nothing tracked yet for this code).
-     */
     public function getCurrentStatus(string $trackingNumber): ?string
     {
         $history = $this->track($trackingNumber)['msg'] ?? [];

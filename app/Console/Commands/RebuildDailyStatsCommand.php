@@ -182,45 +182,58 @@ class RebuildDailyStatsCommand extends Command
      * Same fan-out as IncrementsDailyStats::dailyStatScopes().
      *
      * @param  Collection<int, int>  $productIds
-     * @return list<array{store_id: int|null, agent_id: int|null, product_id: int|null, delivery_account_id: int|null}>
+     * @return list<array{store_id: int|null, agent_id: int|null, product_id: int|null, delivery_account_id: int|null, source_platform: string|null}>
      */
     private function scopesFor(Order $order, Collection $productIds): array
     {
-        $blank = ['store_id' => null, 'agent_id' => null, 'product_id' => null, 'delivery_account_id' => null];
+        $blank = ['store_id' => null, 'agent_id' => null, 'product_id' => null, 'delivery_account_id' => null, 'source_platform' => null];
 
-        $scopes = [$blank];
+        // Where the order sits — business-wide, its store, its source
+        // (platform or channel), and the store × source pair — each on its
+        // own and again with its courier or each of its products, so the
+        // dashboard's Store and Source filters narrow every tab the same way.
+        $where = [[]];
 
         if ($order->store_id !== null) {
-            $scopes[] = ['store_id' => $order->store_id] + $blank;
+            $where[] = ['store_id' => $order->store_id];
         }
 
-        if ($order->assigned_agent_id !== null) {
-            $scopes[] = ['agent_id' => $order->assigned_agent_id] + $blank;
+        if ($order->source_platform !== null) {
+            $where[] = ['source_platform' => $order->source_platform];
         }
+
+        if ($order->store_id !== null && $order->source_platform !== null) {
+            $where[] = ['store_id' => $order->store_id, 'source_platform' => $order->source_platform];
+        }
+
+        $what = [[]];
 
         if ($order->delivery_account_id !== null) {
-            $scopes[] = ['delivery_account_id' => $order->delivery_account_id] + $blank;
+            $what[] = ['delivery_account_id' => $order->delivery_account_id];
         }
 
         foreach ($productIds as $productId) {
-            $scopes[] = ['product_id' => $productId] + $blank;
+            $what[] = ['product_id' => $productId];
         }
 
-        if ($order->store_id !== null) {
-            if ($order->delivery_account_id !== null) {
-                $scopes[] = ['store_id' => $order->store_id, 'delivery_account_id' => $order->delivery_account_id] + $blank;
-            }
+        $scopes = [];
 
-            foreach ($productIds as $productId) {
-                $scopes[] = ['store_id' => $order->store_id, 'product_id' => $productId] + $blank;
+        foreach ($where as $place) {
+            foreach ($what as $thing) {
+                $scopes[] = $place + $thing + $blank;
             }
+        }
+
+        // Agent rows carry no other dimension: the agent is the question.
+        if ($order->assigned_agent_id !== null) {
+            $scopes[] = ['agent_id' => $order->assigned_agent_id] + $blank;
         }
 
         return $scopes;
     }
 
     /**
-     * @param  array{store_id: int|null, agent_id: int|null, product_id: int|null, delivery_account_id: int|null}  $scope
+     * @param  array{store_id: int|null, agent_id: int|null, product_id: int|null, delivery_account_id: int|null, source_platform: string|null}  $scope
      */
     private function bumpSummary(int $businessId, string $statDate, array $scope, string $column, float|int $amount): void
     {
@@ -231,6 +244,7 @@ class RebuildDailyStatsCommand extends Command
             $scope['product_id'] ?? 0,
             $scope['agent_id'] ?? 0,
             $scope['delivery_account_id'] ?? 0,
+            $scope['source_platform'] ?? '',
         ]);
 
         if (! isset($this->summaryRows[$key])) {

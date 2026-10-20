@@ -21,9 +21,16 @@ import { formatDateRange } from '@/lib/format';
 
 export type SimpleOption = { id: number; name: string };
 
+/** A platform (Shopify…) or a manual channel (WhatsApp…) orders come from. */
+export type SourceOption = { value: string; label: string };
+
+const ALL_SOURCES = 'all';
+
 export type DashboardFilterValues = {
     /** Comma-separated store ids — query-string friendly. */
     store_ids?: string;
+    /** One source_platform value; unset means every source. */
+    source?: string;
     period?: string;
     /** Y-m-d bounds, read only when period is CUSTOM_PERIOD. */
     date_from?: string;
@@ -213,12 +220,14 @@ export function PeriodFilter({
  */
 export function DashboardFilters({
     stores,
+    sources,
     draft,
     onChange,
     onReset,
     hasActiveFilters,
 }: {
     stores: SimpleOption[];
+    sources: SourceOption[];
     draft: DashboardFilterValues;
     onChange: (next: Partial<DashboardFilterValues>) => void;
     onReset: () => void;
@@ -250,6 +259,35 @@ export function DashboardFilters({
                     searchPlaceholder="Search stores…"
                     emptyMessage={t('No stores found.')}
                 />
+            </div>
+
+            <div className="grid gap-1.5">
+                <Label htmlFor="dashboard-source-filter">{t('Source')}</Label>
+                <Select
+                    value={draft.source ?? ALL_SOURCES}
+                    onValueChange={(value) =>
+                        onChange({
+                            source: value === ALL_SOURCES ? undefined : value,
+                        })
+                    }
+                >
+                    <SelectTrigger
+                        id="dashboard-source-filter"
+                        className="w-44"
+                    >
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value={ALL_SOURCES}>
+                            {t('All sources')}
+                        </SelectItem>
+                        {sources.map((source) => (
+                            <SelectItem key={source.value} value={source.value}>
+                                {source.label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
 
             <PeriodFilter draft={draft} onChange={onChange} />

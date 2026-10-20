@@ -2,6 +2,7 @@
 
 use App\Enums\OrderConfirmationStatus;
 use App\Enums\OrderDeliveryStatus;
+use App\Events\Order\OrderCreated;
 use App\Models\CommissionRule;
 use App\Models\DailyStatsSummary;
 use App\Models\DeliveryAccount;
@@ -119,6 +120,22 @@ test('product and courier stats are also kept per store', function () {
         // The all-stores rows are unchanged.
         ->and(statsRow($admin->business_id, ['product_id' => $product->id])->delivered_count)->toBe(1)
         ->and(statsRow($admin->business_id, ['store_id' => $store->id])->delivered_count)->toBe(1);
+});
+
+test('stats are also kept per source, alone and with the store', function () {
+    $admin = makeBusinessUser();
+    $store = makeStore($admin->business_id);
+
+    $order = makeOrder($admin->business_id, ['store_id' => $store->id, 'source_platform' => 'instagram']);
+    app('events')->dispatch(new OrderCreated($order));
+
+    $rows = DailyStatsSummary::withoutGlobalScopes()->where('business_id', $admin->business_id)
+        ->whereNull('agent_id')->whereNull('product_id')->whereNull('delivery_account_id')->get();
+
+    expect($rows)->toHaveCount(4)
+        ->and($rows->where('source_platform', 'instagram')->whereNull('store_id')->first()->orders_count)->toBe(1)
+        ->and($rows->where('source_platform', 'instagram')->where('store_id', $store->id)->first()->orders_count)->toBe(1)
+        ->and($rows->whereNull('source_platform')->whereNull('store_id')->first()->orders_count)->toBe(1);
 });
 
 test('commission calculation mirrors into commission_total', function () {
