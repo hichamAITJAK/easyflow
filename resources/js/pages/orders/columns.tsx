@@ -622,14 +622,20 @@ export function createColumns({
             cell: ({ row }) => {
                 const order = row.original;
 
-                // A synced order is identified by its store first — that is
-                // what an admin scans for — with the platform underneath as
-                // the quieter qualifier. A manual order has no store, so it
-                // shows how the client reached the business instead.
-                if (isManualOrderSource(order.source_platform)) {
+                // The store first — that is what an admin scans for — with
+                // where the order came from underneath: the platform for a
+                // synced order, the channel (WhatsApp, Instagram…) for a
+                // manual one. An old manual order with no store shows only
+                // its channel.
+                const source = isManualOrderSource(order.source_platform)
+                    ? t(orderSourceLabel(order.source_platform))
+                    : (order.store?.platform?.name ??
+                      t(orderSourceLabel(order.source_platform)));
+
+                if (!order.store) {
                     return (
                         <Badge variant="outline" className="font-normal">
-                            {t(orderSourceLabel(order.source_platform))}
+                            {source}
                         </Badge>
                     );
                 }
@@ -637,12 +643,10 @@ export function createColumns({
                 return (
                     <div className="grid gap-0.5">
                         <span className="truncate text-sm font-medium whitespace-nowrap">
-                            {order.store?.name ??
-                                t(orderSourceLabel(order.source_platform))}
+                            {order.store.name}
                         </span>
                         <span className="truncate text-xs text-muted-foreground">
-                            {order.store?.platform?.name ??
-                                t(orderSourceLabel(order.source_platform))}
+                            {source}
                         </span>
                     </div>
                 );
