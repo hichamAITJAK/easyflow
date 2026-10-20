@@ -183,7 +183,7 @@ export default function UsersIndex({
                         className="mb-0"
                         title={t('Team')}
                         description={t(
-                            'Manage your confirmation agents, fulfilment agents and creatives editors.',
+                            'Manage your confirmation agents, fulfilment agents, delivery guys and creatives editors.',
                         )}
                     />
                     <Button onClick={handleCreate}>
@@ -219,6 +219,15 @@ export default function UsersIndex({
                             </span>
                         </TabsTrigger>
                         <TabsTrigger
+                            value="delivery_guy"
+                            className={PILL_TABS_TRIGGER}
+                        >
+                            <span>{t('Delivery guys')}</span>
+                            <span className={PILL_TABS_COUNT}>
+                                {usersByTab.delivery_guy.length}
+                            </span>
+                        </TabsTrigger>
+                        <TabsTrigger
                             value="creatives_editor"
                             className={PILL_TABS_TRIGGER}
                         >
@@ -233,6 +242,7 @@ export default function UsersIndex({
                         [
                             'confirmation_agent',
                             'fulfilment_agent',
+                            'delivery_guy',
                             'creatives_editor',
                         ] as const
                     ).map((tabValue) => (
