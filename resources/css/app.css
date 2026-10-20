@@ -270,6 +270,20 @@
     html {
         @apply font-sans;
     }
+
+    /* No visible scrollbars anywhere: the page, tables, tab strips,
+       dropdowns. Everything still scrolls (wheel, trackpad, touch, keys);
+       only the bar itself is hidden. */
+    * {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    *::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
+    }
 }
 
 /*
