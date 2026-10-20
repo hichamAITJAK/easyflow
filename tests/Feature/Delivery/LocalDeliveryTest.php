@@ -144,10 +144,9 @@ test('the delivery guy sees his own parcels and nothing else', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('delivery/index')
-            ->where('city', 'Agadir')
-            ->has('parcels', 1)
-            ->where('parcels.0.courier_tracking_number', 'LOC-AGA-1')
-            ->where('deliveredToday', 1)
+            ->where('summary.city', 'Agadir')
+            ->where('summary.to_collect', 1)
+            ->where('summary.on_road', 0)
             ->etc());
 
     // Landing page after login, and no way into the operations app.

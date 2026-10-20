@@ -90,6 +90,29 @@ class UserController extends Controller
                 ->get()
             : collect();
 
+        // Delivery guys: parcels to collect / on the road, and the COD cash
+        // they are holding (delivered, not yet handed over).
+        $delivery = $users->contains('role', UserRole::DELIVERY_GUY)
+            ? Order::where('business_id', $businessId)
+                ->whereNotNull('delivery_guy_id')
+                ->where(fn ($query) => $query
+                    ->whereIn('delivery_status', [
+                        OrderDeliveryStatus::READY_FOR_PICKUP,
+                        OrderDeliveryStatus::OUT_FOR_DELIVERY,
+                        OrderDeliveryStatus::POSTPONED,
+                        OrderDeliveryStatus::DELIVERY_ATTEMPT_FAILED,
+                    ])
+                    ->orWhere(fn ($query) => $query->where('delivery_status', OrderDeliveryStatus::DELIVERED)->whereNull('delivery_cash_settlement_id')))
+                ->toBase()
+                ->selectRaw("delivery_guy_id,
+                    sum(case when delivery_status = 'ready_for_pickup' then 1 else 0 end) as to_collect,
+                    sum(case when delivery_status in ('out_for_delivery', 'postponed', 'delivery_attempt_failed') then 1 else 0 end) as on_road,
+                    coalesce(sum(case when delivery_status = 'delivered' then total_amount else 0 end), 0) as cash_owed")
+                ->groupBy('delivery_guy_id')
+                ->get()
+                ->keyBy('delivery_guy_id')
+            : collect();
+
         $workload = [];
 
         foreach ($users as $user) {
@@ -114,6 +137,14 @@ class UserController extends Controller
                 $workload[$user->id] = [
                     'toPrepare' => $count(OrderDeliveryStatus::AWAITING_PICKUP),
                     'returns' => $count(OrderDeliveryStatus::RETURNED_IN_TRANSIT),
+                ];
+            } elseif ($user->role === UserRole::DELIVERY_GUY) {
+                $row = $delivery->get($user->id);
+
+                $workload[$user->id] = [
+                    'toCollect' => (int) ($row->to_collect ?? 0),
+                    'onRoad' => (int) ($row->on_road ?? 0),
+                    'cashOwed' => round((float) ($row->cash_owed ?? 0), 2),
                 ];
             }
         }

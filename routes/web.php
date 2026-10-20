@@ -34,6 +34,7 @@ use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardCo
 use App\Http\Controllers\SuperAdmin\PlatformController;
 use App\Http\Controllers\SuperAdmin\QueueController;
 use App\Http\Controllers\Tools\ProfitCalculatorController;
+use App\Http\Controllers\Users\DeliveryCashSettlementController;
 use App\Http\Controllers\Users\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -125,6 +126,10 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
     Route::resource('users', UserController::class)
         ->except(['show'])
         ->middleware('can:manage-users');
+    // Own delivery: the admin records the COD cash a delivery guy handed over.
+    Route::post('users/{user}/cash-settlements', [DeliveryCashSettlementController::class, 'store'])
+        ->middleware('can:manage-users')
+        ->name('users.cash-settlements.store');
 
     Route::middleware('can:manage-users')->group(function () {
         Route::prefix('stores')->name('stores.')->group(function () {
@@ -198,6 +203,12 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
     // Own delivery: the delivery guy's parcels.
     Route::prefix('delivery')->name('delivery.')->middleware('can:handle-delivery')->group(function () {
         Route::get('/', [DeliveryController::class, 'index'])->name('index');
+        Route::get('/summary', [DeliveryController::class, 'summary'])->name('summary');
+        Route::post('/scan', [DeliveryController::class, 'scan'])->name('scan');
+        Route::post('/apply', [DeliveryController::class, 'apply'])->name('apply');
+        Route::get('/activity', [DeliveryController::class, 'activity'])->name('activity');
+        Route::post('/undo', [DeliveryController::class, 'undo'])->name('undo');
+        Route::get('/cash', [DeliveryController::class, 'cash'])->name('cash');
     });
 
     Route::prefix('orders')->name('orders.')->middleware('can:use-operations-app')->group(function () {

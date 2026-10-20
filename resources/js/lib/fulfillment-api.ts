@@ -48,7 +48,7 @@ function csrfToken(): string {
     return match ? decodeURIComponent(match[1]) : '';
 }
 
-async function request<T>(
+export async function request<T>(
     url: string,
     body?: Record<string, unknown>,
 ): Promise<T> {

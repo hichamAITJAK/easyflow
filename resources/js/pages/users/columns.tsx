@@ -1,3 +1,4 @@
+import { router } from '@inertiajs/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
     Banknote,
@@ -48,7 +49,8 @@ const AGENT_ONLY_COLUMNS = ['workload', 'compensation', 'scope', 'targets'];
 /** What is on an agent's desk right now (see UserController::workload). */
 export type AgentWorkload =
     | { open: number; toCall: number; followUp: number }
-    | { toPrepare: number; returns: number };
+    | { toPrepare: number; returns: number }
+    | { toCollect: number; onRoad: number; cashOwed: number };
 
 /** The figure the Workload column sorts on. */
 function workloadTotal(workload: AgentWorkload | undefined): number {
@@ -56,7 +58,11 @@ function workloadTotal(workload: AgentWorkload | undefined): number {
         return 0;
     }
 
-    return 'open' in workload ? workload.open : workload.toPrepare;
+    if ('open' in workload) {
+        return workload.open;
+    }
+
+    return 'onRoad' in workload ? workload.onRoad : workload.toPrepare;
 }
 
 export function createColumns({
@@ -76,11 +82,20 @@ export function createColumns({
 }): ColumnDef<User>[] {
     const columns = allColumns({ t, getInitials, onEdit, onDelete, workload });
 
-    return role === 'creatives_editor' || role === 'delivery_guy'
-        ? columns.filter(
-              (column) => !AGENT_ONLY_COLUMNS.includes(column.id ?? ''),
-          )
-        : columns;
+    if (role === 'creatives_editor') {
+        return columns.filter(
+            (column) => !AGENT_ONLY_COLUMNS.includes(column.id ?? ''),
+        );
+    }
+
+    // A delivery guy has work and pay, but no store/product scope or targets.
+    if (role === 'delivery_guy') {
+        return columns.filter(
+            (column) => !['scope', 'targets'].includes(column.id ?? ''),
+        );
+    }
+
+    return columns;
 }
 
 function allColumns({
@@ -216,9 +231,14 @@ function allColumns({
                               toCall: load.toCall,
                               followUp: load.followUp,
                           })
-                        : t(':count returns to receive', {
-                              count: load.returns,
-                          });
+                        : 'onRoad' in load
+                          ? t(':count to collect · :cash MAD cash owed', {
+                                count: load.toCollect,
+                                cash: load.cashOwed.toFixed(0),
+                            })
+                          : t(':count returns to receive', {
+                                count: load.returns,
+                            });
 
                 return (
                     <div className="grid gap-0.5 whitespace-nowrap">
@@ -236,7 +256,9 @@ function allColumns({
                             <span className="text-muted-foreground">
                                 {'open' in load
                                     ? t('not confirmed')
-                                    : t('to prepare')}
+                                    : 'onRoad' in load
+                                      ? t('on the road')
+                                      : t('to prepare')}
                             </span>
                         </span>
                         <span className="text-xs text-muted-foreground">
@@ -483,6 +505,42 @@ function allColumns({
                                     >
                                         <Phone className="size-4 text-muted-foreground" />
                                         <span>{t('Copy phone')}</span>
+                                    </DropdownMenuItem>
+                                )}
+                                {user.role === 'delivery_guy' && (
+                                    <DropdownMenuItem
+                                        onSelect={() => {
+                                            const load = workload[user.id];
+                                            const owed =
+                                                load && 'cashOwed' in load
+                                                    ? load.cashOwed
+                                                    : 0;
+
+                                            if (
+                                                owed > 0 &&
+                                                window.confirm(
+                                                    t(
+                                                        'Mark :amount MAD received from :name?',
+                                                        {
+                                                            amount: owed.toFixed(
+                                                                2,
+                                                            ),
+                                                            name: user.name,
+                                                        },
+                                                    ),
+                                                )
+                                            ) {
+                                                router.post(
+                                                    `/users/${user.id}/cash-settlements`,
+                                                    {},
+                                                    { preserveScroll: true },
+                                                );
+                                            }
+                                        }}
+                                        className="cursor-pointer gap-2"
+                                    >
+                                        <Banknote className="size-4 text-muted-foreground" />
+                                        <span>{t('Settle cash')}</span>
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuSeparator />
