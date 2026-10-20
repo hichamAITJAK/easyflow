@@ -5,6 +5,7 @@ import OrderController from '@/actions/App/Http/Controllers/Orders/OrderControll
 import { DataTablePaginationServer } from '@/components/data-table/data-table-pagination-server';
 import { DataTablePerPageSelect } from '@/components/data-table/data-table-per-page-select';
 import { CreateShipmentDialog } from '@/components/orders/create-shipment-dialog';
+import type { DeliveryGuyOption } from '@/components/orders/create-shipment-dialog';
 import { OrderFormDialog } from '@/components/orders/order-form-dialog';
 import { OrderQueueCard } from '@/components/orders/order-queue-card';
 import { OrderQueuePane } from '@/components/orders/order-queue-pane';
@@ -54,12 +55,14 @@ export default function OrdersQueue({
     filters,
     bucketCounts,
     deliveryAccounts,
+    deliveryGuys,
     stores,
 }: {
     orders: Paginated<Order>;
     filters: OrderFilters;
     bucketCounts: OrderBucketCounts;
     deliveryAccounts: DeliveryAccount[];
+    deliveryGuys: DeliveryGuyOption[];
     /** The agent's stores, for filing a new order (OrderController::index). */
     stores: { id: number; name: string }[];
 }) {
@@ -673,6 +676,7 @@ export default function OrdersQueue({
                 }}
                 order={shipmentOrder}
                 deliveryAccounts={deliveryAccounts}
+                deliveryGuys={deliveryGuys}
             />
 
             <OrderFormDialog

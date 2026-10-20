@@ -18,7 +18,8 @@ export default function AppLayout({
     // instead of the admin sidebar.
     const AppLayoutTemplate =
         auth.user?.role === 'confirmation_agent' ||
-        auth.user?.role === 'fulfilment_agent'
+        auth.user?.role === 'fulfilment_agent' ||
+        auth.user?.role === 'delivery_guy'
             ? AppHeaderLayout
             : AppSidebarLayout;
 

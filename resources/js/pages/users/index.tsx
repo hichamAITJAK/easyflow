@@ -46,7 +46,11 @@ import type { User } from '@/types';
 import { createColumns } from './columns';
 import type { AgentWorkload } from './columns';
 
-type AgentTab = 'confirmation_agent' | 'fulfilment_agent' | 'creatives_editor';
+type AgentTab =
+    | 'confirmation_agent'
+    | 'fulfilment_agent'
+    | 'delivery_guy'
+    | 'creatives_editor';
 
 const tabConfig: Record<
     AgentTab,
@@ -64,6 +68,12 @@ const tabConfig: Record<
         emptyDescription:
             'Add agents to prepare and scan parcels in the warehouse.',
     },
+    delivery_guy: {
+        label: 'Delivery guys',
+        emptyTitle: 'No delivery guys yet',
+        emptyDescription:
+            'Add your own delivery guys for the cities you deliver in yourself.',
+    },
     creatives_editor: {
         label: 'Creatives editors',
         emptyTitle: 'No creatives editors yet',
@@ -75,6 +85,7 @@ const tabConfig: Record<
 const ADD_LABELS: Record<AgentTab, string> = {
     confirmation_agent: 'Add confirmation agent',
     fulfilment_agent: 'Add fulfilment agent',
+    delivery_guy: 'Add delivery guy',
     creatives_editor: 'Add creatives editor',
 };
 
@@ -109,6 +120,7 @@ export default function UsersIndex({
             fulfilment_agent: users.filter(
                 (user) => user.role === 'fulfilment_agent',
             ),
+            delivery_guy: users.filter((user) => user.role === 'delivery_guy'),
             creatives_editor: users.filter(
                 (user) => user.role === 'creatives_editor',
             ),

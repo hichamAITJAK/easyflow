@@ -159,7 +159,7 @@ class FulfillmentController extends Controller
         $scanActions = [OrderDeliveryStatus::READY_FOR_PICKUP->value, OrderDeliveryStatus::RETURN_RECEIVED->value];
 
         $events = OrderStatusEvent::query()
-            ->with(['order:id,reference,courier_tracking_number,customer_name,customer_address,customer_city,delivery_account_id', 'order.deliveryAccount.courier:id,name'])
+            ->with(['order:id,reference,courier_tracking_number,customer_name,customer_address,customer_city,delivery_account_id', 'order.deliveryAccount.courier:id,name', 'order.deliveryGuy:id,name'])
             ->where('business_id', $request->user()->business_id)
             ->where('changed_by_user_id', $request->user()->id)
             ->whereIn('to_status', $scanActions)
@@ -196,7 +196,8 @@ class FulfillmentController extends Controller
                 'customer_name' => $event->order?->customer_name,
                 'reference' => $event->order?->reference,
                 'customer_city' => $event->order?->customer_city,
-                'courier' => $event->order?->deliveryAccount?->courier?->name,
+                'courier' => $event->order?->deliveryAccount?->courier?->name
+                    ?? ($event->order?->deliveryGuy ? __('Own delivery').' · '.$event->order->deliveryGuy->name : null),
                 'from_status' => $event->from_status,
                 'to_status' => $event->to_status,
                 'created_at' => $event->created_at,
@@ -316,13 +317,14 @@ class FulfillmentController extends Controller
     private function orderPayload(Order $order): array
     {
         $order->makeVisible(['customer_name', 'customer_address']);
-        $order->loadMissing(['items.product', 'items.variant']);
+        $order->loadMissing(['items.product', 'items.variant', 'deliveryGuy:id,name']);
 
         return [
             'id' => $order->id,
             'reference' => $order->reference,
             'store' => $order->store?->name,
-            'courier' => $order->deliveryAccount?->courier?->name,
+            'courier' => $order->deliveryAccount?->courier?->name
+                ?? ($order->deliveryGuy ? __('Own delivery').' · '.$order->deliveryGuy->name : null),
             'customer_name' => $order->customer_name,
             'customer_address' => $order->customer_address,
             'customer_city' => $order->customer_city,

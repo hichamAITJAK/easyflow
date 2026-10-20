@@ -53,20 +53,34 @@ import type { DeliveryAccount } from '@/types/delivery';
 
 type CityOption = { value: string; label: string };
 
+export type DeliveryGuyOption = {
+    id: number;
+    name: string;
+    delivery_city: string | null;
+};
+
+/** The courier select's "my own delivery guys" entry. */
+const OWN_DELIVERY = '__own__';
+
 export function CreateShipmentDialog({
     open,
     onOpenChange,
     order,
     deliveryAccounts,
+    deliveryGuys,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     order: Order | null;
     deliveryAccounts: DeliveryAccount[];
+    /** Own delivery: the business's delivery guys, each with his city. */
+    deliveryGuys: DeliveryGuyOption[];
 }) {
     const { t } = useTranslation();
 
     const [accountId, setAccountId] = useState<string>('');
+    const [guyId, setGuyId] = useState<string>('');
+    const ownDelivery = accountId === OWN_DELIVERY;
     const [cityId, setCityId] = useState<string | null>(null);
     const [cityOptions, setCityOptions] = useState<CityOption[]>([]);
     const [loadingCities, setLoadingCities] = useState(false);
@@ -83,7 +97,7 @@ export function CreateShipmentDialog({
         setCityId(null);
         setCityOptions([]);
 
-        if (!accountId) {
+        if (!accountId || accountId === OWN_DELIVERY) {
             return;
         }
 
@@ -107,6 +121,7 @@ export function CreateShipmentDialog({
     useEffect(() => {
         if (open) {
             setAccountId('');
+            setGuyId('');
             setCityId(null);
             setCityOptions([]);
             setAddress(order?.customer_address ?? '');
@@ -121,14 +136,16 @@ export function CreateShipmentDialog({
         return null;
     }
 
-    if (deliveryAccounts.length === 0) {
+    if (deliveryAccounts.length === 0 && deliveryGuys.length === 0) {
         return (
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>{t('Create shipment')}</DialogTitle>
                         <DialogDescription>
-                            {t('Register this order as a parcel with a delivery courier.')}
+                            {t(
+                                'Register this order as a parcel with a delivery courier.',
+                            )}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -139,7 +156,9 @@ export function CreateShipmentDialog({
                             </EmptyMedia>
                             <EmptyTitle>{t('No courier connected')}</EmptyTitle>
                             <EmptyDescription>
-                                {t('Connect a delivery courier account before you can create shipments.')}
+                                {t(
+                                    'Connect a delivery courier account before you can create shipments.',
+                                )}
                             </EmptyDescription>
                         </EmptyHeader>
                         <EmptyContent>
@@ -161,7 +180,9 @@ export function CreateShipmentDialog({
                 <DialogHeader>
                     <DialogTitle>{t('Create shipment')}</DialogTitle>
                     <DialogDescription>
-                        {t('Review the customer details and choose a courier to register this parcel.')}
+                        {t(
+                            'Review the customer details and choose a courier to register this parcel.',
+                        )}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -187,7 +208,9 @@ export function CreateShipmentDialog({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="customer_phone">{t('Phone')}</Label>
+                                <Label htmlFor="customer_phone">
+                                    {t('Phone')}
+                                </Label>
                                 <Input
                                     id="customer_phone"
                                     name="customer_phone"
@@ -259,9 +282,16 @@ export function CreateShipmentDialog({
                                         id="delivery_account_id"
                                         className="w-full"
                                     >
-                                        <SelectValue placeholder={t('Choose a courier')} />
+                                        <SelectValue
+                                            placeholder={t('Choose a courier')}
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
+                                        {deliveryGuys.length > 0 && (
+                                            <SelectItem value={OWN_DELIVERY}>
+                                                {t('Own delivery')}
+                                            </SelectItem>
+                                        )}
                                         {deliveryAccounts.map((account) => (
                                             <SelectItem
                                                 key={account.id}
@@ -277,96 +307,147 @@ export function CreateShipmentDialog({
                                 <input
                                     type="hidden"
                                     name="delivery_account_id"
-                                    value={accountId}
+                                    value={ownDelivery ? '' : accountId}
                                 />
                                 <InputError
                                     message={errors.delivery_account_id}
                                 />
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="city_id">{t('City')}</Label>
-                                <Popover
-                                    open={cityPopoverOpen}
-                                    onOpenChange={setCityPopoverOpen}
-                                >
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            id="city_id"
-                                            type="button"
-                                            variant="outline"
-                                            role="combobox"
-                                            aria-expanded={cityPopoverOpen}
-                                            disabled={
-                                                !accountId || loadingCities
-                                            }
-                                            className="w-full justify-between font-normal"
+                            {ownDelivery ? (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="delivery_guy_id">
+                                        {t('Delivery guy')}
+                                    </Label>
+                                    <Select
+                                        value={guyId}
+                                        onValueChange={setGuyId}
+                                    >
+                                        <SelectTrigger
+                                            id="delivery_guy_id"
+                                            className="w-full"
                                         >
-                                            {cityId
-                                                ? cityOptions.find(
-                                                      (option) =>
-                                                          option.value ===
-                                                          cityId,
-                                                  )?.label
-                                                : !accountId
-                                                  ? t('Choose a courier first')
-                                                  : loadingCities
-                                                    ? t('Loading cities…')
-                                                    : t('Select a city')}
-                                            <ChevronsUpDown className="opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
-                                        <Command>
-                                            <CommandInput placeholder={t('Search cities…')} />
-                                            <CommandList>
-                                                <CommandEmpty>
-                                                    {t('No cities found.')}
-                                                </CommandEmpty>
-                                                <CommandGroup>
-                                                    {cityOptions.map(
-                                                        (option) => (
-                                                            <CommandItem
-                                                                key={
-                                                                    option.value
-                                                                }
-                                                                value={
-                                                                    option.label
-                                                                }
-                                                                onSelect={() => {
-                                                                    setCityId(
-                                                                        option.value,
-                                                                    );
-                                                                    setCityPopoverOpen(
-                                                                        false,
-                                                                    );
-                                                                }}
-                                                            >
-                                                                <Check
-                                                                    className={cn(
-                                                                        'mr-2',
-                                                                        cityId ===
-                                                                            option.value
-                                                                            ? 'opacity-100'
-                                                                            : 'opacity-0',
-                                                                    )}
-                                                                />
-                                                                {option.label}
-                                                            </CommandItem>
-                                                        ),
+                                            <SelectValue
+                                                placeholder={t(
+                                                    'Choose a delivery guy',
+                                                )}
+                                            />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {deliveryGuys.map((guy) => (
+                                                <SelectItem
+                                                    key={guy.id}
+                                                    value={String(guy.id)}
+                                                >
+                                                    {guy.delivery_city
+                                                        ? `${guy.name} · ${guy.delivery_city}`
+                                                        : guy.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <input
+                                        type="hidden"
+                                        name="delivery_guy_id"
+                                        value={guyId}
+                                    />
+                                    <InputError
+                                        message={errors.delivery_guy_id}
+                                    />
+                                </div>
+                            ) : (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="city_id">{t('City')}</Label>
+                                    <Popover
+                                        open={cityPopoverOpen}
+                                        onOpenChange={setCityPopoverOpen}
+                                    >
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                id="city_id"
+                                                type="button"
+                                                variant="outline"
+                                                role="combobox"
+                                                aria-expanded={cityPopoverOpen}
+                                                disabled={
+                                                    !accountId || loadingCities
+                                                }
+                                                className="w-full justify-between font-normal"
+                                            >
+                                                {cityId
+                                                    ? cityOptions.find(
+                                                          (option) =>
+                                                              option.value ===
+                                                              cityId,
+                                                      )?.label
+                                                    : !accountId
+                                                      ? t(
+                                                            'Choose a courier first',
+                                                        )
+                                                      : loadingCities
+                                                        ? t('Loading cities…')
+                                                        : t('Select a city')}
+                                                <ChevronsUpDown className="opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
+                                            <Command>
+                                                <CommandInput
+                                                    placeholder={t(
+                                                        'Search cities…',
                                                     )}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                                <input
-                                    type="hidden"
-                                    name="city_id"
-                                    value={cityId ?? ''}
-                                />
-                                <InputError message={errors.city_id} />
-                            </div>
+                                                />
+                                                <CommandList>
+                                                    <CommandEmpty>
+                                                        {t('No cities found.')}
+                                                    </CommandEmpty>
+                                                    <CommandGroup>
+                                                        {cityOptions.map(
+                                                            (option) => (
+                                                                <CommandItem
+                                                                    key={
+                                                                        option.value
+                                                                    }
+                                                                    value={
+                                                                        option.label
+                                                                    }
+                                                                    onSelect={() => {
+                                                                        setCityId(
+                                                                            option.value,
+                                                                        );
+                                                                        setCityPopoverOpen(
+                                                                            false,
+                                                                        );
+                                                                    }}
+                                                                >
+                                                                    <Check
+                                                                        className={cn(
+                                                                            'mr-2',
+                                                                            cityId ===
+                                                                                option.value
+                                                                                ? 'opacity-100'
+                                                                                : 'opacity-0',
+                                                                        )}
+                                                                    />
+                                                                    {
+                                                                        option.label
+                                                                    }
+                                                                </CommandItem>
+                                                            ),
+                                                        )}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    <input
+                                        type="hidden"
+                                        name="city_id"
+                                        value={cityId ?? ''}
+                                    />
+                                    <InputError message={errors.city_id} />
+                                </div>
+                            )}
 
                             <div className="space-y-4 rounded-lg border p-4">
                                 <p className="text-sm font-medium">
@@ -391,7 +472,10 @@ export function CreateShipmentDialog({
                                     <Label htmlFor="parcel_note">
                                         {t('Note for the courier')}
                                     </Label>
-                                    <Input id="parcel_note" name="parcel_note" />
+                                    <Input
+                                        id="parcel_note"
+                                        name="parcel_note"
+                                    />
                                     <InputError message={errors.parcel_note} />
                                 </div>
 
@@ -409,9 +493,7 @@ export function CreateShipmentDialog({
                                         <Checkbox
                                             checked={parcelFragile}
                                             onCheckedChange={(value) =>
-                                                setParcelFragile(
-                                                    value === true,
-                                                )
+                                                setParcelFragile(value === true)
                                             }
                                         />
                                         {t('Fragile')}
@@ -420,9 +502,7 @@ export function CreateShipmentDialog({
                                         <Checkbox
                                             checked={parcelReplace}
                                             onCheckedChange={(value) =>
-                                                setParcelReplace(
-                                                    value === true,
-                                                )
+                                                setParcelReplace(value === true)
                                             }
                                         />
                                         {t('Exchange')}
@@ -455,7 +535,9 @@ export function CreateShipmentDialog({
                                 </Button>
                                 <Button
                                     disabled={
-                                        processing || !accountId || !cityId
+                                        processing ||
+                                        !accountId ||
+                                        (ownDelivery ? !guyId : !cityId)
                                     }
                                 >
                                     Create shipment

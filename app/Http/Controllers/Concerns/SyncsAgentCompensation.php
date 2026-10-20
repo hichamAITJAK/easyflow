@@ -31,12 +31,17 @@ trait SyncsAgentCompensation
             // by product, and has no confirmation targets.
             $this->syncAgentScopes($user, $data['store_ids'] ?? [], []);
             $user->performanceTargets()->delete();
+        } elseif ($user->role === UserRole::DELIVERY_GUY) {
+            // One city, no store or product scope, no targets.
+            $user->forceFill(['delivery_city' => trim((string) ($data['delivery_city'] ?? ''))])->save();
+            $user->agentScopes()->delete();
+            $user->performanceTargets()->delete();
         } else {
             $user->agentScopes()->delete();
             $user->performanceTargets()->delete();
         }
 
-        if (in_array($user->role, [UserRole::CONFIRMATION_AGENT, UserRole::FULFILMENT_AGENT], true)) {
+        if (in_array($user->role, [UserRole::CONFIRMATION_AGENT, UserRole::FULFILMENT_AGENT, UserRole::DELIVERY_GUY], true)) {
             $this->syncCommissionRule($user, $data);
         } else {
             $user->commissionRules()->delete();
@@ -138,10 +143,12 @@ trait SyncsAgentCompensation
     private function syncCommissionRule(User $user, array $data): void
     {
         $isFulfilment = $user->role === UserRole::FULFILMENT_AGENT;
+        // A delivery guy is paid per parcel he delivers, always fixed.
+        $isDeliveryGuy = $user->role === UserRole::DELIVERY_GUY;
         $mode = CommissionPaymentMode::from($data['payment_mode']);
         $isCommission = $mode->paysCommission();
         $isSalary = $mode->paysSalary();
-        $hasUpsell = $isCommission && ! $isFulfilment
+        $hasUpsell = $isCommission && ! $isFulfilment && ! $isDeliveryGuy
             && ($data['upsell_amount_type'] ?? null) !== null
             && ($data['upsell_amount'] ?? null) !== null;
 
@@ -154,12 +161,14 @@ trait SyncsAgentCompensation
                 'salary_amount' => $isSalary ? ($data['salary_amount'] ?? null) : null,
                 'salary_period' => $isSalary ? ($data['salary_period'] ?? null) : null,
                 'trigger_status' => $isCommission
-                    ? ($isFulfilment
-                        ? (($data['trigger_status'] ?? null) === 'delivered' ? 'delivered' : 'ready_for_pickup')
-                        : ($data['trigger_status'] ?? null))
+                    ? ($isDeliveryGuy
+                        ? 'delivered'
+                        : ($isFulfilment
+                            ? (($data['trigger_status'] ?? null) === 'delivered' ? 'delivered' : 'ready_for_pickup')
+                            : ($data['trigger_status'] ?? null)))
                     : null,
                 'amount_type' => $isCommission
-                    ? ($isFulfilment ? 'fixed' : ($data['amount_type'] ?? null))
+                    ? ($isFulfilment || $isDeliveryGuy ? 'fixed' : ($data['amount_type'] ?? null))
                     : null,
                 'amount' => $isCommission ? ($data['amount'] ?? null) : null,
                 // Upsell commission: confirmation agents on commission only.
@@ -169,7 +178,7 @@ trait SyncsAgentCompensation
             ],
         );
 
-        $this->syncCommissionOverrides($user, $isCommission && ! $isFulfilment ? ($data['overrides'] ?? []) : []);
+        $this->syncCommissionOverrides($user, $isCommission && ! $isFulfilment && ! $isDeliveryGuy ? ($data['overrides'] ?? []) : []);
     }
 
     /**

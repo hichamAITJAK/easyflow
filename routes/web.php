@@ -9,6 +9,7 @@ use App\Http\Controllers\Creatives\CreativeController;
 use App\Http\Controllers\Creatives\CreativeProductController;
 use App\Http\Controllers\Customers\CustomerController;
 use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\Delivery\DeliveryController;
 use App\Http\Controllers\DeliveryCouriers\DeliveryAccountController;
 use App\Http\Controllers\DeliveryCouriers\DeliveryCourrierConnectionController;
 use App\Http\Controllers\Fulfillment\FulfillmentWebController;
@@ -113,6 +114,7 @@ Route::middleware(['auth', 'verified'])->get('dashboard', function (Request $req
     return match ($request->user()->role) {
         UserRole::SUPER_ADMIN => redirect()->route('super-admin.home'),
         UserRole::FULFILMENT_AGENT => redirect()->route('fulfillment.index'),
+        UserRole::DELIVERY_GUY => redirect()->route('delivery.index'),
         UserRole::CREATIVES_EDITOR => redirect()->route('creatives.index'),
         default => $controller->index($request),
     };
@@ -186,6 +188,11 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
         Route::post('/confirm', [FulfillmentWebController::class, 'confirm'])->name('confirm');
         Route::get('/activity', [FulfillmentWebController::class, 'activity'])->name('activity');
         Route::post('/undo', [FulfillmentWebController::class, 'undo'])->name('undo');
+    });
+
+    // Own delivery: the delivery guy's parcels.
+    Route::prefix('delivery')->name('delivery.')->middleware('can:handle-delivery')->group(function () {
+        Route::get('/', [DeliveryController::class, 'index'])->name('index');
     });
 
     Route::prefix('orders')->name('orders.')->middleware('can:use-operations-app')->group(function () {

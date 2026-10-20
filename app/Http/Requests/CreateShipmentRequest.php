@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\UserRole;
 use App\Models\DeliveryAccount;
+use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -25,11 +27,20 @@ class CreateShipmentRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // Either a courier account (with one of its cities) or one of
+            // the business's own delivery guys, who brings his own city.
+            'delivery_guy_id' => [
+                'nullable',
+                Rule::exists(User::class, 'id')
+                    ->where('business_id', $this->user()->business_id)
+                    ->where('role', UserRole::DELIVERY_GUY->value),
+            ],
             'delivery_account_id' => [
-                'required',
+                'required_without:delivery_guy_id',
+                'nullable',
                 Rule::exists(DeliveryAccount::class, 'id')->where('business_id', $this->user()->business_id),
             ],
-            'city_id' => ['required', 'integer', 'exists:delevery_courrier_cities,id'],
+            'city_id' => ['required_without:delivery_guy_id', 'nullable', 'integer', 'exists:delevery_courrier_cities,id'],
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_phone' => ['required', 'string', 'max:30'],
             'customer_address' => ['required', 'string', 'max:1000'],

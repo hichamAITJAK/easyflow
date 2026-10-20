@@ -66,7 +66,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  */
-#[Fillable(['reference', 'business_id', 'store_id', 'external_order_id', 'source_platform', 'assigned_agent_id', 'customer_name', 'customer_phone', 'customer_phone_hash', 'customer_address', 'customer_city', 'customer_ip_address', 'total_amount', 'upsell_amount', 'delivery_cost', 'returned_cost', 'refused_cost', 'confirmation_status', 'delivery_status', 'is_delivery_active', 'cancellation_reason_code', 'return_reason_code', 'notes', 'is_duplicate_flagged', 'is_blacklist_flagged', 'is_test', 'delivery_account_id', 'courier_tracking_number', 'courier_slug', 'delivery_driver_name', 'delivery_driver_phone', 'shipped_at', 'parcel_note', 'parcel_nature', 'parcel_open', 'parcel_fragile', 'parcel_replace', 'parcel_products', 'ready_for_pickup_at', 'return_received_at', 'ordered_at', 'raw_payload'])]
+#[Fillable(['reference', 'business_id', 'store_id', 'external_order_id', 'source_platform', 'assigned_agent_id', 'customer_name', 'customer_phone', 'customer_phone_hash', 'customer_address', 'customer_city', 'customer_ip_address', 'total_amount', 'upsell_amount', 'delivery_cost', 'returned_cost', 'refused_cost', 'confirmation_status', 'delivery_status', 'is_delivery_active', 'cancellation_reason_code', 'return_reason_code', 'notes', 'is_duplicate_flagged', 'is_blacklist_flagged', 'is_test', 'delivery_account_id', 'delivery_guy_id', 'courier_tracking_number', 'courier_slug', 'delivery_driver_name', 'delivery_driver_phone', 'shipped_at', 'parcel_note', 'parcel_nature', 'parcel_open', 'parcel_fragile', 'parcel_replace', 'parcel_products', 'ready_for_pickup_at', 'return_received_at', 'ordered_at', 'raw_payload'])]
 #[Hidden(['customer_name', 'customer_phone', 'customer_address', 'raw_payload'])]
 #[ScopedBy([BusinessScope::class])]
 class Order extends Model
@@ -133,6 +133,16 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    /**
+     * Own delivery: the delivery guy carrying this parcel, when no courier is.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function deliveryGuy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'delivery_guy_id');
     }
 
     /**

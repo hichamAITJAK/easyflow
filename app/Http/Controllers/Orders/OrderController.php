@@ -155,6 +155,13 @@ class OrderController extends Controller
             'deliveryAccounts' => DeliveryAccount::where('business_id', $businessId)
                 ->with('courier:id,name,slug')
                 ->get(['id', 'courier_id', 'label']),
+            // Own delivery: the business's delivery guys, each with his city.
+            'deliveryGuys' => User::where('business_id', $businessId)
+                ->where('role', UserRole::DELIVERY_GUY)
+                ->where('status', 'active')
+                ->orderBy('delivery_city')
+                ->orderBy('name')
+                ->get(['id', 'name', 'delivery_city']),
             'agents' => User::where('business_id', $businessId)
                 ->where('role', UserRole::CONFIRMATION_AGENT)
                 ->orderBy('name')
@@ -332,8 +339,9 @@ class OrderController extends Controller
 
         try {
             $this->orders->createShipment($order, $user, [
-                'delivery_account_id' => (int) $validated['delivery_account_id'],
-                'city_id' => (int) $validated['city_id'],
+                'delivery_guy_id' => isset($validated['delivery_guy_id']) ? (int) $validated['delivery_guy_id'] : null,
+                'delivery_account_id' => isset($validated['delivery_account_id']) ? (int) $validated['delivery_account_id'] : null,
+                'city_id' => isset($validated['city_id']) ? (int) $validated['city_id'] : null,
                 'customer_name' => $validated['customer_name'],
                 'customer_phone' => $validated['customer_phone'],
                 'customer_address' => $validated['customer_address'],
@@ -354,7 +362,8 @@ class OrderController extends Controller
 
         // PostHog: Track shipment creation
         $this->posthog->capture((string) $user->id, 'order_shipment_created', [
-            'delivery_account_id' => (int) $validated['delivery_account_id'],
+            'delivery_account_id' => isset($validated['delivery_account_id']) ? (int) $validated['delivery_account_id'] : null,
+            'delivery_guy_id' => isset($validated['delivery_guy_id']) ? (int) $validated['delivery_guy_id'] : null,
             'total_amount' => (float) $validated['total_amount'],
             'business_id' => $user->business_id,
         ]);

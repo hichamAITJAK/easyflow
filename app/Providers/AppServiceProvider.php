@@ -179,6 +179,13 @@ class AppServiceProvider extends ServiceProvider
             true,
         ));
 
+        // Own delivery: the delivery guy's space, which the admin can open too.
+        Gate::define('handle-delivery', fn (User $user): bool => in_array(
+            $user->role,
+            [UserRole::ADMIN, UserRole::DELIVERY_GUY],
+            true,
+        ));
+
         // The tenant app (dashboard, orders, stores, ...) is off-limits to a
         // super admin — they have no business_id and belong in /super-admin.
         Gate::define('access-tenant-app', fn (User $user): bool => $user->role !== UserRole::SUPER_ADMIN);
@@ -191,7 +198,7 @@ class AppServiceProvider extends ServiceProvider
         // keep their own commission entries, which are gated separately.
         Gate::define('use-operations-app', fn (User $user): bool => ! in_array(
             $user->role,
-            [UserRole::FULFILMENT_AGENT, UserRole::CREATIVES_EDITOR],
+            [UserRole::FULFILMENT_AGENT, UserRole::DELIVERY_GUY, UserRole::CREATIVES_EDITOR],
             true,
         ));
 

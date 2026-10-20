@@ -51,6 +51,7 @@ trait UserValidationRules
                 UserRole::ADMIN,
                 UserRole::CONFIRMATION_AGENT,
                 UserRole::FULFILMENT_AGENT,
+                UserRole::DELIVERY_GUY,
                 UserRole::CREATIVES_EDITOR,
             ])],
             'status' => ['required', Rule::enum(UserStatus::class)],
@@ -224,6 +225,23 @@ trait UserValidationRules
             // When the per-parcel pay is earned: at the agent's own scan
             // (shipped out of the warehouse) or once the courier delivers.
             'trigger_status' => ['nullable', Rule::in(['ready_for_pickup', 'delivered'])],
+        ];
+    }
+
+    /**
+     * A delivery guy: the one city he covers, and salary, a fixed amount
+     * per parcel he delivers, or both.
+     *
+     * @return array<string, array<int, ValidationRule|Enum|array<mixed>|string>>
+     */
+    protected function deliveryGuyRules(): array
+    {
+        return [
+            'delivery_city' => ['required', 'string', 'max:100'],
+            'payment_mode' => ['required', Rule::enum(CommissionPaymentMode::class)],
+            'salary_amount' => ['required_if:payment_mode,salary,salary_and_commission', 'nullable', 'numeric', 'min:0'],
+            'salary_period' => ['required_if:payment_mode,salary,salary_and_commission', 'nullable', Rule::enum(SalaryPeriod::class)],
+            'amount' => ['required_if:payment_mode,commission,salary_and_commission', 'nullable', 'numeric', 'min:0'],
         ];
     }
 }

@@ -46,7 +46,7 @@ class ParcelController extends Controller
             : $this->applyOrderAssignmentScope(Order::query(), $user);
 
         $query = $query
-            ->with(['deliveryAccount.courier:id,name,slug'])
+            ->with(['deliveryAccount.courier:id,name,slug', 'deliveryGuy:id,name,delivery_city'])
             ->where('business_id', $businessId)
             ->whereNotNull('courier_tracking_number')
             ->when($request->string('delivery_status')->toString(), fn ($query, $status) => $query->where('delivery_status', $status))

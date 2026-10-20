@@ -32,6 +32,7 @@ import Heading from '@/components/heading';
 import { BlacklistOrderDialog } from '@/components/orders/blacklist-order-dialog';
 import { CancelOrderDialog } from '@/components/orders/cancel-order-dialog';
 import { CreateShipmentDialog } from '@/components/orders/create-shipment-dialog';
+import type { DeliveryGuyOption } from '@/components/orders/create-shipment-dialog';
 import { OrderBulkAssignDialog } from '@/components/orders/order-bulk-assign-dialog';
 import { OrderBulkDeleteDialog } from '@/components/orders/order-bulk-delete-dialog';
 import { OrderBulkStatusDialog } from '@/components/orders/order-bulk-status-dialog';
@@ -289,6 +290,7 @@ export default function OrdersIndex({
     stores,
     agents,
     deliveryAccounts,
+    deliveryGuys,
 }: {
     orders: Paginated<Order>;
     metrics: OrderMetrics;
@@ -296,6 +298,7 @@ export default function OrdersIndex({
     stores: SimpleOption[];
     agents: AgentOption[];
     deliveryAccounts: DeliveryAccount[];
+    deliveryGuys: DeliveryGuyOption[];
 }) {
     const { t } = useTranslation();
 
@@ -1007,6 +1010,7 @@ export default function OrdersIndex({
                 onOpenChange={(open) => !open && setShipmentOrder(null)}
                 order={shipmentOrder}
                 deliveryAccounts={deliveryAccounts}
+                deliveryGuys={deliveryGuys}
             />
             <CancelOrderDialog
                 open={cancelOrder !== null}

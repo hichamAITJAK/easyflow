@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { ChevronDown, Headset, PackageCheck } from 'lucide-react';
+import { ChevronDown, Headset, PackageCheck, Truck } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { AppearanceDropdown } from '@/components/appearance-dropdown';
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -39,6 +39,12 @@ const ROLE_CHIPS = {
         caption: 'Fulfilment',
         className: 'bg-[#EFA22C]/12 text-[#A87110]',
     },
+    delivery_guy: {
+        icon: Truck,
+        label: 'Delivery Guy',
+        caption: 'Delivery',
+        className: 'bg-[#468FA5]/12 text-[#2E7389]',
+    },
 } as const;
 
 /*
@@ -58,7 +64,8 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const activeNavItem = mainNavItems.find((item) => isCurrentUrl(item.href));
     const chip =
         auth.user?.role === 'confirmation_agent' ||
-        auth.user?.role === 'fulfilment_agent'
+        auth.user?.role === 'fulfilment_agent' ||
+        auth.user?.role === 'delivery_guy'
             ? ROLE_CHIPS[auth.user.role]
             : null;
 

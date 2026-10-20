@@ -3,6 +3,7 @@
 namespace App\Services\Operations\Orders;
 
 use App\Models\Order;
+use Illuminate\Support\Str;
 
 /**
  * Generates a unique, human-readable business-facing reference for an
@@ -37,6 +38,21 @@ class OrderCodeGenerator
      * orders.$column (including soft-deleted rows, since the column stays
      * unique-indexed regardless of trashed state).
      */
+    /**
+     * A tracking number for a parcel our own delivery guy carries, e.g.
+     * LOC-AGA-7K2M9P: the city's first letters make the label readable at
+     * a glance in the warehouse.
+     */
+    public function localTracking(?string $city): string
+    {
+        $prefix = strtoupper(substr(preg_replace('/[^a-z]/i', '', Str::ascii((string) $city)) ?: 'LOC', 0, 3));
+
+        return $this->unique(
+            column: 'courier_tracking_number',
+            make: fn () => "LOC-{$prefix}-".$this->randomCode(6),
+        );
+    }
+
     private function unique(string $column, \Closure $make): string
     {
         for ($attempt = 0; $attempt < self::MAX_ATTEMPTS; $attempt++) {

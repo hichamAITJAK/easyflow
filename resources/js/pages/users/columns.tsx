@@ -76,7 +76,7 @@ export function createColumns({
 }): ColumnDef<User>[] {
     const columns = allColumns({ t, getInitials, onEdit, onDelete, workload });
 
-    return role === 'creatives_editor'
+    return role === 'creatives_editor' || role === 'delivery_guy'
         ? columns.filter(
               (column) => !AGENT_ONLY_COLUMNS.includes(column.id ?? ''),
           )

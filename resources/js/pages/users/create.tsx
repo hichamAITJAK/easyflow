@@ -1,8 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Clapperboard, IdCard, Package } from 'lucide-react';
+import { ArrowLeft, Clapperboard, IdCard, Package, Truck } from 'lucide-react';
 import { useState } from 'react';
 import { ConfirmationAgentForm } from '@/components/confirmation-agent-form';
 import { CreativesEditorForm } from '@/components/creatives-editor-form';
+import { DeliveryGuyForm } from '@/components/delivery-guy-form';
 import { FulfilmentAgentForm } from '@/components/fulfilment-agent-form';
 import Heading from '@/components/heading';
 import { PILL_TABS_LIST, PILL_TABS_TRIGGER } from '@/components/pill-tabs';
@@ -13,7 +14,11 @@ import { index as usersIndex } from '@/routes/users';
 import type { Product, Store } from '@/types';
 import type { PerformanceMetric, PerformanceTargetPeriod } from '@/types/agent';
 
-type TeamRole = 'confirmation_agent' | 'fulfilment_agent' | 'creatives_editor';
+type TeamRole =
+    | 'confirmation_agent'
+    | 'fulfilment_agent'
+    | 'delivery_guy'
+    | 'creatives_editor';
 
 export default function UsersCreate({
     role: initialRole,
@@ -77,6 +82,13 @@ export default function UsersCreate({
                                 <span>{t('Fulfilment Agent')}</span>
                             </TabsTrigger>
                             <TabsTrigger
+                                value="delivery_guy"
+                                className={PILL_TABS_TRIGGER}
+                            >
+                                <Truck className="size-4" />
+                                <span>{t('Delivery Guy')}</span>
+                            </TabsTrigger>
+                            <TabsTrigger
                                 value="creatives_editor"
                                 className={PILL_TABS_TRIGGER}
                             >
@@ -99,6 +111,12 @@ export default function UsersCreate({
                 ) : role === 'fulfilment_agent' ? (
                     <FulfilmentAgentForm
                         stores={stores}
+                        avatarOptions={avatarOptions}
+                        onSuccess={() => router.get(usersIndex())}
+                        onCancel={() => router.get(usersIndex())}
+                    />
+                ) : role === 'delivery_guy' ? (
+                    <DeliveryGuyForm
                         avatarOptions={avatarOptions}
                         onSuccess={() => router.get(usersIndex())}
                         onCancel={() => router.get(usersIndex())}

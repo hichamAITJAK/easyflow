@@ -5,6 +5,7 @@ export type UserRole =
     | 'admin'
     | 'confirmation_agent'
     | 'fulfilment_agent'
+    | 'delivery_guy'
     | 'creatives_editor';
 
 export type UserStatus = 'active' | 'invited' | 'disabled';
@@ -16,6 +17,8 @@ export type User = {
     email: string;
     phone?: string | null;
     role: UserRole;
+    /** Delivery guys only: the one city they deliver in. */
+    delivery_city?: string | null;
     status: UserStatus;
     avatar?: string | null;
     last_login_at?: string | null;

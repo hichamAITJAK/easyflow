@@ -479,6 +479,8 @@ class DashboardController extends Controller
         $deliveredUnpaid = Order::where('business_id', $businessId)
             ->where('is_test', false)
             ->where('delivery_status', OrderDeliveryStatus::DELIVERED)
+            // Own-delivery parcels are settled with the delivery guy, not a courier.
+            ->whereNotNull('delivery_account_id')
             ->whereNotExists(fn ($query) => $query->selectRaw('1')
                 ->from('courier_settlements')
                 ->whereColumn('courier_settlements.delivery_account_id', 'orders.delivery_account_id')

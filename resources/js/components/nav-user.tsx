@@ -23,6 +23,7 @@ const ROLE_LABELS: Record<string, string> = {
     admin: 'Admin',
     confirmation_agent: 'Confirmation agent',
     fulfilment_agent: 'Fulfilment agent',
+    delivery_guy: 'Delivery guy',
     creatives_editor: 'Creatives editor',
 };
 

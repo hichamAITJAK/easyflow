@@ -7,6 +7,7 @@ use App\Enums\OrderConfirmationStatus;
 use App\Enums\OrderDeliveryStatus;
 use App\Enums\OrderReturnReason;
 use App\Enums\StoreConnectionStatus;
+use App\Enums\UserRole;
 use App\Events\Order\ConfirmationStatusChanged;
 use App\Events\Order\DeliveryStatusChanged;
 use App\Events\Order\OrderAssigned;
@@ -404,6 +405,10 @@ class OrderService
             throw new InvalidArgumentException('Only confirmed orders can be shipped.');
         }
 
+        if (! empty($data['delivery_guy_id'])) {
+            return $this->handToDeliveryGuy($order, $actor, $data);
+        }
+
         $account = DeliveryAccount::where('business_id', $order->business_id)
             ->with(['courier', 'collectCity'])
             ->findOrFail($data['delivery_account_id']);
@@ -443,6 +448,51 @@ class OrderService
             'returned_cost' => $parcel->returnedCost,
             'refused_cost' => $parcel->refusedCost,
             'courier_slug' => $account->courier->slug,
+            'shipped_at' => now(),
+        ]);
+
+        $this->updateStatus($order, $actor, OrderConfirmationStatus::SUBMITTED_TO_COURIER);
+        $this->updateDeliveryStatus($order, OrderDeliveryStatus::AWAITING_PICKUP, $actor);
+
+        return $order;
+    }
+
+    /**
+     * Own delivery: hand the parcel to one of the business's delivery guys
+     * instead of a courier. No API to call — we mint the tracking number
+     * ourselves, the parcel goes through the same warehouse scan, and the
+     * guy moves it on from his own space. His city is the parcel's city.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function handToDeliveryGuy(Order $order, User $actor, array $data): Order
+    {
+        $guy = User::where('business_id', $order->business_id)
+            ->where('role', UserRole::DELIVERY_GUY)
+            ->findOrFail($data['delivery_guy_id']);
+
+        $customerPhone = PhoneNumber::format($data['customer_phone']) ?? $data['customer_phone'];
+
+        $order->update([
+            'customer_name' => $data['customer_name'],
+            'customer_phone' => $customerPhone,
+            'customer_phone_hash' => hash('sha256', $customerPhone),
+            'customer_address' => $data['customer_address'],
+            'customer_city' => $guy->delivery_city ?: $order->customer_city,
+            'total_amount' => $data['total_amount'],
+            'delivery_account_id' => null,
+            'delivery_guy_id' => $guy->id,
+            'courier_tracking_number' => $this->codeGenerator->localTracking($guy->delivery_city),
+            'courier_slug' => 'own',
+            'delivery_cost' => 0,
+            'returned_cost' => 0,
+            'refused_cost' => 0,
+            'parcel_note' => $data['parcel_note'] ?? null,
+            'parcel_nature' => $data['parcel_nature'] ?? null,
+            'parcel_open' => $data['parcel_open'] ?? null,
+            'parcel_fragile' => $data['parcel_fragile'] ?? null,
+            'parcel_replace' => $data['parcel_replace'] ?? null,
+            'parcel_products' => $this->parcelProducts->build($order),
             'shipped_at' => now(),
         ]);
 

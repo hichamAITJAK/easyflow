@@ -17,6 +17,7 @@ import { dashboard } from '@/routes';
 import { index as commissionEntriesIndex } from '@/routes/commission-entries';
 import { index as creativesIndex } from '@/routes/creatives';
 import { index as customersIndex } from '@/routes/customers';
+import { index as deliveryIndex } from '@/routes/delivery';
 import { index as deliveryCouriersIndex } from '@/routes/delivery-couriers';
 import { index as fulfillmentIndex } from '@/routes/fulfillment';
 import { index as ordersIndex } from '@/routes/orders';
@@ -179,9 +180,27 @@ const CREATIVES_EDITOR_NAV_ITEMS: NavItem[] = [
     },
 ];
 
+/** The delivery guy's bar: his parcels and his own pay. */
+const DELIVERY_NAV_ITEMS: NavItem[] = [
+    {
+        title: 'Delivery',
+        href: deliveryIndex(),
+        icon: Truck,
+    },
+    {
+        title: 'Commissions',
+        href: commissionEntriesIndex(),
+        icon: Wallet,
+    },
+];
+
 export function getVisibleNavItems(role?: UserRole | null): NavItem[] {
     if (role === 'fulfilment_agent') {
         return FULFILMENT_NAV_ITEMS;
+    }
+
+    if (role === 'delivery_guy') {
+        return DELIVERY_NAV_ITEMS;
     }
 
     if (role === 'creatives_editor') {

@@ -88,10 +88,28 @@ export function createColumns({
             // Still keyed on the courier name so sorting/filtering by this
             // column keeps grouping parcels by carrier rather than by whatever
             // a business happened to name its account.
-            accessorFn: (order) => order.delivery_account?.courier?.name ?? '—',
+            accessorFn: (order) =>
+                order.delivery_account?.courier?.name ??
+                (order.delivery_guy ? 'Own delivery' : '—'),
             header: t('Courier'),
             cell: ({ row }) => {
                 const account = row.original.delivery_account;
+                const guy = row.original.delivery_guy;
+
+                if (!account && guy) {
+                    return (
+                        <div className="flex flex-col">
+                            <span className="font-medium">
+                                {t('Own delivery')}
+                            </span>
+                            <span className="truncate text-sm text-muted-foreground">
+                                {guy.delivery_city
+                                    ? `${guy.name} · ${guy.delivery_city}`
+                                    : guy.name}
+                            </span>
+                        </div>
+                    );
+                }
 
                 if (!account) {
                     return <span className="text-muted-foreground">—</span>;

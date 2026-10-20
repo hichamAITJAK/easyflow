@@ -167,6 +167,12 @@ export type Order = {
         label: string;
         courier?: { id: number; name: string; slug: string } | null;
     } | null;
+    /** Own delivery: the delivery guy carrying the parcel (no courier then). */
+    delivery_guy?: {
+        id: number;
+        name: string;
+        delivery_city: string | null;
+    } | null;
     parcel_note: string | null;
     parcel_nature: string | null;
     parcel_open: boolean | null;
