@@ -24,22 +24,17 @@ export type DeliveryParcel = {
     }[];
 };
 
-/** What the guy may do to a parcel, decided server-side from its status. */
-export type DeliveryAction =
-    | 'out_for_delivery'
-    | 'delivered'
-    | 'delivery_attempt_failed'
-    | 'postponed'
-    | 'refused'
-    | 'returned_in_transit';
-
-export type DeliveryReason =
-    | 'no_answer'
-    | 'client_absent'
-    | 'wrong_address'
-    | 'client_refused'
-    | 'payment_issue'
-    | 'other';
+/**
+ * What the guy may mark, decided server-side from the parcel's status,
+ * with the courier's own label (Livré, Pas de réponse…) and the status it
+ * maps to.
+ */
+export type DeliveryAction = {
+    key: string;
+    label: string;
+    status: OrderDeliveryStatus;
+    needs_date: boolean;
+};
 
 export type DeliveryScanResult = {
     order: DeliveryParcel;

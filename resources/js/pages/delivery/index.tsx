@@ -148,7 +148,7 @@ export default function DeliveryIndex({
                 // usually "delivered" at the door. Anything final clears it
                 // so the next scan starts blank.
                 setResult(
-                    payload.action === 'out_for_delivery'
+                    response.order.delivery_status === 'out_for_delivery'
                         ? { order: response.order, actions: response.actions }
                         : null,
                 );

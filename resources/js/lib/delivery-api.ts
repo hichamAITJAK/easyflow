@@ -4,7 +4,6 @@ import type {
     DeliveryActivityEvent,
     DeliveryCash,
     DeliveryParcel,
-    DeliveryReason,
     DeliveryScanResult,
     DeliverySummary,
 } from '@/types/delivery-guy';
@@ -24,8 +23,7 @@ export const deliveryApi = {
 
     apply: (body: {
         order_id: number;
-        action: DeliveryAction;
-        reason?: DeliveryReason;
+        action: string;
         postponed_until?: string;
         note?: string;
     }) =>

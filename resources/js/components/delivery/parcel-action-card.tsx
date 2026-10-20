@@ -1,7 +1,6 @@
 import {
     AlertTriangle,
     Box,
-    CalendarClock,
     MapPin,
     PackageOpen,
     Phone,
@@ -24,53 +23,40 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
 import { deliveryStatusLabels } from '@/lib/order-status';
 import { formatMoroccoPhoneForWhatsApp } from '@/lib/phone';
-import type {
-    DeliveryAction,
-    DeliveryParcel,
-    DeliveryReason,
-} from '@/types/delivery-guy';
+import { cn } from '@/lib/utils';
+import type { DeliveryAction, DeliveryParcel } from '@/types/delivery-guy';
 
 export type ApplyPayload = {
-    action: DeliveryAction;
-    reason?: DeliveryReason;
+    action: string;
     postponed_until?: string;
     note?: string;
 };
 
-/** Reasons offered when a delivery did not go through (kept on the history). */
-const FAIL_REASONS: { value: DeliveryReason; label: string }[] = [
-    { value: 'no_answer', label: 'No answer' },
-    { value: 'client_absent', label: 'Client absent' },
-    { value: 'wrong_address', label: 'Wrong address' },
-    { value: 'other', label: 'Other' },
-];
-
-const RETURN_REASONS: { value: DeliveryReason; label: string }[] = [
-    { value: 'client_refused', label: 'Client refused' },
-    { value: 'payment_issue', label: 'Could not pay' },
-    { value: 'wrong_address', label: 'Wrong address' },
-    { value: 'no_answer', label: 'Never reached' },
-    { value: 'other', label: 'Other' },
-];
-
-type Pending = 'failed' | 'postponed' | 'returned' | null;
+/** How each outcome is coloured: the happy ones stand out, the rest are quiet. */
+function toneFor(action: DeliveryAction): string {
+    switch (action.status) {
+        case 'delivered':
+            return 'bg-[#16A08E] text-white hover:bg-[#12907f] border-transparent';
+        case 'out_for_delivery':
+            return 'bg-primary text-primary-foreground hover:bg-primary/90 border-transparent';
+        case 'refused':
+        case 'returned_in_transit':
+            return 'text-[#B3281D]';
+        default:
+            return '';
+    }
+}
 
 /**
- * The scanned parcel and what the delivery guy can do with it. One big
- * button for the usual outcome of the current step (take it, deliver
- * it), the exceptions as smaller buttons that ask why or when first.
+ * The scanned parcel and what the delivery guy can mark on it, with the
+ * couriers' own labels (Livré, Pas de réponse, Reporté…). The server
+ * decides which show from the parcel's status. The big ones (Ramassé,
+ * Livré) are the usual path; the rest are the exceptions.
  */
 export function ParcelActionCard({
     order,
@@ -84,12 +70,10 @@ export function ParcelActionCard({
     applying: boolean;
 }) {
     const { t } = useTranslation();
-    const [pending, setPending] = useState<Pending>(null);
-    const [reason, setReason] = useState<DeliveryReason | ''>('');
+    const [dated, setDated] = useState<DeliveryAction | null>(null);
     const [date, setDate] = useState('');
     const [note, setNote] = useState('');
 
-    const can = (action: DeliveryAction) => actions.includes(action);
     const digits = order.customer_phone?.replace(/[^\d+]/g, '');
     const whatsapp = order.customer_phone
         ? formatMoroccoPhoneForWhatsApp(order.customer_phone)
@@ -104,41 +88,36 @@ export function ParcelActionCard({
         order.parcel_replace && { label: t('Replacement'), icon: Repeat },
     ].filter(Boolean) as { label: string; icon: typeof AlertTriangle }[];
 
-    const openDialog = (kind: Exclude<Pending, null>) => {
-        setReason('');
-        setDate('');
-        setNote('');
-        setPending(kind);
+    const primary = actions.filter(
+        (action) =>
+            action.status === 'delivered' ||
+            action.status === 'out_for_delivery',
+    );
+    const others = actions.filter((action) => !primary.includes(action));
+
+    const choose = (action: DeliveryAction) => {
+        if (action.needs_date) {
+            setDate('');
+            setNote('');
+            setDated(action);
+
+            return;
+        }
+
+        onApply({ action: action.key });
     };
 
-    const submitDialog = () => {
-        if (pending === 'failed' && reason) {
+    const submitDated = () => {
+        if (dated && date) {
             onApply({
-                action: 'delivery_attempt_failed',
-                reason,
-                note: note || undefined,
-            });
-        } else if (pending === 'postponed' && date) {
-            onApply({
-                action: 'postponed',
+                action: dated.key,
                 postponed_until: date,
-                note: note || undefined,
-            });
-        } else if (pending === 'returned' && reason) {
-            onApply({
-                action: 'returned_in_transit',
-                reason,
                 note: note || undefined,
             });
         }
 
-        setPending(null);
+        setDated(null);
     };
-
-    const dialogReady =
-        (pending === 'failed' && reason !== '') ||
-        (pending === 'postponed' && date !== '') ||
-        (pending === 'returned' && reason !== '');
 
     return (
         <>
@@ -280,84 +259,40 @@ export function ParcelActionCard({
                         </p>
                     ) : (
                         <div className="space-y-2">
-                            {can('out_for_delivery') && (
+                            {primary.map((action) => (
                                 <Button
+                                    key={action.key}
                                     size="lg"
-                                    className="h-16 w-full text-base font-semibold"
+                                    className={cn(
+                                        'h-14 w-full text-base font-semibold',
+                                        toneFor(action),
+                                    )}
                                     disabled={applying}
-                                    onClick={() =>
-                                        onApply({ action: 'out_for_delivery' })
-                                    }
+                                    onClick={() => choose(action)}
                                 >
                                     {applying ? <Spinner /> : null}
-                                    {t('Take this parcel')}
+                                    {action.label}
+                                    {action.status === 'delivered' &&
+                                        ` · ${order.total_amount} MAD`}
                                 </Button>
-                            )}
-                            {can('delivered') && (
-                                <Button
-                                    size="lg"
-                                    className="h-16 w-full bg-[#16A08E] text-base font-semibold text-white hover:bg-[#12907f]"
-                                    disabled={applying}
-                                    onClick={() =>
-                                        onApply({ action: 'delivered' })
-                                    }
-                                >
-                                    {applying ? <Spinner /> : null}
-                                    {t('Delivered · :amount MAD collected', {
-                                        amount: order.total_amount,
-                                    })}
-                                </Button>
-                            )}
-                            {(can('delivery_attempt_failed') ||
-                                can('postponed') ||
-                                can('refused') ||
-                                can('returned_in_transit')) && (
+                            ))}
+
+                            {others.length > 0 && (
                                 <div className="grid grid-cols-2 gap-2">
-                                    {can('delivery_attempt_failed') && (
+                                    {others.map((action) => (
                                         <Button
+                                            key={action.key}
                                             variant="outline"
+                                            className={cn(
+                                                'h-11 whitespace-normal',
+                                                toneFor(action),
+                                            )}
                                             disabled={applying}
-                                            onClick={() => openDialog('failed')}
+                                            onClick={() => choose(action)}
                                         >
-                                            {t('Not delivered')}
+                                            {action.label}
                                         </Button>
-                                    )}
-                                    {can('postponed') && (
-                                        <Button
-                                            variant="outline"
-                                            disabled={applying}
-                                            onClick={() =>
-                                                openDialog('postponed')
-                                            }
-                                        >
-                                            <CalendarClock />
-                                            {t('Postpone')}
-                                        </Button>
-                                    )}
-                                    {can('refused') && (
-                                        <Button
-                                            variant="outline"
-                                            className="text-[#B3281D]"
-                                            disabled={applying}
-                                            onClick={() =>
-                                                onApply({ action: 'refused' })
-                                            }
-                                        >
-                                            {t('Refused')}
-                                        </Button>
-                                    )}
-                                    {can('returned_in_transit') && (
-                                        <Button
-                                            variant="outline"
-                                            className="text-[#B3281D]"
-                                            disabled={applying}
-                                            onClick={() =>
-                                                openDialog('returned')
-                                            }
-                                        >
-                                            {t('Return to warehouse')}
-                                        </Button>
-                                    )}
+                                    ))}
                                 </div>
                             )}
                         </div>
@@ -366,75 +301,32 @@ export function ParcelActionCard({
             </Card>
 
             <Dialog
-                open={pending !== null}
-                onOpenChange={(open) => !open && setPending(null)}
+                open={dated !== null}
+                onOpenChange={(open) => !open && setDated(null)}
             >
                 <DialogContent className="sm:max-w-sm">
                     <DialogHeader>
-                        <DialogTitle>
-                            {pending === 'postponed'
-                                ? t('Postpone delivery')
-                                : pending === 'returned'
-                                  ? t('Return to warehouse')
-                                  : t('Not delivered')}
-                        </DialogTitle>
+                        <DialogTitle>{dated?.label}</DialogTitle>
                         <DialogDescription>
-                            {pending === 'postponed'
-                                ? t('When should it be delivered instead?')
-                                : t('Why? This is kept on the parcel history.')}
+                            {t('When should it be delivered instead?')}
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="grid gap-4">
-                        {pending === 'postponed' ? (
-                            <div className="grid gap-1.5">
-                                <Label htmlFor="postponed_until">
-                                    {t('New date')}
-                                </Label>
-                                <Input
-                                    id="postponed_until"
-                                    type="date"
-                                    value={date}
-                                    min={new Date().toISOString().slice(0, 10)}
-                                    onChange={(event) =>
-                                        setDate(event.target.value)
-                                    }
-                                />
-                            </div>
-                        ) : (
-                            <div className="grid gap-1.5">
-                                <Label htmlFor="reason">{t('Reason')}</Label>
-                                <Select
-                                    value={reason}
-                                    onValueChange={(value) =>
-                                        setReason(value as DeliveryReason)
-                                    }
-                                >
-                                    <SelectTrigger
-                                        id="reason"
-                                        className="w-full"
-                                    >
-                                        <SelectValue
-                                            placeholder={t('Choose a reason')}
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {(pending === 'returned'
-                                            ? RETURN_REASONS
-                                            : FAIL_REASONS
-                                        ).map((item) => (
-                                            <SelectItem
-                                                key={item.value}
-                                                value={item.value}
-                                            >
-                                                {t(item.label)}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
-
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="postponed_until">
+                                {t('New date')}
+                            </Label>
+                            <Input
+                                id="postponed_until"
+                                type="date"
+                                value={date}
+                                min={new Date().toISOString().slice(0, 10)}
+                                onChange={(event) =>
+                                    setDate(event.target.value)
+                                }
+                            />
+                        </div>
                         <div className="grid gap-1.5">
                             <Label htmlFor="delivery_note">
                                 {t('Note (optional)')}
@@ -454,14 +346,14 @@ export function ParcelActionCard({
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => setPending(null)}
+                            onClick={() => setDated(null)}
                         >
                             {t('Cancel')}
                         </Button>
                         <Button
                             type="button"
-                            disabled={!dialogReady}
-                            onClick={submitDialog}
+                            disabled={!date}
+                            onClick={submitDated}
                         >
                             {t('Confirm')}
                         </Button>

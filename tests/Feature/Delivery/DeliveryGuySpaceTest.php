@@ -46,8 +46,13 @@ test('the scan shows the parcel and only the actions its status allows', functio
     $scan = fn (string $code) => $this->actingAs($guy)->postJson(route('delivery.scan'), ['qr_value' => $code]);
 
     $scan('LOC-AGA-1')->assertOk()->assertJsonPath('actions', []);
-    $scan('LOC-AGA-2')->assertOk()->assertJsonPath('actions', ['out_for_delivery'])->assertJsonPath('order.total_amount', '199.00');
-    $scan('LOC-AGA-3')->assertOk()->assertJsonPath('actions', ['delivered', 'delivery_attempt_failed', 'postponed', 'refused', 'returned_in_transit']);
+    $scan('LOC-AGA-2')->assertOk()->assertJsonPath('actions.0.key', 'ramasse')->assertJsonPath('actions.0.label', 'Ramassé')->assertJsonCount(1, 'actions')->assertJsonPath('order.total_amount', '199.00');
+    $scan('LOC-AGA-3')->assertOk()
+        ->assertJsonPath('actions.0.key', 'livre')
+        ->assertJsonPath('actions.0.status', 'delivered')
+        ->assertJsonCount(12, 'actions')
+        ->assertJsonPath('actions.9.key', 'reporte')
+        ->assertJsonPath('actions.9.needs_date', true);
     // Not his: reads as not found, never leaks.
     $scan('LOC-RAB-1')->assertUnprocessable();
 
@@ -63,18 +68,22 @@ test('taking, failing, postponing and delivering a parcel, with the reason kept 
     $apply = fn (array $body) => $this->actingAs($guy)->postJson(route('delivery.apply'), ['order_id' => $parcel->id, ...$body]);
 
     // Can't deliver what he has not taken.
-    $apply(['action' => 'delivered'])->assertUnprocessable();
+    $apply(['action' => 'livre'])->assertUnprocessable();
 
-    $apply(['action' => 'out_for_delivery'])->assertOk()->assertJsonPath('order.delivery_status', 'out_for_delivery');
+    $apply(['action' => 'ramasse'])->assertOk()->assertJsonPath('order.delivery_status', 'out_for_delivery');
 
-    $apply(['action' => 'delivery_attempt_failed'])->assertUnprocessable(); // needs a reason
-    $apply(['action' => 'delivery_attempt_failed', 'reason' => 'no_answer', 'note' => 'rang twice'])->assertOk();
-    expect(OrderStatusEvent::where('order_id', $parcel->id)->latest('id')->value('note'))->toBe('No answer · rang twice');
+    $apply(['action' => 'pas_de_reponse', 'note' => 'rang twice'])->assertOk()->assertJsonPath('order.delivery_status', 'delivery_attempt_failed');
+    expect(OrderStatusEvent::where('order_id', $parcel->id)->latest('id')->value('note'))->toBe('Pas de réponse · rang twice');
 
-    $apply(['action' => 'postponed', 'postponed_until' => now()->addDay()->toDateString()])->assertOk()
+    // A second failed attempt keeps its own line even though the status stays.
+    $apply(['action' => 'deuxieme_appel'])->assertOk();
+    expect(OrderStatusEvent::where('order_id', $parcel->id)->where('note', 'Deuxième Appel Pas Réponse')->exists())->toBeTrue();
+
+    $apply(['action' => 'reporte'])->assertUnprocessable(); // needs the date
+    $apply(['action' => 'reporte', 'postponed_until' => now()->addDay()->toDateString()])->assertOk()
         ->assertJsonPath('order.delivery_status', 'postponed');
 
-    $apply(['action' => 'delivered'])->assertOk()
+    $apply(['action' => 'livre'])->assertOk()
         ->assertJsonPath('summary.delivered_today', 1)
         ->assertJsonPath('summary.cash_owed', 199);
 
@@ -86,19 +95,18 @@ test('taking, failing, postponing and delivering a parcel, with the reason kept 
         ->assertOk()
         ->assertJsonPath('events.0.to_status', 'delivered')
         ->assertJsonPath('events.0.can_undo', false)
-        ->assertJsonPath('events.2.note', 'No answer · rang twice');
+        ->assertJsonPath('events.3.note', 'Pas de réponse · rang twice');
 });
 
-test('a return needs a reason and an undo puts the parcel back where it was', function () {
+test('a return is marked Retourné and an undo puts the parcel back where it was', function () {
     $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
     $guy = spaceGuy($admin->business_id);
     $parcel = localParcel($guy, 'LOC-AGA-5', OrderDeliveryStatus::OUT_FOR_DELIVERY);
 
-    $this->actingAs($guy)->postJson(route('delivery.apply'), ['order_id' => $parcel->id, 'action' => 'returned_in_transit'])->assertUnprocessable();
-    $this->actingAs($guy)->postJson(route('delivery.apply'), ['order_id' => $parcel->id, 'action' => 'returned_in_transit', 'reason' => 'client_refused'])->assertOk();
+    $this->actingAs($guy)->postJson(route('delivery.apply'), ['order_id' => $parcel->id, 'action' => 'retourne'])->assertOk();
 
     expect($parcel->fresh()->delivery_status)->toBe(OrderDeliveryStatus::RETURNED_IN_TRANSIT)
-        ->and($parcel->fresh()->return_reason_code?->value)->toBe('client_refused');
+        ->and(OrderStatusEvent::where('order_id', $parcel->id)->latest('id')->value('note'))->toBe('Retourné');
 
     $eventId = $this->actingAs($guy)->getJson(route('delivery.activity'))->json('events.0.id');
     $this->actingAs($guy)->postJson(route('delivery.undo'), ['event_id' => $eventId])->assertOk();

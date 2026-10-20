@@ -33,31 +33,32 @@ class DeliveryController extends Controller
 {
     private const UNDO_MINUTES = 5;
 
-    /** What the guy may do to a parcel, by where it stands. */
+    /** A parcel out with the guy, whatever happened on the last attempt. */
+    private const OUT = ['out_for_delivery', 'postponed', 'delivery_attempt_failed'];
+
+    /**
+     * What the guy may mark, with the same labels the couriers use (the
+     * warehouse and the admins already read Coliix's words in the parcel
+     * history). Each maps to our status; the label goes on the history
+     * row. `from` is where the parcel must be for the action to show.
+     *
+     * @var array<string, array{status: string, label: string, from: list<string>, needs_date?: bool, return_reason?: OrderReturnReason}>
+     */
     private const ACTIONS = [
-        'ready_for_pickup' => ['out_for_delivery'],
-        'out_for_delivery' => ['delivered', 'delivery_attempt_failed', 'postponed', 'refused', 'returned_in_transit'],
-        'postponed' => ['delivered', 'delivery_attempt_failed', 'postponed', 'refused', 'returned_in_transit'],
-        'delivery_attempt_failed' => ['delivered', 'delivery_attempt_failed', 'postponed', 'refused', 'returned_in_transit'],
-    ];
-
-    /** Why it did not go through; the return reason the ledger understands. */
-    private const REASONS = [
-        'no_answer' => OrderReturnReason::CLIENT_UNREACHABLE_AT_DELIVERY,
-        'client_absent' => OrderReturnReason::CLIENT_UNREACHABLE_AT_DELIVERY,
-        'wrong_address' => OrderReturnReason::WRONG_ADDRESS,
-        'client_refused' => OrderReturnReason::CLIENT_REFUSED,
-        'payment_issue' => OrderReturnReason::PAYMENT_ISSUE,
-        'other' => OrderReturnReason::OTHER,
-    ];
-
-    private const REASON_LABELS = [
-        'no_answer' => 'No answer',
-        'client_absent' => 'Client absent',
-        'wrong_address' => 'Wrong address',
-        'client_refused' => 'Client refused',
-        'payment_issue' => 'Could not pay',
-        'other' => 'Other',
+        'ramasse' => ['status' => 'out_for_delivery', 'label' => 'Ramassé', 'from' => ['ready_for_pickup']],
+        'mise_en_distribution' => ['status' => 'out_for_delivery', 'label' => 'Mise en distribution', 'from' => ['postponed', 'delivery_attempt_failed']],
+        'livre' => ['status' => 'delivered', 'label' => 'Livré', 'from' => self::OUT],
+        'pas_de_reponse' => ['status' => 'delivery_attempt_failed', 'label' => 'Pas de réponse', 'from' => self::OUT],
+        'deuxieme_appel' => ['status' => 'delivery_attempt_failed', 'label' => 'Deuxième Appel Pas Réponse', 'from' => self::OUT],
+        'troisieme_appel' => ['status' => 'delivery_attempt_failed', 'label' => 'Troisième Appel Pas Réponse', 'from' => self::OUT],
+        'boite_vocal' => ['status' => 'delivery_attempt_failed', 'label' => 'Boite Vocal', 'from' => self::OUT],
+        'injoignable' => ['status' => 'delivery_attempt_failed', 'label' => 'Injoignable', 'from' => self::OUT],
+        'numero_errone' => ['status' => 'delivery_attempt_failed', 'label' => 'Numero Erroné', 'from' => self::OUT],
+        'hors_zone' => ['status' => 'delivery_attempt_failed', 'label' => 'Hors-zone', 'from' => self::OUT],
+        'client_interesse' => ['status' => 'delivery_attempt_failed', 'label' => 'Client intéressé', 'from' => self::OUT],
+        'reporte' => ['status' => 'postponed', 'label' => 'Reporté', 'from' => self::OUT, 'needs_date' => true],
+        'refuse' => ['status' => 'refused', 'label' => 'Refusé', 'from' => self::OUT],
+        'retourne' => ['status' => 'returned_in_transit', 'label' => 'Retourné', 'from' => self::OUT, 'return_reason' => OrderReturnReason::OTHER],
     ];
 
     public function __construct(private readonly OrderService $orders) {}
@@ -101,49 +102,50 @@ class DeliveryController extends Controller
 
         $data = $request->validate([
             'order_id' => ['required', 'integer'],
-            'action' => ['required', Rule::in(['out_for_delivery', 'delivered', 'delivery_attempt_failed', 'postponed', 'refused', 'returned_in_transit'])],
-            'reason' => ['nullable', Rule::in(array_keys(self::REASONS))],
+            'action' => ['required', Rule::in(array_keys(self::ACTIONS))],
             'postponed_until' => ['nullable', 'date', 'after_or_equal:today'],
             'note' => ['nullable', 'string', 'max:255'],
         ]);
 
         $order = $this->ownParcel($user, (int) $data['order_id']);
+        $action = self::ACTIONS[$data['action']];
 
-        if (! in_array($data['action'], $this->actionsFor($order), true)) {
+        if (! in_array($order->delivery_status?->value, $action['from'], true)) {
             throw ValidationException::withMessages([
                 'action' => __("This parcel can't be marked like that right now."),
             ]);
         }
 
-        $status = OrderDeliveryStatus::from($data['action']);
-        $reason = $data['reason'] ?? null;
-
-        if ($status === OrderDeliveryStatus::POSTPONED && empty($data['postponed_until'])) {
+        if (($action['needs_date'] ?? false) && empty($data['postponed_until'])) {
             throw ValidationException::withMessages(['postponed_until' => __('Pick the new delivery date.')]);
         }
 
-        if (in_array($status, [OrderDeliveryStatus::DELIVERY_ATTEMPT_FAILED, OrderDeliveryStatus::RETURNED_IN_TRANSIT], true) && $reason === null) {
-            throw ValidationException::withMessages(['reason' => __('Say why.')]);
-        }
-
-        $order = $this->orders->updateDeliveryStatus(
-            $order,
-            $status,
-            $user,
-            $status === OrderDeliveryStatus::RETURNED_IN_TRANSIT ? self::REASONS[$reason] : null,
-        );
-
-        $this->annotate($order, implode(' · ', array_filter([
-            $reason !== null ? __(self::REASON_LABELS[$reason]) : null,
-            $status === OrderDeliveryStatus::POSTPONED
-                ? __('Postponed to :date', ['date' => Carbon::parse($data['postponed_until'])->toDateString()])
-                : null,
+        $status = OrderDeliveryStatus::from($action['status']);
+        $note = implode(' · ', array_filter([
+            $action['label'],
+            ($action['needs_date'] ?? false) ? Carbon::parse($data['postponed_until'])->toDateString() : null,
             $data['note'] ?? null,
-        ])));
+        ]));
+
+        if ($order->delivery_status === $status) {
+            // A second "Pas de réponse" changes nothing on the order, but
+            // the attempt itself is worth a line in the history.
+            OrderStatusEvent::create([
+                'business_id' => $order->business_id,
+                'order_id' => $order->id,
+                'from_status' => $status->value,
+                'to_status' => $status->value,
+                'changed_by_user_id' => $user->id,
+                'note' => $note,
+            ]);
+        } else {
+            $order = $this->orders->updateDeliveryStatus($order, $status, $user, $action['return_reason'] ?? null);
+            $this->annotate($order, $note);
+        }
 
         return response()->json([
             'order' => $this->payload($order->fresh()),
-            'actions' => $this->actionsFor($order),
+            'actions' => $this->actionsFor($order->fresh()),
             'summary' => $this->summaryFor($user),
         ]);
     }
@@ -161,7 +163,7 @@ class DeliveryController extends Controller
             ->with('order:id,reference,courier_tracking_number,customer_name,customer_city,total_amount')
             ->where('business_id', $user->business_id)
             ->where('changed_by_user_id', $user->id)
-            ->whereIn('to_status', array_keys(array_merge(...array_map(fn ($list) => array_flip($list), array_values(self::ACTIONS)))))
+            ->whereIn('to_status', array_values(array_unique(array_column(self::ACTIONS, 'status'))))
             ->whereDate('created_at', now()->toDateString())
             ->whereNotExists(function ($query) use ($user) {
                 $query->selectRaw('1')
@@ -325,10 +327,25 @@ class DeliveryController extends Controller
             ->whereNull('delivery_cash_settlement_id');
     }
 
-    /** @return list<string> */
+    /**
+     * The actions this parcel's status allows, in the order they are shown.
+     *
+     * @return list<array{key: string, label: string, status: string, needs_date: bool}>
+     */
     private function actionsFor(Order $order): array
     {
-        return self::ACTIONS[$order->delivery_status?->value ?? ''] ?? [];
+        $current = $order->delivery_status?->value;
+
+        return collect(self::ACTIONS)
+            ->filter(fn (array $action) => in_array($current, $action['from'], true))
+            ->map(fn (array $action, string $key) => [
+                'key' => $key,
+                'label' => $action['label'],
+                'status' => $action['status'],
+                'needs_date' => $action['needs_date'] ?? false,
+            ])
+            ->values()
+            ->all();
     }
 
     private function findParcel(User $user, string $scanned): Order
