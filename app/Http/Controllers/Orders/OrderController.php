@@ -219,6 +219,7 @@ class OrderController extends Controller
             // took it (phone, WhatsApp…), so it is theirs from the start
             // rather than going through load-based auto-assignment.
             'assigned_agent_id' => $user->role === UserRole::CONFIRMATION_AGENT ? $user->id : null,
+            'store_id' => isset($validated['store_id']) ? (int) $validated['store_id'] : null,
             'source_platform' => $validated['source_platform'] ?? null,
             'customer_name' => $validated['customer_name'],
             'customer_phone' => $validated['customer_phone'],
@@ -258,6 +259,7 @@ class OrderController extends Controller
         $validated = $request->validated();
 
         $this->orders->updateManualOrder($order, [
+            'store_id' => isset($validated['store_id']) ? (int) $validated['store_id'] : null,
             'source_platform' => $validated['source_platform'] ?? null,
             'customer_name' => $validated['customer_name'],
             'customer_phone' => $validated['customer_phone'],

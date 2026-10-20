@@ -1,4 +1,6 @@
-export type StoreConnectionStatus = 'pending' | 'connected' | 'failed';
+/** `manual`: a store with no online shop, never synced. */
+export type StoreConnectionStatus =
+    'pending' | 'connected' | 'failed' | 'manual';
 
 export type EcommercePlatform = {
     id: number;

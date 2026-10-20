@@ -44,6 +44,12 @@ class EcommercePlatformSeeder extends Seeder
                 'description' => 'Ecommerce platform for multi-market stores, connected with an access token.',
                 'logo_url' => '/assets/images/storeep_icon.png',
             ],
+            [
+                'name' => 'Manual',
+                'slug' => 'manual',
+                'description' => 'A store with no online shop: orders are keyed in by hand from WhatsApp, Instagram, phone calls and the like.',
+                'logo_url' => null,
+            ],
         ];
 
         foreach ($platforms as $platform) {

@@ -988,6 +988,7 @@ export default function OrdersIndex({
                     }
                 }}
                 order={editOrder}
+                stores={stores}
             />
             <OrderViewDialog
                 open={viewOrder !== null}

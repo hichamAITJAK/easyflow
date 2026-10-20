@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\OrderSource;
+use App\Http\Requests\Concerns\StoreWithinAgentScope;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -12,6 +13,8 @@ use Illuminate\Validation\Rules\Enum;
 
 class StoreOrderRequest extends FormRequest
 {
+    use StoreWithinAgentScope;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -28,6 +31,8 @@ class StoreOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // Which brand the order is for; see StoreWithinAgentScope.
+            'store_id' => ['required', ...$this->storeRules()],
             'source_platform' => ['nullable', new Enum(OrderSource::class)],
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_phone' => ['required', 'string', 'max:30'],

@@ -54,11 +54,14 @@ export default function OrdersQueue({
     filters,
     bucketCounts,
     deliveryAccounts,
+    stores,
 }: {
     orders: Paginated<Order>;
     filters: OrderFilters;
     bucketCounts: OrderBucketCounts;
     deliveryAccounts: DeliveryAccount[];
+    /** The agent's stores, for filing a new order (OrderController::index). */
+    stores: { id: number; name: string }[];
 }) {
     const { t } = useTranslation();
 
@@ -681,6 +684,7 @@ export default function OrdersQueue({
                     }
                 }}
                 order={editOrder}
+                stores={stores}
             />
 
             {/* A separate mount from the edit dialog above so each keeps its
@@ -692,6 +696,7 @@ export default function OrdersQueue({
                 list yet, so `refetchSelected` would refresh the wrong record
                 and leave the queue looking unchanged. */}
             <OrderFormDialog
+                stores={stores}
                 open={createOpen}
                 onOpenChange={(open) => {
                     if (!open) {

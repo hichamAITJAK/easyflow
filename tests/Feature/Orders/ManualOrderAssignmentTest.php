@@ -27,7 +27,7 @@ test('an order created by a confirmation agent is assigned to that agent', funct
         'business_id' => $admin->business_id,
     ]);
 
-    $this->actingAs($agent)->post(route('orders.store'), $payload)->assertRedirect();
+    $this->actingAs($agent)->post(route('orders.store'), $payload + ['store_id' => makeStore($agent->business_id)->id])->assertRedirect();
 
     $order = Order::where('business_id', $admin->business_id)->firstOrFail();
 
@@ -47,7 +47,7 @@ test('an order created by an admin still goes through auto-assignment', function
         'business_id' => $admin->business_id,
     ]);
 
-    $this->actingAs($admin)->post(route('orders.store'), $payload)->assertRedirect();
+    $this->actingAs($admin)->post(route('orders.store'), $payload + ['store_id' => makeStore($admin->business_id)->id])->assertRedirect();
 
     expect(Order::where('business_id', $admin->business_id)->firstOrFail()->assigned_agent_id)
         ->toBe($agent->id);

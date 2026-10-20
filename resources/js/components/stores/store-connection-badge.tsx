@@ -21,6 +21,14 @@ export function StoreConnectionBadge({
         );
     }
 
+    if (status === 'manual') {
+        return (
+            <ConnectionStatusBadge tone="pending">
+                {t('Manual store')}
+            </ConnectionStatusBadge>
+        );
+    }
+
     if (status === 'failed') {
         return (
             <ConnectionStatusBadge tone="error">

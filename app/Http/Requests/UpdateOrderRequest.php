@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\OrderSource;
+use App\Http\Requests\Concerns\StoreWithinAgentScope;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -13,6 +14,8 @@ use Illuminate\Validation\Rules\Enum;
 
 class UpdateOrderRequest extends FormRequest
 {
+    use StoreWithinAgentScope;
+
     /**
      * Determine if the user is authorized to make this request. An order
      * can no longer be edited once it has shipped — the courier already
@@ -35,6 +38,8 @@ class UpdateOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // Which brand the order is for; see StoreWithinAgentScope.
+            'store_id' => ['nullable', ...$this->storeRules()],
             'source_platform' => ['nullable', new Enum(OrderSource::class)],
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_phone' => ['required', 'string', 'max:30'],

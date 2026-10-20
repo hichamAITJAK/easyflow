@@ -22,7 +22,7 @@ test('creating a manual order with a variant records the variant and its sku sna
     $product = Product::where('business_id', $admin->business_id)->firstOrFail();
     $variant = $product->variants()->where('sku', 'TS-M')->firstOrFail();
 
-    $response = $this->actingAs($admin)->post(route('orders.store'), [
+    $response = $this->actingAs($admin)->post(route('orders.store'), ['store_id' => makeStore($admin->business_id)->id,
         'customer_name' => 'Jane Doe',
         'customer_phone' => '+212600000000',
         'customer_address' => '123 Main St',
@@ -66,7 +66,7 @@ test('one product can be ordered in several variants, each with its own quantity
 
     // The form sends one entry per variant, all sharing a product_id — the
     // shape a single on-screen line with three variant rows flattens to.
-    $response = $this->actingAs($admin)->post(route('orders.store'), [
+    $response = $this->actingAs($admin)->post(route('orders.store'), ['store_id' => makeStore($admin->business_id)->id,
         'customer_name' => 'Jane Doe',
         'customer_phone' => '+212600000000',
         'customer_address' => '123 Main St',
@@ -142,7 +142,7 @@ test('a manually created order rejects a variant belonging to another business',
         ->variants()
         ->firstOrFail();
 
-    $response = $this->actingAs($admin)->post(route('orders.store'), [
+    $response = $this->actingAs($admin)->post(route('orders.store'), ['store_id' => makeStore($admin->business_id)->id,
         'customer_name' => 'Jane Doe',
         'customer_phone' => '+212600000000',
         'customer_address' => '123 Main St',

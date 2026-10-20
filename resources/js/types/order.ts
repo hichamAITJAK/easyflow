@@ -32,7 +32,8 @@ export type OrderDeliveryStatus =
  * reached the business) — platform-synced orders store their store's
  * platform slug in the same column instead.
  */
-export type OrderSource = 'whatsapp' | 'phone_call' | 'other';
+export type OrderSource =
+    'whatsapp' | 'instagram' | 'facebook' | 'tiktok' | 'phone_call' | 'other';
 
 export type OrderCancelReason =
     | 'client_unreachable'

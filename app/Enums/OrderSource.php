@@ -11,6 +11,9 @@ namespace App\Enums;
 enum OrderSource: string
 {
     case WHATSAPP = 'whatsapp';
+    case INSTAGRAM = 'instagram';
+    case FACEBOOK = 'facebook';
+    case TIKTOK = 'tiktok';
     case PHONE_CALL = 'phone_call';
     case OTHER = 'other';
 
@@ -18,6 +21,9 @@ enum OrderSource: string
     {
         return match ($this) {
             self::WHATSAPP => 'WhatsApp',
+            self::INSTAGRAM => 'Instagram',
+            self::FACEBOOK => 'Facebook',
+            self::TIKTOK => 'TikTok',
             self::PHONE_CALL => 'Phone call',
             self::OTHER => 'Other',
         };

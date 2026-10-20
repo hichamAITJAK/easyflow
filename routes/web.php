@@ -127,6 +127,8 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
         Route::prefix('stores')->name('stores.')->group(function () {
             Route::get('/', [StoreController::class, 'index'])->name('index');
             Route::get('/create', [StoreController::class, 'create'])->name('create');
+            // A store with no online shop, for WhatsApp / Instagram / phone brands.
+            Route::post('/manual', [StoreController::class, 'storeManual'])->name('manual.store');
 
             Route::get('/connect/youcan/callback', [YouCanConnectionController::class, 'callback'])->name('connect.youcan.callback');
             Route::get('/connect/shopify/callback', [ShopifyConnectionController::class, 'callback'])->name('connect.shopify.callback');

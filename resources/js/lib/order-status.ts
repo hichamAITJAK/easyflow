@@ -366,6 +366,9 @@ export function orderSourceLabel(value: string | null | undefined): string {
 
     const manual: Record<string, string> = {
         whatsapp: 'WhatsApp',
+        instagram: 'Instagram',
+        facebook: 'Facebook',
+        tiktok: 'TikTok',
         phone_call: 'Phone call',
         other: 'Other',
         manual: 'Manual',

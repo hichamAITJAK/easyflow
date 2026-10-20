@@ -8,7 +8,7 @@ uses(RefreshDatabase::class);
 test('creating a manual order sets ordered_at alongside created_at', function () {
     $admin = makeBusinessUser();
 
-    $response = $this->actingAs($admin)->post(route('orders.store'), [
+    $response = $this->actingAs($admin)->post(route('orders.store'), ['store_id' => makeStore($admin->business_id)->id,
         'customer_name' => 'Jane Doe',
         'customer_phone' => '+212600000000',
         'customer_address' => '123 Main St',

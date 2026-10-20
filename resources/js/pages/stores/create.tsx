@@ -7,6 +7,7 @@ import WooCommerceConnectionController from '@/actions/App/Http/Controllers/Stor
 import { ConnectTutorialDialog } from '@/components/connect-tutorial-dialog';
 import Heading from '@/components/heading';
 import { ProviderConnectCard } from '@/components/provider-connect-card';
+import { ManualStoreCard } from '@/components/stores/manual-store-card';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -144,6 +145,7 @@ export default function StoresCreate({
                 />
 
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    <ManualStoreCard />
                     {connectablePlatforms.map((platform) => (
                         <ProviderConnectCard
                             key={platform.id}

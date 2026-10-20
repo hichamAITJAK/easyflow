@@ -91,6 +91,9 @@ type LineItem = {
 
 const ORDER_SOURCES: { value: OrderSource; label: string }[] = [
     { value: 'whatsapp', label: 'WhatsApp' },
+    { value: 'instagram', label: 'Instagram' },
+    { value: 'facebook', label: 'Facebook' },
+    { value: 'tiktok', label: 'TikTok' },
     { value: 'phone_call', label: 'Phone call' },
     { value: 'other', label: 'Other' },
 ];
@@ -218,11 +221,14 @@ export function OrderFormDialog({
     open,
     onOpenChange,
     order,
+    stores,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     /** When set, the dialog edits this order instead of creating a new one. */
     order?: Order | null;
+    /** The stores this user may file an order under (an agent sees only their scope). */
+    stores: { id: number; name: string }[];
 }) {
     const { t } = useTranslation();
 
@@ -232,6 +238,7 @@ export function OrderFormDialog({
     const [customerName, setCustomerName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
     const [orderSource, setOrderSource] = useState<string>('');
+    const [storeId, setStoreId] = useState<string>('');
     const [products, setProducts] = useState<ProductOption[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(false);
     const [items, setItems] = useState<LineItem[]>([]);
@@ -294,6 +301,14 @@ export function OrderFormDialog({
         setCity(order?.customer_city ?? '');
         setCustomerName(order?.customer_name ?? '');
         setCustomerPhone(order?.customer_phone ?? '');
+        // One store to choose from is no choice: preselect it.
+        setStoreId(
+            order?.store_id
+                ? String(order.store_id)
+                : stores.length === 1
+                  ? String(stores[0].id)
+                  : '',
+        );
         setOrderSource(
             order &&
                 ORDER_SOURCES.some((s) => s.value === order.source_platform)
@@ -490,6 +505,7 @@ export function OrderFormDialog({
         setErrors({});
 
         const payload = {
+            store_id: storeId ? Number(storeId) : null,
             source_platform: orderSource || null,
             customer_name: customerName,
             customer_phone: customerPhone,
@@ -617,6 +633,31 @@ export function OrderFormDialog({
                                 }
                             />
                             <InputError message={errors.customer_city} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="order_store">{t('Store')}</Label>
+                            <Select value={storeId} onValueChange={setStoreId}>
+                                <SelectTrigger
+                                    id="order_store"
+                                    className="w-full"
+                                >
+                                    <SelectValue
+                                        placeholder={t('Choose a store')}
+                                    />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {stores.map((store) => (
+                                        <SelectItem
+                                            key={store.id}
+                                            value={String(store.id)}
+                                        >
+                                            {store.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <InputError message={errors.store_id} />
                         </div>
 
                         <div className="grid gap-2">

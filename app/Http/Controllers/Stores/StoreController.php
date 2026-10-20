@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Stores;
 
 use App\Enums\EcomPlatform;
+use App\Enums\StoreConnectionStatus;
 use App\Events\Store\StoreDeleting;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Stores\DeleteStoreRequest;
@@ -14,6 +15,7 @@ use App\Services\Operations\EcomPlatforms\YouCanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -62,13 +64,52 @@ class StoreController extends Controller
             : null;
 
         return Inertia::render('stores/create', [
-            'platforms' => EcommercePlatform::all(),
+            // The Manual platform has its own card, not a connect flow.
+            'platforms' => EcommercePlatform::where('slug', '!=', 'manual')->get(),
             'reconnecting' => $reconnecting === null ? null : [
                 'id' => $reconnecting->id,
                 'name' => $reconnecting->name,
                 'platform_slug' => $reconnecting->platform?->slug,
             ],
         ]);
+    }
+
+    /**
+     * Create a store with no online shop. A brand that only sells through
+     * WhatsApp, Instagram or the phone still needs a store so its manual
+     * orders can be told apart from another brand's, filtered, and counted
+     * in the dashboard breakdown. Nothing to connect: `manual` status keeps
+     * it out of every platform sync.
+     */
+    public function storeManual(Request $request): RedirectResponse
+    {
+        $businessId = $request->user()->business_id;
+        abort_if($businessId === null, 403);
+
+        $data = $request->validate(['name' => ['required', 'string', 'max:255']]);
+
+        $platform = EcommercePlatform::firstOrCreate(['slug' => 'manual'], ['name' => 'Manual']);
+
+        // Slugs are unique per business; a second "Faizat" becomes faizat-2.
+        $base = Str::slug($data['name']) ?: 'store';
+        $slug = $base;
+
+        for ($i = 2; Store::where('business_id', $businessId)->where('slug', $slug)->exists(); $i++) {
+            $slug = "{$base}-{$i}";
+        }
+
+        Store::create([
+            'business_id' => $businessId,
+            'platform_id' => $platform->id,
+            'name' => trim($data['name']),
+            'slug' => $slug,
+            'api_credentials' => '[]',
+            'connection_status' => StoreConnectionStatus::MANUAL,
+        ]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Manual store created.')]);
+
+        return redirect()->route('stores.index');
     }
 
     /**

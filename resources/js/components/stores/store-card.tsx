@@ -2,6 +2,7 @@ import {
     ArrowUpRight,
     Clock,
     MoreHorizontal,
+    PencilLine,
     Plug,
     RefreshCw,
     Store as StoreIcon,
@@ -48,6 +49,8 @@ export function StoreCard({
     const { t } = useTranslation();
 
     const failed = store.connection_status === 'failed';
+    // Nothing to reconnect or sync on a store with no online shop.
+    const manual = store.connection_status === 'manual';
     const redirectsToPlatform = OAUTH_PLATFORMS.includes(
         store.platform?.slug ?? '',
     );
@@ -132,7 +135,7 @@ export function StoreCard({
                                     <DropdownMenuSeparator />
                                 </>
                             )}
-                            {redirectsToPlatform ? (
+                            {manual ? null : redirectsToPlatform ? (
                                 <DropdownMenuItem asChild>
                                     {/* A full page visit, not an Inertia one:
                                         this redirects out to the platform's
@@ -152,7 +155,7 @@ export function StoreCard({
                                 </DropdownMenuItem>
                             )}
 
-                            <DropdownMenuSeparator />
+                            {!manual && <DropdownMenuSeparator />}
 
                             <DropdownMenuItem
                                 variant="destructive"
@@ -207,7 +210,14 @@ export function StoreCard({
                                     : undefined
                             }
                         >
-                            {store.last_synced_at ? (
+                            {manual ? (
+                                <>
+                                    <PencilLine className="size-3 shrink-0" />
+                                    <span className="truncate">
+                                        {t('Orders keyed in by hand')}
+                                    </span>
+                                </>
+                            ) : store.last_synced_at ? (
                                 <>
                                     <RefreshCw className="size-3 shrink-0" />
                                     <span className="truncate">

@@ -54,9 +54,9 @@ class OrderService
 
     /**
      * Manually create an order for the given business, along with its line
-     * items (if any). A manual order never has a store — it didn't come
-     * from a synced ecom platform, so source_platform instead records the
-     * channel it arrived through (whatsapp/phone_call/other, see
+     * items (if any). store_id says which brand it is for (a manual store
+     * for brands with no online shop), and source_platform records the
+     * channel it arrived through (whatsapp/instagram/phone_call…, see
      * App\Enums\OrderSource), falling back to 'manual' when unspecified.
      *
      * total_amount is trusted as given — the caller (the manual order form)
@@ -82,6 +82,7 @@ class OrderService
         $order = Order::create([
             'reference' => $this->codeGenerator->reference(),
             'business_id' => $businessId,
+            'store_id' => $data['store_id'] ?? null,
             'source_platform' => $data['source_platform'] ?? 'manual',
             'customer_name' => $data['customer_name'],
             'customer_phone' => $customerPhone,
@@ -149,6 +150,9 @@ class OrderService
         $itemsTotalBefore = $this->itemsTotal($order);
 
         $order->update([
+            // Orders from before stores were required keep no store
+            // until one is picked.
+            'store_id' => $data['store_id'] ?? $order->store_id,
             'source_platform' => $data['source_platform'] ?? $order->source_platform,
             'customer_name' => $data['customer_name'],
             'customer_phone' => $customerPhone,
