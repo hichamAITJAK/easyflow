@@ -154,10 +154,12 @@ export function CreateShipmentDialog({
                             <EmptyMedia variant="icon">
                                 <Truck />
                             </EmptyMedia>
-                            <EmptyTitle>{t('No courier connected')}</EmptyTitle>
+                            <EmptyTitle>
+                                {t('No way to deliver yet')}
+                            </EmptyTitle>
                             <EmptyDescription>
                                 {t(
-                                    'Connect a delivery courier account before you can create shipments.',
+                                    'Connect a delivery courier, or add a delivery guy in Team, before you can create shipments.',
                                 )}
                             </EmptyDescription>
                         </EmptyHeader>
