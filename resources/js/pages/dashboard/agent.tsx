@@ -277,56 +277,58 @@ export default function AgentDashboard({
                         rangeLabel={rangeLabel}
                     />
 
-                    {/* my rates */}
-                    <div className="mt-4 rounded-2xl border border-border bg-card p-4 shadow-xs lg:p-5">
-                        <p className="text-sm font-medium text-muted-foreground">
-                            {t('My rates')} · {rangeLabel}
-                        </p>
-                        <div className="mt-4 space-y-4">
-                            {rates.map((rate) => (
-                                <div key={rate.label}>
-                                    <div className="mb-1.5 flex items-baseline justify-between">
-                                        <span className="text-sm font-medium">
-                                            {rate.label}
-                                        </span>
-                                        <span
-                                            className="font-mono text-sm font-semibold tabular-nums"
-                                            style={{ color: rate.color }}
-                                        >
-                                            {rate.value === null
-                                                ? '—'
-                                                : `${rate.value}%`}
-                                        </span>
+                    {/* my rates and my goals side by side on a wide screen */}
+                    <div className="lg:grid lg:grid-cols-2 lg:gap-4">
+                        <div className="mt-4 rounded-2xl border border-border bg-card p-4 shadow-xs lg:p-5">
+                            <p className="text-sm font-medium text-muted-foreground">
+                                {t('My rates')} · {rangeLabel}
+                            </p>
+                            <div className="mt-4 space-y-4">
+                                {rates.map((rate) => (
+                                    <div key={rate.label}>
+                                        <div className="mb-1.5 flex items-baseline justify-between">
+                                            <span className="text-sm font-medium">
+                                                {rate.label}
+                                            </span>
+                                            <span
+                                                className="font-mono text-sm font-semibold tabular-nums"
+                                                style={{ color: rate.color }}
+                                            >
+                                                {rate.value === null
+                                                    ? '—'
+                                                    : `${rate.value}%`}
+                                            </span>
+                                        </div>
+                                        <div className="h-8 overflow-hidden rounded-full bg-muted/50">
+                                            <div
+                                                className="h-full rounded-full transition-all duration-500"
+                                                style={{
+                                                    width: `${Math.min(100, rate.value ?? 0)}%`,
+                                                    background: rate.color,
+                                                }}
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="h-8 overflow-hidden rounded-full bg-muted/50">
-                                        <div
-                                            className="h-full rounded-full transition-all duration-500"
-                                            style={{
-                                                width: `${Math.min(100, rate.value ?? 0)}%`,
-                                                background: rate.color,
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                    </div>
 
-                    {/* my goals · set by the admin */}
-                    <GoalsCard
-                        confirmation={rateTotals.confirmation}
-                        delivery={rateTotals.delivery}
-                        confirmationGoal={
-                            confirmationRateTarget !== null
-                                ? Number(confirmationRateTarget)
-                                : performance.goals.conf
-                        }
-                        deliveryGoal={
-                            deliveryRateTarget !== null
-                                ? Number(deliveryRateTarget)
-                                : performance.goals.deliv
-                        }
-                    />
+                        {/* my goals · set by the admin */}
+                        <GoalsCard
+                            confirmation={rateTotals.confirmation}
+                            delivery={rateTotals.delivery}
+                            confirmationGoal={
+                                confirmationRateTarget !== null
+                                    ? Number(confirmationRateTarget)
+                                    : performance.goals.conf
+                            }
+                            deliveryGoal={
+                                deliveryRateTarget !== null
+                                    ? Number(deliveryRateTarget)
+                                    : performance.goals.deliv
+                            }
+                        />
+                    </div>
 
                     {/* upsells · commissions, then best time full width:
                         three columns are too narrow for these on a phone */}
