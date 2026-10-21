@@ -2203,5 +2203,15 @@
     "No hand-overs yet": "Aucune remise pour l'instant",
     "Record a hand-over above when a delivery guy brings in his cash.": "Enregistrez une remise ci-dessus quand un livreur rapporte ses espèces.",
     "Settled by": "Réglé par",
-    "Income, cash to receive & parcels": "Revenus, argent à recevoir et colis"
+    "Income, cash to receive & parcels": "Revenus, argent à recevoir et colis",
+    "Cash handed over": "Espèces remises",
+    "Last change": "Dernier changement",
+    "Search parcels…": "Rechercher un colis…",
+    "No parcels yet": "Aucun colis pour l'instant",
+    "Parcels handed to you will show up here.": "Les colis qui vous sont confiés apparaîtront ici.",
+    "Left from your last hand-over": "Reste de votre dernière remise",
+    "Paid ahead at your last hand-over": "Payé d'avance à votre dernière remise",
+    "Amounts are after your pay per parcel. Hand the cash to your manager; anything missing stays on your balance.": "Montants après déduction de votre paie par colis. Remettez les espèces à votre responsable ; tout manque reste sur votre solde.",
+    "carried :amount": "reporté :amount",
+    "Still owed": "Reste dû"
 }

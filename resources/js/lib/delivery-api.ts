@@ -3,6 +3,7 @@ import type {
     DeliveryAction,
     DeliveryActivityEvent,
     DeliveryCash,
+    DeliveryGuyParcel,
     DeliveryParcel,
     DeliveryScanResult,
     DeliverySummary,
@@ -43,4 +44,7 @@ export const deliveryApi = {
         ),
 
     cash: () => request<DeliveryCash>('/delivery/cash'),
+
+    parcels: () =>
+        request<{ parcels: DeliveryGuyParcel[] }>('/delivery/parcels'),
 };

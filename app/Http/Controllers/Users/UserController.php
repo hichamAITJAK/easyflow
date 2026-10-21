@@ -9,6 +9,7 @@ use App\Http\Controllers\Concerns\SyncsAgentCompensation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Models\DeliveryCashSettlement;
 use App\Models\Order;
 use App\Models\PerformanceTarget;
 use App\Models\Product;
@@ -107,10 +108,21 @@ class UserController extends Controller
                 ->selectRaw("delivery_guy_id,
                     sum(case when delivery_status = 'ready_for_pickup' then 1 else 0 end) as to_collect,
                     sum(case when delivery_status in ('out_for_delivery', 'postponed', 'delivery_attempt_failed') then 1 else 0 end) as on_road,
-                    coalesce(sum(case when delivery_status = 'delivered' then total_amount else 0 end), 0) as cash_owed")
+                    coalesce(sum(case when delivery_status = 'delivered' then total_amount - coalesce(delivery_cost, 0) else 0 end), 0) as cash_owed")
                 ->groupBy('delivery_guy_id')
                 ->get()
                 ->keyBy('delivery_guy_id')
+            : collect();
+
+        // What each delivery guy's last hand-over left open.
+        $carried = $users->contains('role', UserRole::DELIVERY_GUY)
+            ? DeliveryCashSettlement::where('business_id', $businessId)
+                ->whereIn('id', fn ($query) => $query->selectRaw('max(id)')
+                    ->from('delivery_cash_settlements')
+                    ->where('business_id', $businessId)
+                    ->groupBy('user_id'))
+                ->pluck('balance_after', 'user_id')
+                ->map(fn ($value) => (float) $value)
             : collect();
 
         $workload = [];
@@ -144,7 +156,8 @@ class UserController extends Controller
                 $workload[$user->id] = [
                     'toCollect' => (int) ($row->to_collect ?? 0),
                     'onRoad' => (int) ($row->on_road ?? 0),
-                    'cashOwed' => round((float) ($row->cash_owed ?? 0), 2),
+                    // Plus what his last hand-over left open.
+                    'cashOwed' => round((float) ($row->cash_owed ?? 0) + $carried->get($user->id, 0.0), 2),
                 ];
             }
         }

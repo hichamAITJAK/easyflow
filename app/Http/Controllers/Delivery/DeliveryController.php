@@ -266,10 +266,14 @@ class DeliveryController extends Controller
     {
         $user = $request->user();
 
+        $settlements = app(DeliveryCashSettlementService::class);
+
         $parcels = $this->owedParcels($user)
             ->orderByDesc('updated_at')
-            ->get(['id', 'reference', 'courier_tracking_number', 'customer_name', 'customer_city', 'total_amount', 'updated_at'])
+            ->get(['id', 'reference', 'courier_tracking_number', 'customer_name', 'customer_city', 'total_amount', 'delivery_cost', 'updated_at'])
             ->each->makeVisible(['customer_name']);
+
+        $carried = $settlements->carried($user);
 
         $last = DeliveryCashSettlement::where('business_id', $user->business_id)
             ->where('user_id', $user->id)
@@ -277,21 +281,60 @@ class DeliveryController extends Controller
             ->first();
 
         return response()->json([
-            'owed' => round((float) $parcels->sum('total_amount'), 2),
+            'owed' => $settlements->owed($user),
+            // Left open by the last hand-over; positive means still owed.
+            'carried' => $carried,
             'parcels' => $parcels->map(fn (Order $order) => [
                 'id' => $order->id,
                 'reference' => $order->reference,
                 'tracking_number' => $order->courier_tracking_number,
                 'customer_name' => $order->customer_name,
                 'customer_city' => $order->customer_city,
-                'amount' => $order->total_amount,
+                'amount' => number_format((float) $order->total_amount - (float) ($order->delivery_cost ?? 0), 2, '.', ''),
+                'total' => $order->total_amount,
+                'pay' => number_format((float) ($order->delivery_cost ?? 0), 2, '.', ''),
                 'delivered_at' => $order->updated_at,
             ])->values(),
             'last_settlement' => $last === null ? null : [
                 'amount' => $last->amount,
+                'received_amount' => $last->received_amount,
+                'balance_after' => $last->balance_after,
                 'parcels_count' => $last->parcels_count,
                 'created_at' => $last->created_at,
             ],
+        ]);
+    }
+
+    /**
+     * Every parcel ever handed to this delivery guy, newest first, for
+     * his own list: where each one stands and what it is worth.
+     */
+    public function parcels(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $orders = Order::where('business_id', $user->business_id)
+            ->where('delivery_guy_id', $user->id)
+            ->orderByDesc('updated_at')
+            ->limit(500)
+            ->get(['id', 'reference', 'courier_tracking_number', 'customer_name', 'customer_phone', 'customer_city', 'customer_address', 'total_amount', 'delivery_cost', 'delivery_status', 'delivery_cash_settlement_id', 'shipped_at', 'updated_at'])
+            ->each->makeVisible(['customer_name', 'customer_phone', 'customer_address']);
+
+        return response()->json([
+            'parcels' => $orders->map(fn (Order $order) => [
+                'id' => $order->id,
+                'reference' => $order->reference,
+                'tracking_number' => $order->courier_tracking_number,
+                'customer_name' => $order->customer_name,
+                'customer_phone' => $order->customer_phone,
+                'customer_city' => $order->customer_city,
+                'customer_address' => $order->customer_address,
+                'amount' => $order->total_amount,
+                'delivery_status' => $order->delivery_status?->value,
+                'settled' => $order->delivery_cash_settlement_id !== null,
+                'shipped_at' => $order->shipped_at,
+                'updated_at' => $order->updated_at,
+            ])->values(),
         ]);
     }
 
@@ -314,7 +357,7 @@ class DeliveryController extends Controller
                 ->where('to_status', OrderDeliveryStatus::DELIVERED->value)
                 ->whereDate('created_at', now()->toDateString())
                 ->count(),
-            'cash_owed' => round((float) $this->owedParcels($user)->sum('total_amount'), 2),
+            'cash_owed' => app(DeliveryCashSettlementService::class)->owed($user),
             'city' => $user->delivery_city,
         ];
     }

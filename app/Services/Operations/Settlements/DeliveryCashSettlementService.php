@@ -10,10 +10,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Cash a delivery guy holds on delivered parcels, and the hand-over that
- * clears it. Mirrors CourierSettlementService for own delivery: the
- * parcels say what is expected, the admin types what was received, and a
- * gap larger than the tolerance marks the hand-over disputed.
+ * Cash a delivery guy holds, and the hand-over that clears it.
+ *
+ * What he owes on a delivered parcel is its total minus his pay for it
+ * (the order's delivery_cost, set when he marks it delivered; zero on a
+ * salary). What he owes overall is that, over every unsettled delivered
+ * parcel, plus whatever was left open by his last hand-over: a short
+ * hand-over keeps the shortfall on his balance instead of zeroing it.
  */
 class DeliveryCashSettlementService
 {
@@ -26,25 +29,46 @@ class DeliveryCashSettlementService
             ->whereNull('delivery_cash_settlement_id');
     }
 
+    /** Cash still to hand over from the parcels alone. */
+    public function parcelsNet(User $guy): float
+    {
+        return round((float) $this->owedParcels($guy)
+            ->toBase()
+            ->selectRaw('coalesce(sum(total_amount - coalesce(delivery_cost, 0)), 0) as net')
+            ->value('net'), 2);
+    }
+
+    /** What his last hand-over left open (positive: still owes). */
+    public function carried(User $guy): float
+    {
+        return round((float) DeliveryCashSettlement::where('business_id', $guy->business_id)
+            ->where('user_id', $guy->id)
+            ->latest('id')
+            ->value('balance_after'), 2);
+    }
+
     public function owed(User $guy): float
     {
-        return round((float) $this->owedParcels($guy)->sum('total_amount'), 2);
+        return round($this->parcelsNet($guy) + $this->carried($guy), 2);
     }
 
     /**
-     * Tie every unsettled delivered parcel to one new settlement. With no
-     * received amount the hand-over is taken as complete.
+     * Tie every unsettled delivered parcel to one new hand-over. With no
+     * received amount the hand-over is taken as complete. What is still
+     * missing afterwards stays on his balance for the next one.
      */
     public function settle(User $guy, User $by, ?float $received = null, ?string $note = null): ?DeliveryCashSettlement
     {
         return DB::transaction(function () use ($guy, $by, $received, $note) {
-            $parcels = $this->owedParcels($guy)->lockForUpdate()->get(['id', 'total_amount']);
+            $parcels = $this->owedParcels($guy)->lockForUpdate()->get(['id', 'total_amount', 'delivery_cost']);
+            $carried = $this->carried($guy);
+            $net = round((float) $parcels->sum(fn (Order $order) => (float) $order->total_amount - (float) ($order->delivery_cost ?? 0)), 2);
+            $expected = round($net + $carried, 2);
 
-            if ($parcels->isEmpty()) {
+            if ($parcels->isEmpty() && abs($carried) < 0.01) {
                 return null;
             }
 
-            $expected = round((float) $parcels->sum('total_amount'), 2);
             $received = $received === null ? $expected : round($received, 2);
             $difference = round($received - $expected, 2);
 
@@ -55,12 +79,15 @@ class DeliveryCashSettlementService
                 'amount' => $expected,
                 'received_amount' => $received,
                 'difference_amount' => $difference,
+                'balance_after' => abs($difference) < 0.01 ? 0 : round(-$difference, 2),
                 'parcels_count' => $parcels->count(),
                 'status' => abs($difference) < CourierSettlementService::MATCH_TOLERANCE_MAD ? 'reconciled' : 'disputed',
                 'note' => $note,
             ]);
 
-            Order::whereIn('id', $parcels->pluck('id'))->update(['delivery_cash_settlement_id' => $settlement->id]);
+            if ($parcels->isNotEmpty()) {
+                Order::whereIn('id', $parcels->pluck('id'))->update(['delivery_cash_settlement_id' => $settlement->id]);
+            }
 
             return $settlement;
         });

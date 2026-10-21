@@ -209,6 +209,7 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
         Route::get('/activity', [DeliveryController::class, 'activity'])->name('activity');
         Route::post('/undo', [DeliveryController::class, 'undo'])->name('undo');
         Route::get('/cash', [DeliveryController::class, 'cash'])->name('cash');
+        Route::get('/parcels', [DeliveryController::class, 'parcels'])->name('parcels');
     });
 
     Route::prefix('orders')->name('orders.')->middleware('can:use-operations-app')->group(function () {

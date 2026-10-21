@@ -626,10 +626,19 @@ class DashboardController extends Controller
                 ->whereNull('delivery_cash_settlement_id')
                 ->when($guyId !== null, fn ($query) => $query->where('delivery_guy_id', $guyId))
                 ->toBase()
-                ->selectRaw('count(*) as parcels, coalesce(sum(total_amount), 0) as amount')
+                ->selectRaw('count(*) as parcels, coalesce(sum(total_amount - coalesce(delivery_cost, 0)), 0) as amount')
                 ->first();
 
-            $toReceive += (float) $owed->amount;
+            // Plus what each guy's last hand-over left open.
+            $carried = (float) DeliveryCashSettlement::where('business_id', $businessId)
+                ->whereIn('id', fn ($query) => $query->selectRaw('max(id)')
+                    ->from('delivery_cash_settlements')
+                    ->where('business_id', $businessId)
+                    ->when($guyId !== null, fn ($q) => $q->where('user_id', $guyId))
+                    ->groupBy('user_id'))
+                ->sum('balance_after');
+
+            $toReceive += (float) $owed->amount + $carried;
             $deliveredUnpaid += (int) $owed->parcels;
 
             $handovers = DeliveryCashSettlement::where('business_id', $businessId)
@@ -641,10 +650,13 @@ class DashboardController extends Controller
                 $lastClosed = $lastHandover;
             }
 
-            $short = (clone $handovers)
-                ->where('difference_amount', '<=', -CourierSettlementService::MATCH_TOLERANCE_MAD)
-                ->latest('id')
-                ->first();
+            // A short hand-over carries into the next one, so only the
+            // latest hand-over says whether the guy is still short.
+            $short = (clone $handovers)->latest('id')->first();
+
+            if ($short !== null && (float) $short->difference_amount > -CourierSettlementService::MATCH_TOLERANCE_MAD) {
+                $short = null;
+            }
 
             if ($short !== null && ($lastShort === null || $short->created_at->greaterThan($lastShort['at']))) {
                 $lastShort = ['at' => $short->created_at, 'differenceMad' => (float) $short->difference_amount];

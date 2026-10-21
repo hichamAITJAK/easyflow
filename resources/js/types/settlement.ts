@@ -31,10 +31,12 @@ export type DeliveryCashSettlement = {
     user_id: number;
     delivery_guy?: { id: number; name: string } | null;
     settled_by?: { id: number; name: string } | null;
-    /** What the parcels added up to. */
+    /** What was expected: parcels net of pay, plus what was carried. */
     amount: string;
     received_amount: string | null;
     difference_amount: string;
+    /** Still owed after this hand-over (negative: paid ahead). */
+    balance_after: string;
     parcels_count: number;
     status: DeliveryCashSettlementStatus;
     note: string | null;
@@ -47,4 +49,6 @@ export type DeliveryGuyCash = {
     name: string;
     owed: number;
     parcels: number;
+    /** Left open by the last hand-over; positive means still owed. */
+    carried: number;
 };

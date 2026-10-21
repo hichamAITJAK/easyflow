@@ -2,15 +2,14 @@
 
 namespace App\Http\Controllers\Settlements;
 
-use App\Enums\OrderDeliveryStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\CourierSettlement;
 use App\Models\DeliveryAccount;
 use App\Models\DeliveryCashSettlement;
-use App\Models\Order;
 use App\Models\User;
 use App\Services\Operations\Settlements\CourierSettlementService;
+use App\Services\Operations\Settlements\DeliveryCashSettlementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,25 +44,18 @@ class CourierSettlementController extends Controller
         $guys = User::where('business_id', $businessId)
             ->where('role', UserRole::DELIVERY_GUY)
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'business_id']);
 
-        $owed = Order::where('business_id', $businessId)
-            ->whereIn('delivery_guy_id', $guys->pluck('id'))
-            ->where('delivery_status', OrderDeliveryStatus::DELIVERED)
-            ->whereNull('delivery_cash_settlement_id')
-            ->toBase()
-            ->selectRaw('delivery_guy_id, count(*) as parcels, sum(total_amount) as amount')
-            ->groupBy('delivery_guy_id')
-            ->get()
-            ->keyBy('delivery_guy_id');
+        $cash = app(DeliveryCashSettlementService::class);
 
         return Inertia::render('settlements/index', [
             'settlements' => $settlements,
             'deliveryGuys' => $guys->map(fn (User $guy) => [
                 'id' => $guy->id,
                 'name' => $guy->name,
-                'owed' => round((float) ($owed[$guy->id]->amount ?? 0), 2),
-                'parcels' => (int) ($owed[$guy->id]->parcels ?? 0),
+                'owed' => $cash->owed($guy),
+                'parcels' => $cash->owedParcels($guy)->count(),
+                'carried' => $cash->carried($guy),
             ])->values(),
             'cashSettlements' => DeliveryCashSettlement::where('business_id', $businessId)
                 ->with(['deliveryGuy:id,name', 'settledBy:id,name'])

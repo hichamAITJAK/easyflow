@@ -20,12 +20,13 @@ use Illuminate\Support\Carbon;
  * @property float $amount
  * @property float|null $received_amount
  * @property float $difference_amount
+ * @property float $balance_after
  * @property string $status
  * @property int $parcels_count
  * @property string|null $note
  * @property Carbon|null $created_at
  */
-#[Fillable(['business_id', 'user_id', 'settled_by_user_id', 'amount', 'received_amount', 'difference_amount', 'parcels_count', 'status', 'note'])]
+#[Fillable(['business_id', 'user_id', 'settled_by_user_id', 'amount', 'received_amount', 'difference_amount', 'balance_after', 'parcels_count', 'status', 'note'])]
 #[ScopedBy([BusinessScope::class])]
 class DeliveryCashSettlement extends Model
 {
@@ -37,6 +38,7 @@ class DeliveryCashSettlement extends Model
             'amount' => 'decimal:2',
             'received_amount' => 'decimal:2',
             'difference_amount' => 'decimal:2',
+            'balance_after' => 'decimal:2',
             'parcels_count' => 'integer',
             'created_at' => 'datetime',
         ];

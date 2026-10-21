@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import {
     Banknote,
+    List,
     MapPin,
     PackageCheck,
     ScanLine,
@@ -13,6 +14,7 @@ import { toast } from 'sonner';
 import { DeliveryActivityList } from '@/components/delivery/activity-list';
 import { ParcelActionCard } from '@/components/delivery/parcel-action-card';
 import type { ApplyPayload } from '@/components/delivery/parcel-action-card';
+import { DeliveryParcelsTable } from '@/components/delivery/parcels-table';
 import { ScannerView } from '@/components/fulfillment/scanner-view';
 import { PILL_TABS_LIST, PILL_TABS_TRIGGER } from '@/components/pill-tabs';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,6 +28,7 @@ import { cn } from '@/lib/utils';
 import type {
     DeliveryActivityEvent,
     DeliveryCash,
+    DeliveryGuyParcel,
     DeliveryScanResult,
     DeliverySummary,
 } from '@/types/delivery-guy';
@@ -67,6 +70,9 @@ export default function DeliveryIndex({
     const [cash, setCash] = useState<DeliveryCash | null>(null);
     const [cashLoading, setCashLoading] = useState(false);
 
+    const [parcels, setParcels] = useState<DeliveryGuyParcel[]>([]);
+    const [parcelsLoading, setParcelsLoading] = useState(false);
+
     const inFlight = useRef(false);
 
     const refreshSummary = useCallback(async () => {
@@ -87,6 +93,18 @@ export default function DeliveryIndex({
             toast.error(errorMessage(error));
         } finally {
             setActivityLoading(false);
+        }
+    }, []);
+
+    const loadParcels = useCallback(async () => {
+        setParcelsLoading(true);
+
+        try {
+            setParcels((await deliveryApi.parcels()).parcels);
+        } catch (error) {
+            toast.error(errorMessage(error));
+        } finally {
+            setParcelsLoading(false);
         }
     }, []);
 
@@ -189,9 +207,11 @@ export default function DeliveryIndex({
             } else if (next === 'cash') {
                 void loadCash();
                 void refreshSummary();
+            } else if (next === 'parcels') {
+                void loadParcels();
             }
         },
-        [loadActivity, loadCash, refreshSummary],
+        [loadActivity, loadCash, loadParcels, refreshSummary],
     );
 
     return (
@@ -243,7 +263,7 @@ export default function DeliveryIndex({
                     <TabsList
                         className={cn(
                             PILL_TABS_LIST,
-                            'mt-5 grid w-full max-w-none grid-cols-3 border border-border bg-muted/40',
+                            'mt-5 grid w-full max-w-none grid-cols-4 border border-border bg-muted/40',
                         )}
                     >
                         <TabsTrigger
@@ -265,6 +285,13 @@ export default function DeliveryIndex({
                         >
                             <Wallet className="size-4" />
                             {t('Cash')}
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="parcels"
+                            className={cn(PILL_TABS_TRIGGER, 'h-9 py-0')}
+                        >
+                            <List className="size-4" />
+                            {t('Parcels')}
                         </TabsTrigger>
                     </TabsList>
 
@@ -292,6 +319,13 @@ export default function DeliveryIndex({
                             loading={activityLoading}
                             onUndo={handleUndo}
                             undoingId={undoingId}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="parcels">
+                        <DeliveryParcelsTable
+                            parcels={parcels}
+                            loading={parcelsLoading}
                         />
                     </TabsContent>
 
@@ -326,7 +360,28 @@ export default function DeliveryIndex({
                                 )}
                             </div>
 
-                            {cash && cash.parcels.length === 0 ? (
+                            {cash && cash.carried !== 0 && (
+                                <div className="flex items-center gap-3 border-b border-border bg-muted/30 p-4">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-medium">
+                                            {cash.carried > 0
+                                                ? t(
+                                                      'Left from your last hand-over',
+                                                  )
+                                                : t(
+                                                      'Paid ahead at your last hand-over',
+                                                  )}
+                                        </p>
+                                    </div>
+                                    <span className="font-mono text-sm font-semibold tabular-nums">
+                                        {cash.carried.toFixed(2)} MAD
+                                    </span>
+                                </div>
+                            )}
+
+                            {cash &&
+                            cash.parcels.length === 0 &&
+                            cash.carried === 0 ? (
                                 <div className="px-4 py-10 text-center text-sm text-muted-foreground">
                                     {t('Nothing to hand over.')}
                                 </div>
@@ -347,16 +402,24 @@ export default function DeliveryIndex({
                                                     ` · ${parcel.customer_city}`}
                                             </p>
                                         </div>
-                                        <span className="font-mono text-sm font-semibold tabular-nums">
-                                            {parcel.amount} MAD
-                                        </span>
+                                        <div className="text-right">
+                                            <span className="font-mono text-sm font-semibold tabular-nums">
+                                                {parcel.amount} MAD
+                                            </span>
+                                            {Number(parcel.pay) > 0 && (
+                                                <p className="font-mono text-xs text-muted-foreground tabular-nums">
+                                                    {parcel.total} −{' '}
+                                                    {parcel.pay}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
                                 ))
                             )}
                         </div>
                         <p className="mt-3 text-xs text-muted-foreground">
                             {t(
-                                'Hand the cash to your manager; they mark it settled from the Team page.',
+                                'Amounts are after your pay per parcel. Hand the cash to your manager; anything missing stays on your balance.',
                             )}
                         </p>
                     </TabsContent>

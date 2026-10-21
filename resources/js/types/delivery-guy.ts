@@ -66,18 +66,41 @@ export type DeliveryActivityEvent = {
 
 export type DeliveryCash = {
     owed: number;
+    /** Left open by the last hand-over; positive means still owed. */
+    carried: number;
     parcels: {
         id: number;
         reference: string | null;
         tracking_number: string | null;
         customer_name: string | null;
         customer_city: string | null;
+        /** Total minus the guy's pay for this parcel. */
         amount: string;
+        total: string;
+        pay: string;
         delivered_at: string;
     }[];
     last_settlement: {
         amount: string;
+        received_amount: string | null;
+        balance_after: string;
         parcels_count: number;
         created_at: string;
     } | null;
+};
+
+/** One row of the delivery guy's own parcel list. */
+export type DeliveryGuyParcel = {
+    id: number;
+    reference: string | null;
+    tracking_number: string | null;
+    customer_name: string | null;
+    customer_phone: string | null;
+    customer_city: string | null;
+    customer_address: string | null;
+    amount: string;
+    delivery_status: OrderDeliveryStatus | null;
+    settled: boolean;
+    shipped_at: string | null;
+    updated_at: string;
 };

@@ -29,6 +29,7 @@ function localParcel(User $guy, string $tracking, OrderDeliveryStatus $status, a
         'delivery_status' => $status,
         'is_delivery_active' => true,
         'total_amount' => 199,
+        'delivery_cost' => 0,
         ...$extra,
     ]);
 }
@@ -85,7 +86,8 @@ test('taking, failing, postponing and delivering a parcel, with the reason kept 
 
     $apply(['action' => 'livre'])->assertOk()
         ->assertJsonPath('summary.delivered_today', 1)
-        ->assertJsonPath('summary.cash_owed', 199);
+        // 199 collected minus his 15 MAD pay.
+        ->assertJsonPath('summary.cash_owed', 184);
 
     expect($parcel->fresh()->delivery_status)->toBe(OrderDeliveryStatus::DELIVERED)
         ->and((float) CommissionLedgerEntry::withoutGlobalScopes()->where('user_id', $guy->id)->where('entry_type', 'earned')->sum('amount'))->toBe(15.0);
@@ -169,13 +171,42 @@ test('a hand-over records what was received and flags a short one', function () 
     expect((float) $settlement->amount)->toBe(300.0)
         ->and((float) $settlement->received_amount)->toBe(250.0)
         ->and((float) $settlement->difference_amount)->toBe(-50.0)
-        ->and($settlement->status)->toBe('disputed');
+        ->and($settlement->status)->toBe('disputed')
+        ->and((float) $settlement->balance_after)->toBe(50.0);
+
+    // The missing 50 stays on his balance and shows in his space.
+    $this->actingAs($guy)->getJson(route('delivery.cash'))
+        ->assertJsonPath('owed', 50)->assertJsonPath('carried', 50)->assertJsonCount(0, 'parcels');
+    $this->actingAs($guy)->getJson(route('delivery.summary'))->assertJsonPath('cash_owed', 50);
+    $this->actingAs($admin)->get(route('users.index'))
+        ->assertInertia(fn ($page) => $page->where("workload.{$guy->id}.cashOwed", 50)->etc());
+
+    // Next hand-over: a new parcel net of pay (100 - 15) plus the 50 left.
+    localParcel($guy, 'LOC-AGA-31', OrderDeliveryStatus::DELIVERED, ['total_amount' => 100, 'delivery_cost' => 15, 'is_delivery_active' => false]);
+    $this->actingAs($admin)->get(route('settlements.index'))
+        ->assertInertia(fn ($page) => $page->where('deliveryGuys.0.owed', 135)->where('deliveryGuys.0.carried', 50)->etc());
+    $this->actingAs($admin)->post(route('users.cash-settlements.store', $guy), ['received_amount' => 135])->assertRedirect();
+    expect(DeliveryCashSettlement::withoutGlobalScopes()->latest('id')->value('balance_after'))->toBe('0.00');
+    $this->actingAs($guy)->getJson(route('delivery.cash'))->assertJsonPath('owed', 0);
 
     $this->actingAs($admin)->get(route('dashboard'))
         ->assertInertia(fn ($page) => $page
-            ->where('expected.lastSettlement.status', 'difference')
-            ->where('expected.lastSettlement.differenceMad', -50)
+            ->where('expected.lastSettlement.status', 'matched')
+            ->where('expected.toReceiveMad', 0)
             ->etc());
+});
+
+test('his parcels list shows every parcel with its state', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $guy = spaceGuy($admin->business_id);
+    localParcel($guy, 'LOC-AGA-50', OrderDeliveryStatus::DELIVERED, ['is_delivery_active' => false]);
+    localParcel($guy, 'LOC-AGA-51', OrderDeliveryStatus::OUT_FOR_DELIVERY);
+    localParcel(spaceGuy($admin->business_id, 'Rabat'), 'LOC-RAB-50', OrderDeliveryStatus::OUT_FOR_DELIVERY);
+
+    $this->actingAs($guy)->getJson(route('delivery.parcels'))
+        ->assertOk()
+        ->assertJsonCount(2, 'parcels')
+        ->assertJsonPath('parcels.0.settled', false);
 });
 
 test('the finance row can be scoped to one delivery guy or one courier account', function () {

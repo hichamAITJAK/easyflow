@@ -203,14 +203,18 @@ function DeliveryGuyCashTab({
                     <span className="text-sm text-muted-foreground">
                         {t('Expected:')}{' '}
                         {guy
-                            ? `${money(guy.owed)} · ${t(':count parcels', { count: guy.parcels })}`
+                            ? `${money(guy.owed)} · ${t(':count parcels', { count: guy.parcels })}${
+                                  guy.carried !== 0
+                                      ? ` · ${t('carried :amount', { amount: money(guy.carried) })}`
+                                      : ''
+                              }`
                             : '—'}
                     </span>
 
                     <Button
                         type="button"
                         onClick={handleSettle}
-                        disabled={submitting || !guy || guy.parcels === 0}
+                        disabled={submitting || !guy || guy.owed === 0}
                     >
                         {t('Record settlement')}
                     </Button>
@@ -229,13 +233,14 @@ function DeliveryGuyCashTab({
                                 <TableHead>{t('Actual')}</TableHead>
                                 <TableHead>{t('Difference')}</TableHead>
                                 <TableHead>{t('Status')}</TableHead>
+                                <TableHead>{t('Still owed')}</TableHead>
                                 <TableHead>{t('Settled by')}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {cashSettlements.length === 0 ? (
                                 <TableRow className="hover:bg-transparent">
-                                    <TableCell colSpan={8} className="p-0">
+                                    <TableCell colSpan={9} className="p-0">
                                         <Empty className="border-none py-12">
                                             <EmptyHeader>
                                                 <EmptyMedia variant="icon">
@@ -288,6 +293,9 @@ function DeliveryGuyCashTab({
                                             >
                                                 {t(STATUS_LABELS[row.status])}
                                             </Badge>
+                                        </TableCell>
+                                        <TableCell className="font-mono tabular-nums">
+                                            {money(row.balance_after)}
                                         </TableCell>
                                         <TableCell className="text-sm text-muted-foreground">
                                             {row.settled_by?.name ?? '—'}
