@@ -2213,5 +2213,6 @@
     "Paid ahead at your last hand-over": "Payé d'avance à votre dernière remise",
     "Amounts are after your pay per parcel. Hand the cash to your manager; anything missing stays on your balance.": "Montants après déduction de votre paie par colis. Remettez les espèces à votre responsable ; tout manque reste sur votre solde.",
     "carried :amount": "reporté :amount",
-    "Still owed": "Reste dû"
+    "Still owed": "Reste dû",
+    "Every parcel handed to you, newest first.": "Tous les colis qui vous ont été confiés, du plus récent au plus ancien."
 }

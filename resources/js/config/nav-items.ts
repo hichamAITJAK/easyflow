@@ -17,7 +17,10 @@ import { dashboard } from '@/routes';
 import { index as commissionEntriesIndex } from '@/routes/commission-entries';
 import { index as creativesIndex } from '@/routes/creatives';
 import { index as customersIndex } from '@/routes/customers';
-import { index as deliveryIndex } from '@/routes/delivery';
+import {
+    index as deliveryIndex,
+    parcels as deliveryParcels,
+} from '@/routes/delivery';
 import { index as deliveryCouriersIndex } from '@/routes/delivery-couriers';
 import {
     index as fulfillmentIndex,
@@ -188,12 +191,17 @@ const CREATIVES_EDITOR_NAV_ITEMS: NavItem[] = [
     },
 ];
 
-/** The delivery guy's bar: his parcels and his own pay. */
+/** The delivery guy's bar: his work, his parcels and his own pay. */
 const DELIVERY_NAV_ITEMS: NavItem[] = [
     {
         title: 'Delivery',
         href: deliveryIndex(),
         icon: Truck,
+    },
+    {
+        title: 'Parcels',
+        href: deliveryParcels(),
+        icon: Package,
     },
     {
         title: 'Commissions',

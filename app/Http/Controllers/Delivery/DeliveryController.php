@@ -309,7 +309,7 @@ class DeliveryController extends Controller
      * Every parcel ever handed to this delivery guy, newest first, for
      * his own list: where each one stands and what it is worth.
      */
-    public function parcels(Request $request): JsonResponse
+    public function parcels(Request $request): Response
     {
         $user = $request->user();
 
@@ -320,7 +320,7 @@ class DeliveryController extends Controller
             ->get(['id', 'reference', 'courier_tracking_number', 'customer_name', 'customer_phone', 'customer_city', 'customer_address', 'total_amount', 'delivery_cost', 'delivery_status', 'delivery_cash_settlement_id', 'shipped_at', 'updated_at'])
             ->each->makeVisible(['customer_name', 'customer_phone', 'customer_address']);
 
-        return response()->json([
+        return Inertia::render('delivery/parcels', [
             'parcels' => $orders->map(fn (Order $order) => [
                 'id' => $order->id,
                 'reference' => $order->reference,

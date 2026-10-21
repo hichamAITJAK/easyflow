@@ -1,7 +1,6 @@
 import { Head } from '@inertiajs/react';
 import {
     Banknote,
-    List,
     MapPin,
     PackageCheck,
     ScanLine,
@@ -14,7 +13,6 @@ import { toast } from 'sonner';
 import { DeliveryActivityList } from '@/components/delivery/activity-list';
 import { ParcelActionCard } from '@/components/delivery/parcel-action-card';
 import type { ApplyPayload } from '@/components/delivery/parcel-action-card';
-import { DeliveryParcelsTable } from '@/components/delivery/parcels-table';
 import { ScannerView } from '@/components/fulfillment/scanner-view';
 import { PILL_TABS_LIST, PILL_TABS_TRIGGER } from '@/components/pill-tabs';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -28,7 +26,6 @@ import { cn } from '@/lib/utils';
 import type {
     DeliveryActivityEvent,
     DeliveryCash,
-    DeliveryGuyParcel,
     DeliveryScanResult,
     DeliverySummary,
 } from '@/types/delivery-guy';
@@ -70,9 +67,6 @@ export default function DeliveryIndex({
     const [cash, setCash] = useState<DeliveryCash | null>(null);
     const [cashLoading, setCashLoading] = useState(false);
 
-    const [parcels, setParcels] = useState<DeliveryGuyParcel[]>([]);
-    const [parcelsLoading, setParcelsLoading] = useState(false);
-
     const inFlight = useRef(false);
 
     const refreshSummary = useCallback(async () => {
@@ -93,18 +87,6 @@ export default function DeliveryIndex({
             toast.error(errorMessage(error));
         } finally {
             setActivityLoading(false);
-        }
-    }, []);
-
-    const loadParcels = useCallback(async () => {
-        setParcelsLoading(true);
-
-        try {
-            setParcels((await deliveryApi.parcels()).parcels);
-        } catch (error) {
-            toast.error(errorMessage(error));
-        } finally {
-            setParcelsLoading(false);
         }
     }, []);
 
@@ -207,11 +189,9 @@ export default function DeliveryIndex({
             } else if (next === 'cash') {
                 void loadCash();
                 void refreshSummary();
-            } else if (next === 'parcels') {
-                void loadParcels();
             }
         },
-        [loadActivity, loadCash, loadParcels, refreshSummary],
+        [loadActivity, loadCash, refreshSummary],
     );
 
     return (
@@ -263,7 +243,7 @@ export default function DeliveryIndex({
                     <TabsList
                         className={cn(
                             PILL_TABS_LIST,
-                            'mt-5 grid w-full max-w-none grid-cols-4 border border-border bg-muted/40',
+                            'mt-5 grid w-full max-w-none grid-cols-3 border border-border bg-muted/40',
                         )}
                     >
                         <TabsTrigger
@@ -285,13 +265,6 @@ export default function DeliveryIndex({
                         >
                             <Wallet className="size-4" />
                             {t('Cash')}
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="parcels"
-                            className={cn(PILL_TABS_TRIGGER, 'h-9 py-0')}
-                        >
-                            <List className="size-4" />
-                            {t('Parcels')}
                         </TabsTrigger>
                     </TabsList>
 
@@ -319,13 +292,6 @@ export default function DeliveryIndex({
                             loading={activityLoading}
                             onUndo={handleUndo}
                             undoingId={undoingId}
-                        />
-                    </TabsContent>
-
-                    <TabsContent value="parcels">
-                        <DeliveryParcelsTable
-                            parcels={parcels}
-                            loading={parcelsLoading}
                         />
                     </TabsContent>
 
