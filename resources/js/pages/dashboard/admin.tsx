@@ -43,6 +43,7 @@ import type {
 } from '@/components/dashboard/performance-track';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -659,346 +660,382 @@ function FinanceRow({
     const hasIncome = months.some((m) => m.amountMad > 0);
 
     return (
-        <section className="space-y-3" data-slot="finance.overview">
+        <section data-slot="finance.overview">
             {node}
-            <div className="flex justify-end">
-                <Select
-                    value={carrier ?? ALL_CARRIERS}
-                    onValueChange={(value) =>
-                        onCarrierChange(
-                            value === ALL_CARRIERS ? undefined : value,
-                        )
-                    }
-                >
-                    <SelectTrigger
-                        aria-label={t('Delivered by')}
-                        className="w-60 bg-card"
-                        data-slot="finance.carrier"
-                    >
-                        <Truck className="size-4 text-muted-foreground" />
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent align="end">
-                        <SelectItem value={ALL_CARRIERS}>
-                            {t('All couriers & delivery guys')}
-                        </SelectItem>
-                        {accounts.length > 0 && (
-                            <SelectGroup>
-                                <SelectLabel>{t('Couriers')}</SelectLabel>
-                                {accounts.map((c) => (
-                                    <SelectItem key={c.value} value={c.value}>
-                                        {c.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
-                        )}
-                        {guys.length > 0 && (
-                            <SelectGroup>
-                                <SelectLabel>{t('Delivery guys')}</SelectLabel>
-                                {guys.map((c) => (
-                                    <SelectItem key={c.value} value={c.value}>
-                                        {c.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
-                        )}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="grid gap-4 lg:grid-cols-3">
-                <Card className="grid overflow-hidden p-0 lg:col-span-2 lg:grid-cols-[1.2fr_1fr]">
-                    {/* INCOME */}
-                    <div className="p-6" data-slot="finance.income">
-                        <h2 className="text-lg font-semibold tracking-tight">
-                            {t('Income')}
-                        </h2>
-                        <p className="mt-0.5 text-sm text-muted-foreground">
-                            {t('Collected from delivered orders')}
-                        </p>
-                        <p className="mt-3">
-                            <span className="font-mono text-2xl font-semibold tabular-nums">
-                                {money(income.totalMad)}
-                            </span>{' '}
-                            <span className="text-xs text-muted-foreground">
-                                MAD ·{' '}
-                                {income.grain === 'day'
-                                    ? t('per day')
-                                    : income.grain === 'week'
-                                      ? t('per week')
-                                      : t('per month')}
-                            </span>
-                        </p>
-                        <div className="mt-6">
-                            {hasIncome ? (
-                                <svg
-                                    viewBox="0 0 600 258"
-                                    className="h-64 w-full overflow-visible"
+            <Card className="p-6">
+                <CardContent className="p-0">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                        <div>
+                            <h2 className="text-lg font-semibold tracking-tight">
+                                {t('Finance')}
+                            </h2>
+                            <p className="mt-0.5 text-sm text-muted-foreground">
+                                {t('Income, cash to receive & parcels')}
+                            </p>
+                        </div>
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="dashboard-carrier-filter">
+                                {t('Delivered by')}
+                            </Label>
+                            <Select
+                                value={carrier ?? ALL_CARRIERS}
+                                onValueChange={(value) =>
+                                    onCarrierChange(
+                                        value === ALL_CARRIERS
+                                            ? undefined
+                                            : value,
+                                    )
+                                }
+                            >
+                                <SelectTrigger
+                                    id="dashboard-carrier-filter"
+                                    className="w-60 bg-card"
+                                    data-slot="finance.carrier"
                                 >
-                                    <defs>
-                                        <linearGradient
-                                            id="incomeGrad"
-                                            x1="0"
-                                            y1="0"
-                                            x2="0"
-                                            y2="1"
-                                        >
-                                            <stop
-                                                offset="0%"
-                                                stopColor={C.green}
-                                                stopOpacity={0.28}
-                                            />
-                                            <stop
-                                                offset="100%"
-                                                stopColor={C.green}
-                                                stopOpacity={0}
-                                            />
-                                        </linearGradient>
-                                    </defs>
-                                    {ticks.map((g) => (
-                                        <g key={g}>
-                                            <line
-                                                x1={X0}
-                                                y1={Y(g)}
-                                                x2={X1}
-                                                y2={Y(g)}
-                                                stroke="var(--border)"
-                                                strokeWidth={1.5}
-                                                strokeDasharray="1.5 6"
-                                                strokeLinecap="round"
-                                            />
-                                            <text
-                                                x={X0 - 10}
-                                                y={Y(g) + 4}
-                                                textAnchor="end"
-                                                fontSize={11}
-                                                fill="var(--muted-foreground)"
-                                            >
-                                                {tickLabel(g)}
-                                            </text>
-                                        </g>
-                                    ))}
-                                    <path d={area} fill="url(#incomeGrad)" />
-                                    <polyline
-                                        points={line}
-                                        fill="none"
-                                        stroke={C.green}
-                                        strokeWidth={2.5}
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                    {lastPt && (
-                                        <circle
-                                            cx={lastPt[0]}
-                                            cy={lastPt[1]}
-                                            r={4}
-                                            fill={C.green}
-                                            stroke="var(--card)"
-                                            strokeWidth={2}
-                                        />
+                                    <Truck className="size-4 text-muted-foreground" />
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent align="end">
+                                    <SelectItem value={ALL_CARRIERS}>
+                                        {t('All couriers & delivery guys')}
+                                    </SelectItem>
+                                    {accounts.length > 0 && (
+                                        <SelectGroup>
+                                            <SelectLabel>
+                                                {t('Couriers')}
+                                            </SelectLabel>
+                                            {accounts.map((c) => (
+                                                <SelectItem
+                                                    key={c.value}
+                                                    value={c.value}
+                                                >
+                                                    {c.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     )}
-                                    {months.map((m, i) => (
-                                        <g key={`${m.label}-${i}`}>
-                                            {(i % labelEvery === 0 ||
-                                                i === months.length - 1) && (
+                                    {guys.length > 0 && (
+                                        <SelectGroup>
+                                            <SelectLabel>
+                                                {t('Delivery guys')}
+                                            </SelectLabel>
+                                            {guys.map((c) => (
+                                                <SelectItem
+                                                    key={c.value}
+                                                    value={c.value}
+                                                >
+                                                    {c.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="mt-5 grid border-t border-border pt-5 lg:grid-cols-[1.2fr_1fr_1fr]">
+                        {/* INCOME */}
+                        <div
+                            className="pb-6 lg:pr-6 lg:pb-0"
+                            data-slot="finance.income"
+                        >
+                            <h3 className="text-base font-semibold tracking-tight">
+                                {t('Income')}
+                            </h3>
+                            <p className="mt-0.5 text-sm text-muted-foreground">
+                                {t('Collected from delivered orders')}
+                            </p>
+                            <p className="mt-3">
+                                <span className="font-mono text-2xl font-semibold tabular-nums">
+                                    {money(income.totalMad)}
+                                </span>{' '}
+                                <span className="text-xs text-muted-foreground">
+                                    MAD ·{' '}
+                                    {income.grain === 'day'
+                                        ? t('per day')
+                                        : income.grain === 'week'
+                                          ? t('per week')
+                                          : t('per month')}
+                                </span>
+                            </p>
+                            <div className="mt-6">
+                                {hasIncome ? (
+                                    <svg
+                                        viewBox="0 0 600 258"
+                                        className="h-64 w-full overflow-visible"
+                                    >
+                                        <defs>
+                                            <linearGradient
+                                                id="incomeGrad"
+                                                x1="0"
+                                                y1="0"
+                                                x2="0"
+                                                y2="1"
+                                            >
+                                                <stop
+                                                    offset="0%"
+                                                    stopColor={C.green}
+                                                    stopOpacity={0.28}
+                                                />
+                                                <stop
+                                                    offset="100%"
+                                                    stopColor={C.green}
+                                                    stopOpacity={0}
+                                                />
+                                            </linearGradient>
+                                        </defs>
+                                        {ticks.map((g) => (
+                                            <g key={g}>
+                                                <line
+                                                    x1={X0}
+                                                    y1={Y(g)}
+                                                    x2={X1}
+                                                    y2={Y(g)}
+                                                    stroke="var(--border)"
+                                                    strokeWidth={1.5}
+                                                    strokeDasharray="1.5 6"
+                                                    strokeLinecap="round"
+                                                />
                                                 <text
-                                                    x={X(i)}
-                                                    y={250}
-                                                    textAnchor="middle"
+                                                    x={X0 - 10}
+                                                    y={Y(g) + 4}
+                                                    textAnchor="end"
                                                     fontSize={11}
                                                     fill="var(--muted-foreground)"
                                                 >
-                                                    {t(m.label)}
+                                                    {tickLabel(g)}
                                                 </text>
-                                            )}
+                                            </g>
+                                        ))}
+                                        <path
+                                            d={area}
+                                            fill="url(#incomeGrad)"
+                                        />
+                                        <polyline
+                                            points={line}
+                                            fill="none"
+                                            stroke={C.green}
+                                            strokeWidth={2.5}
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                        {lastPt && (
                                             <circle
-                                                cx={X(i)}
-                                                cy={Y(m.amountMad)}
-                                                r={13}
-                                                fill="transparent"
-                                                className="cursor-default"
-                                                onMouseMove={(e) =>
-                                                    move(
-                                                        e,
-                                                        `${money(m.amountMad)} MAD`,
-                                                        `${t(m.label)} · ${t(':count orders delivered', { count: n(m.ordersSettled) })}`,
-                                                    )
-                                                }
-                                                onMouseLeave={hide}
+                                                cx={lastPt[0]}
+                                                cy={lastPt[1]}
+                                                r={4}
+                                                fill={C.green}
+                                                stroke="var(--card)"
+                                                strokeWidth={2}
                                             />
-                                        </g>
-                                    ))}
-                                </svg>
-                            ) : (
-                                <EmptyState title={t('No income to show')} />
-                            )}
-                        </div>
-                    </div>
-                    {/* EXPECTED */}
-                    <div
-                        className="flex flex-col border-t border-border p-6 lg:border-t-0 lg:border-l"
-                        data-slot="finance.expected"
-                    >
-                        <h2 className="text-lg font-semibold tracking-tight">
-                            {t('Expected')}
-                        </h2>
-                        <p className="mt-0.5 text-sm text-muted-foreground">
-                            {expectedHint}
-                        </p>
-                        <div className="my-auto grid grid-cols-2 py-8">
-                            <div className="flex flex-col items-center gap-3 text-center">
-                                <span className="flex size-12 items-center justify-center rounded-xl bg-[#EFA22C]/12">
-                                    <CircleDollarSign
-                                        className="size-5"
-                                        style={{ color: C.amberText }}
-                                    />
-                                </span>
-                                <div>
-                                    <p className="text-sm text-muted-foreground">
-                                        {t('To receive')}
-                                    </p>
-                                    <p className="mt-1 text-2xl font-semibold tabular-nums">
-                                        {money(expected.toReceiveMad)}{' '}
-                                        <span className="text-sm font-medium text-muted-foreground">
-                                            MAD
-                                        </span>
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex flex-col items-center gap-3 border-l border-border text-center">
-                                <span className="flex size-12 items-center justify-center rounded-xl bg-[#16A08E]/12">
-                                    <Wallet
-                                        className="size-5"
-                                        style={{ color: C.greenText }}
-                                    />
-                                </span>
-                                <div>
-                                    <p className="text-sm text-muted-foreground">
-                                        {t('Delivered, unpaid')}
-                                    </p>
-                                    <p className="mt-1 text-2xl font-semibold tabular-nums">
-                                        {n(expected.deliveredUnpaid)}{' '}
-                                        <span className="text-sm font-medium text-muted-foreground">
-                                            {t('orders')}
-                                        </span>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="mt-auto flex items-center justify-between gap-4 border-t border-border pt-5">
-                            <div>
-                                <p className="text-sm text-muted-foreground">
-                                    {t('Last settlement')}
-                                </p>
-                                {settled === null ? (
-                                    <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
-                                        {t('None yet')}
-                                    </p>
-                                ) : (
-                                    <>
-                                        {settled.status === 'matched' ? (
-                                            <p
-                                                className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-semibold"
-                                                style={{ color: C.greenText }}
-                                            >
-                                                <CheckCircle2 className="size-4" />
-                                                {t('All good · matched')}
-                                            </p>
-                                        ) : (
-                                            <p
-                                                className="mt-0.5 inline-flex items-center gap-1.5 font-mono text-sm font-semibold tabular-nums"
-                                                style={{ color: C.redText }}
-                                            >
-                                                <TriangleAlert className="size-4" />
-                                                −
-                                                {money2(
-                                                    Math.abs(
-                                                        settled.differenceMad,
-                                                    ),
-                                                )}{' '}
-                                                MAD
-                                            </p>
                                         )}
-                                    </>
+                                        {months.map((m, i) => (
+                                            <g key={`${m.label}-${i}`}>
+                                                {(i % labelEvery === 0 ||
+                                                    i ===
+                                                        months.length - 1) && (
+                                                    <text
+                                                        x={X(i)}
+                                                        y={250}
+                                                        textAnchor="middle"
+                                                        fontSize={11}
+                                                        fill="var(--muted-foreground)"
+                                                    >
+                                                        {t(m.label)}
+                                                    </text>
+                                                )}
+                                                <circle
+                                                    cx={X(i)}
+                                                    cy={Y(m.amountMad)}
+                                                    r={13}
+                                                    fill="transparent"
+                                                    className="cursor-default"
+                                                    onMouseMove={(e) =>
+                                                        move(
+                                                            e,
+                                                            `${money(m.amountMad)} MAD`,
+                                                            `${t(m.label)} · ${t(':count orders delivered', { count: n(m.ordersSettled) })}`,
+                                                        )
+                                                    }
+                                                    onMouseLeave={hide}
+                                                />
+                                            </g>
+                                        ))}
+                                    </svg>
+                                ) : (
+                                    <EmptyState
+                                        title={t('No income to show')}
+                                    />
                                 )}
                             </div>
-                            <Button asChild>
-                                <a href={settlementsIndex().url}>
-                                    {t('View settlements')}
-                                </a>
-                            </Button>
                         </div>
-                    </div>
-                </Card>
-
-                {/* PARCELS */}
-                <Card className="p-6">
-                    <CardContent
-                        className="flex h-full flex-col p-0"
-                        data-slot="parcels.pipeline"
-                    >
-                        <div className="flex items-center gap-3">
-                            <span className="flex size-10 items-center justify-center rounded-lg bg-secondary">
-                                <Package className="size-[18px] text-primary" />
-                            </span>
-                            <div>
-                                <h2 className="text-lg font-semibold tracking-tight">
-                                    {t('Parcels')}
-                                </h2>
-                                <p className="text-sm text-muted-foreground">
-                                    {t('Shipment pipeline')}
-                                </p>
+                        {/* EXPECTED */}
+                        <div
+                            className="flex flex-col border-t border-border py-6 lg:border-t-0 lg:border-l lg:px-6 lg:py-0"
+                            data-slot="finance.expected"
+                        >
+                            <h3 className="text-base font-semibold tracking-tight">
+                                {t('Expected')}
+                            </h3>
+                            <p className="mt-0.5 text-sm text-muted-foreground">
+                                {expectedHint}
+                            </p>
+                            <div className="my-auto grid grid-cols-2 py-8">
+                                <div className="flex flex-col items-center gap-3 text-center">
+                                    <span className="flex size-12 items-center justify-center rounded-xl bg-[#EFA22C]/12">
+                                        <CircleDollarSign
+                                            className="size-5"
+                                            style={{ color: C.amberText }}
+                                        />
+                                    </span>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">
+                                            {t('To receive')}
+                                        </p>
+                                        <p className="mt-1 text-2xl font-semibold tabular-nums">
+                                            {money(expected.toReceiveMad)}{' '}
+                                            <span className="text-sm font-medium text-muted-foreground">
+                                                MAD
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-center gap-3 border-l border-border text-center">
+                                    <span className="flex size-12 items-center justify-center rounded-xl bg-[#16A08E]/12">
+                                        <Wallet
+                                            className="size-5"
+                                            style={{ color: C.greenText }}
+                                        />
+                                    </span>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">
+                                            {t('Delivered, unpaid')}
+                                        </p>
+                                        <p className="mt-1 text-2xl font-semibold tabular-nums">
+                                            {n(expected.deliveredUnpaid)}{' '}
+                                            <span className="text-sm font-medium text-muted-foreground">
+                                                {t('orders')}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="mt-auto flex items-center justify-between gap-4 border-t border-border pt-5">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">
+                                        {t('Last settlement')}
+                                    </p>
+                                    {settled === null ? (
+                                        <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
+                                            {t('None yet')}
+                                        </p>
+                                    ) : (
+                                        <>
+                                            {settled.status === 'matched' ? (
+                                                <p
+                                                    className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-semibold"
+                                                    style={{
+                                                        color: C.greenText,
+                                                    }}
+                                                >
+                                                    <CheckCircle2 className="size-4" />
+                                                    {t('All good · matched')}
+                                                </p>
+                                            ) : (
+                                                <p
+                                                    className="mt-0.5 inline-flex items-center gap-1.5 font-mono text-sm font-semibold tabular-nums"
+                                                    style={{ color: C.redText }}
+                                                >
+                                                    <TriangleAlert className="size-4" />
+                                                    −
+                                                    {money2(
+                                                        Math.abs(
+                                                            settled.differenceMad,
+                                                        ),
+                                                    )}{' '}
+                                                    MAD
+                                                </p>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                                <Button asChild>
+                                    <a href={settlementsIndex().url}>
+                                        {t('View settlements')}
+                                    </a>
+                                </Button>
                             </div>
                         </div>
-                        <div className="mt-4 border-t border-border pt-4">
-                            <span className="text-2xl font-semibold tabular-nums">
-                                {n(parcels.total)}
-                            </span>
-                            <span className="ml-1.5 text-sm text-muted-foreground">
-                                {t('parcels this period')}
-                            </span>
-                        </div>
-                        <div className="mt-5 flex flex-1 flex-col justify-between gap-5">
-                            {parcels.stages.map((s) => {
-                                const col =
-                                    {
-                                        ready_to_ship: C.amber,
-                                        shipped: C.petrol,
-                                        delivered: C.green,
-                                        returned: C.red,
-                                    }[s.key] ?? C.gray;
 
-                                return (
-                                    <div
-                                        key={s.key}
-                                        data-slot={`parcels.${s.key}`}
-                                    >
-                                        <div className="flex items-baseline justify-between gap-2">
-                                            <span className="text-sm font-medium">
-                                                {s.label}
-                                            </span>
-                                            <span className="text-sm font-semibold tabular-nums">
-                                                {n(s.count)}{' '}
-                                                <span className="ml-1 font-normal text-muted-foreground">
-                                                    {s.ratePct}%
+                        {/* PARCELS */}
+                        <div
+                            className="flex h-full flex-col border-t border-border pt-6 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6"
+                            data-slot="parcels.pipeline"
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className="flex size-10 items-center justify-center rounded-lg bg-secondary">
+                                    <Package className="size-[18px] text-primary" />
+                                </span>
+                                <div>
+                                    <h3 className="text-base font-semibold tracking-tight">
+                                        {t('Parcels')}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        {t('Shipment pipeline')}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="mt-4 border-t border-border pt-4">
+                                <span className="text-2xl font-semibold tabular-nums">
+                                    {n(parcels.total)}
+                                </span>
+                                <span className="ml-1.5 text-sm text-muted-foreground">
+                                    {t('parcels this period')}
+                                </span>
+                            </div>
+                            <div className="mt-5 flex flex-1 flex-col justify-between gap-5">
+                                {parcels.stages.map((s) => {
+                                    const col =
+                                        {
+                                            ready_to_ship: C.amber,
+                                            shipped: C.petrol,
+                                            delivered: C.green,
+                                            returned: C.red,
+                                        }[s.key] ?? C.gray;
+
+                                    return (
+                                        <div
+                                            key={s.key}
+                                            data-slot={`parcels.${s.key}`}
+                                        >
+                                            <div className="flex items-baseline justify-between gap-2">
+                                                <span className="text-sm font-medium">
+                                                    {s.label}
                                                 </span>
-                                            </span>
+                                                <span className="text-sm font-semibold tabular-nums">
+                                                    {n(s.count)}{' '}
+                                                    <span className="ml-1 font-normal text-muted-foreground">
+                                                        {s.ratePct}%
+                                                    </span>
+                                                </span>
+                                            </div>
+                                            <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+                                                <div
+                                                    className="h-full rounded-full"
+                                                    style={{
+                                                        width: `${s.ratePct}%`,
+                                                        background: col,
+                                                    }}
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-                                            <div
-                                                className="h-full rounded-full"
-                                                style={{
-                                                    width: `${s.ratePct}%`,
-                                                    background: col,
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </CardContent>
-                </Card>
-            </div>
+                    </div>
+                </CardContent>
+            </Card>
         </section>
     );
 }

@@ -2202,5 +2202,6 @@
     ":count parcels": ":count colis",
     "No hand-overs yet": "Aucune remise pour l'instant",
     "Record a hand-over above when a delivery guy brings in his cash.": "Enregistrez une remise ci-dessus quand un livreur rapporte ses espèces.",
-    "Settled by": "Réglé par"
+    "Settled by": "Réglé par",
+    "Income, cash to receive & parcels": "Revenus, argent à recevoir et colis"
 }
