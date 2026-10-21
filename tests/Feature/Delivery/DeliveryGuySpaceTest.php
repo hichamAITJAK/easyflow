@@ -204,7 +204,11 @@ test('his parcels list shows every parcel with its state', function () {
     localParcel(spaceGuy($admin->business_id, 'Rabat'), 'LOC-RAB-50', OrderDeliveryStatus::OUT_FOR_DELIVERY);
 
     $this->actingAs($guy)->get(route('delivery.parcels'))
-        ->assertInertia(fn ($page) => $page->component('delivery/parcels')->has('parcels', 2)->where('parcels.0.settled', false));
+        ->assertInertia(fn ($page) => $page->component('delivery/parcels')->has('parcels.data', 2)->where('parcels.data.0.settled', false));
+    $this->actingAs($guy)->get(route('delivery.parcels', ['delivery_status' => 'delivered']))
+        ->assertInertia(fn ($page) => $page->has('parcels.data', 1)->where('filters.delivery_status', 'delivered'));
+    $this->actingAs($guy)->get(route('delivery.parcels', ['search' => 'LOC-AGA-51']))
+        ->assertInertia(fn ($page) => $page->has('parcels.data', 1));
 });
 
 test('the finance row can be scoped to one delivery guy or one courier account', function () {

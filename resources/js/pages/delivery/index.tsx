@@ -272,6 +272,7 @@ export default function DeliveryIndex({
                         <ScannerView
                             onScan={handleScan}
                             busy={busy || applying}
+                            autoFocus={false}
                         />
 
                         {result && (

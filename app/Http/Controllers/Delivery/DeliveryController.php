@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Delivery;
 
 use App\Enums\OrderDeliveryStatus;
 use App\Enums\OrderReturnReason;
+use App\Http\Controllers\Concerns\BuildsTableQuery;
 use App\Http\Controllers\Controller;
 use App\Models\DeliveryCashSettlement;
 use App\Models\Order;
@@ -32,6 +33,8 @@ use Inertia\Response;
  */
 class DeliveryController extends Controller
 {
+    use BuildsTableQuery;
+
     private const UNDO_MINUTES = 5;
 
     /** A parcel out with the guy, whatever happened on the last attempt. */
@@ -313,15 +316,21 @@ class DeliveryController extends Controller
     {
         $user = $request->user();
 
-        $orders = Order::where('business_id', $user->business_id)
+        $query = Order::where('business_id', $user->business_id)
             ->where('delivery_guy_id', $user->id)
-            ->orderByDesc('updated_at')
-            ->limit(500)
-            ->get(['id', 'reference', 'courier_tracking_number', 'customer_name', 'customer_phone', 'customer_city', 'customer_address', 'total_amount', 'delivery_cost', 'delivery_status', 'delivery_cash_settlement_id', 'shipped_at', 'updated_at'])
-            ->each->makeVisible(['customer_name', 'customer_phone', 'customer_address']);
+            ->when($request->string('delivery_status')->toString(), fn ($query, $status) => $query->where('delivery_status', $status))
+            ->orderByDesc('updated_at');
+
+        $query = $this->applySearch($query, $request, ['reference', 'courier_tracking_number'], hashColumn: 'customer_phone_hash');
+
+        $parcels = $query->paginate($this->resolvePerPage($request), ['id', 'reference', 'courier_tracking_number', 'customer_name', 'customer_phone', 'customer_city', 'customer_address', 'total_amount', 'delivery_cost', 'delivery_status', 'delivery_cash_settlement_id', 'shipped_at', 'updated_at'])
+            ->withQueryString();
+
+        $parcels->getCollection()->each->makeVisible(['customer_name', 'customer_phone', 'customer_address']);
 
         return Inertia::render('delivery/parcels', [
-            'parcels' => $orders->map(fn (Order $order) => [
+            'filters' => $request->only(['search', 'delivery_status', 'per_page']),
+            'parcels' => $parcels->through(fn (Order $order) => [
                 'id' => $order->id,
                 'reference' => $order->reference,
                 'tracking_number' => $order->courier_tracking_number,
@@ -334,7 +343,7 @@ class DeliveryController extends Controller
                 'settled' => $order->delivery_cash_settlement_id !== null,
                 'shipped_at' => $order->shipped_at,
                 'updated_at' => $order->updated_at,
-            ])->values(),
+            ]),
         ]);
     }
 

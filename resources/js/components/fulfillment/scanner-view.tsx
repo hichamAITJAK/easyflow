@@ -19,9 +19,12 @@ import { useTranslation } from '@/hooks/use-translation';
 export function ScannerView({
     onScan,
     busy,
+    autoFocus = true,
 }: {
     onScan: (value: string) => void;
     busy: boolean;
+    /** Off for phones: a focused field pops the keyboard over the camera. */
+    autoFocus?: boolean;
 }) {
     const { t } = useTranslation();
 
@@ -36,10 +39,10 @@ export function ScannerView({
     // Keep the bench scanner's target focused whenever the camera isn't
     // holding the screen, including right after a parcel is committed.
     useEffect(() => {
-        if (!live && !busy) {
+        if (autoFocus && !live && !busy) {
             manualRef.current?.focus();
         }
-    }, [live, busy]);
+    }, [autoFocus, live, busy]);
 
     const submitManual = (event: React.FormEvent) => {
         event.preventDefault();
