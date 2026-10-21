@@ -13,6 +13,7 @@ use App\Models\CommissionRule;
 use App\Models\CourierSettlement;
 use App\Models\DailyStatsSummary;
 use App\Models\DeliveryAccount;
+use App\Models\DeliveryCashSettlement;
 use App\Models\Order;
 use App\Models\OrderStatusEvent;
 use App\Models\PerformanceTarget;
@@ -35,6 +36,14 @@ class DashboardController extends Controller
      * stats and order queries below, like the store filter they also take.
      */
     private ?string $source = null;
+
+    /**
+     * Who carries the parcels the finance row describes: a courier
+     * account (`acc:<id>`) or a delivery guy (`guy:<id>`), or everyone.
+     *
+     * @var array{kind: 'account'|'guy', id: int}|null
+     */
+    private ?array $carrier = null;
 
     private const PERIOD_DAYS = 30;
 
@@ -101,6 +110,15 @@ class DashboardController extends Controller
         $requested = $request->string('source')->toString();
         $this->source = collect($sources)->contains('value', $requested) ? $requested : null;
 
+        $carriers = $this->carrierOptions($businessId);
+        $carrierParam = $request->string('carrier')->toString();
+        $this->carrier = null;
+
+        if (collect($carriers)->contains('value', $carrierParam)) {
+            [$kind, $id] = explode(':', $carrierParam);
+            $this->carrier = ['kind' => $kind === 'acc' ? 'account' : 'guy', 'id' => (int) $id];
+        }
+
         $period = $request->string('period')->toString() ?: '30d';
         [$since, $until] = $this->resolvePeriod($period, $request);
         $windowDays = (int) $since->diffInDays($until) + 1;
@@ -140,6 +158,7 @@ class DashboardController extends Controller
             'filters' => [
                 'store_ids' => $storeIds !== [] ? implode(',', $storeIds) : null,
                 'source' => $this->source,
+                'carrier' => $this->carrier === null ? null : $carrierParam,
                 'period' => $period !== '30d' ? $period : null,
                 'agent_id' => $agent?->id !== null ? (string) $agent->id : null,
                 // Echoed from the resolved window, not the raw params, so
@@ -150,6 +169,7 @@ class DashboardController extends Controller
             ],
             'stores' => $stores,
             'sources' => $sources,
+            'carriers' => $carriers,
             'agents' => $agents,
             'alerts' => $this->attentionAlerts($businessId, $alertProducts, $since, $until),
             'kpis' => $this->kpis($businessId, $storeIds, $rows, $previousRows, $since, $until),
@@ -408,8 +428,14 @@ class DashboardController extends Controller
      */
     private function income(?int $businessId, array $storeIds, Carbon $since, Carbon $until): array
     {
-        $rows = $this->scopedRows($businessId, $storeIds, $since, $until)->get();
-        $byDate = $rows->groupBy(fn (DailyStatsSummary $row) => $row->stat_date->toDateString());
+        $byDate = $this->carrier === null
+            ? $this->scopedRows($businessId, $storeIds, $since, $until)->get()
+                ->groupBy(fn (DailyStatsSummary $row) => $row->stat_date->toDateString())
+                ->map(fn (Collection $dayRows) => [
+                    'amount' => (float) $dayRows->sum('revenue_delivered'),
+                    'count' => (int) $dayRows->sum('delivered_count'),
+                ])
+            : $this->carrierIncomeByDate($businessId, $storeIds, $since, $until);
         $days = (int) $since->diffInDays($until) + 1;
 
         $grain = match (true) {
@@ -437,9 +463,9 @@ class DashboardController extends Controller
             $settled = 0;
 
             for ($day = $cursor->copy(); $day->lessThanOrEqualTo($end); $day->addDay()) {
-                $dayRows = $byDate->get($day->toDateString());
-                $amount += (float) ($dayRows?->sum('revenue_delivered') ?? 0);
-                $settled += (int) ($dayRows?->sum('delivered_count') ?? 0);
+                $dayRow = $byDate->get($day->toDateString());
+                $amount += (float) ($dayRow['amount'] ?? 0);
+                $settled += (int) ($dayRow['count'] ?? 0);
             }
 
             $buckets[] = [
@@ -457,49 +483,173 @@ class DashboardController extends Controller
 
         return [
             'grain' => $grain,
-            'totalMad' => round((float) $rows->sum('revenue_delivered'), 2),
+            'totalMad' => round((float) $byDate->sum('amount'), 2),
             'buckets' => $buckets,
         ];
     }
 
     /**
-     * Courier cash not yet in hand, owned by courier_settlements (UC-15):
-     * what pending settlements say couriers still owe, the delivered
-     * parcels no closed settlement covers, and how the last closed one
-     * squared.
+     * Delivered money per day for one carrier, read live: the stats table
+     * knows courier accounts but not delivery guys, and the finance row
+     * must answer the same way for both. A parcel counts on the day it
+     * was marked delivered.
+     *
+     * @param  list<int>  $storeIds
+     * @return Collection<string, array{amount: float, count: int}>
+     */
+    private function carrierIncomeByDate(?int $businessId, array $storeIds, Carbon $since, Carbon $until): Collection
+    {
+        return OrderStatusEvent::query()
+            ->join('orders', 'orders.id', '=', 'order_status_events.order_id')
+            ->where('order_status_events.business_id', $businessId)
+            ->where('order_status_events.to_status', OrderDeliveryStatus::DELIVERED->value)
+            ->whereBetween('order_status_events.created_at', [$since->copy()->startOfDay(), $until->copy()->endOfDay()])
+            ->where('orders.is_test', false)
+            ->where('orders.delivery_status', OrderDeliveryStatus::DELIVERED)
+            ->when($storeIds !== [], fn ($query) => $query->whereIn('orders.store_id', $storeIds))
+            ->when($this->source !== null, fn ($query) => $query->where('orders.source_platform', $this->source))
+            ->tap(fn ($query) => $this->scopeToCarrier($query, 'orders'))
+            ->toBase()
+            ->selectRaw('date(order_status_events.created_at) as day, sum(orders.total_amount) as amount, count(distinct orders.id) as count')
+            ->groupBy('day')
+            ->get()
+            ->keyBy('day')
+            ->map(fn (object $row) => ['amount' => (float) $row->amount, 'count' => (int) $row->count]);
+    }
+
+    /**
+     * Narrow an orders query to the picked carrier, if any.
+     */
+    private function scopeToCarrier(Builder|\Illuminate\Database\Query\Builder $query, string $table = 'orders'): void
+    {
+        if ($this->carrier === null) {
+            return;
+        }
+
+        $column = $this->carrier['kind'] === 'account' ? 'delivery_account_id' : 'delivery_guy_id';
+        $query->where("{$table}.{$column}", $this->carrier['id']);
+    }
+
+    /**
+     * The finance-row carrier filter: every courier account, then every
+     * delivery guy.
+     *
+     * @return list<array{value: string, label: string, kind: 'account'|'guy'}>
+     */
+    private function carrierOptions(?int $businessId): array
+    {
+        $accounts = DeliveryAccount::where('business_id', $businessId)
+            ->with('courier:id,name')
+            ->orderBy('label')
+            ->get(['id', 'courier_id', 'label'])
+            ->map(fn (DeliveryAccount $account) => [
+                'value' => 'acc:'.$account->id,
+                'label' => $account->courier?->name ? "{$account->courier->name} — {$account->label}" : $account->label,
+                'kind' => 'account',
+            ]);
+
+        $guys = User::where('business_id', $businessId)
+            ->where('role', UserRole::DELIVERY_GUY)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (User $guy) => ['value' => 'guy:'.$guy->id, 'label' => $guy->name, 'kind' => 'guy']);
+
+        return $accounts->concat($guys)->values()->all();
+    }
+
+    /**
+     * Cash not yet in hand: what pending courier settlements say couriers
+     * still owe plus what delivery guys hold on delivered parcels, the
+     * delivered parcels no settlement covers, and how the last hand-over
+     * squared. A picked carrier narrows it to that courier account or
+     * that delivery guy.
      *
      * @return array<string, mixed>
      */
     private function expected(?int $businessId): array
     {
-        $toReceive = (float) CourierSettlement::where('business_id', $businessId)
-            ->where('status', 'pending')
-            ->sum('expected_amount');
+        $kind = $this->carrier['kind'] ?? null;
+        $withCouriers = $kind !== 'guy';
+        $withGuys = $kind !== 'account';
 
-        $deliveredUnpaid = Order::where('business_id', $businessId)
-            ->where('is_test', false)
-            ->where('delivery_status', OrderDeliveryStatus::DELIVERED)
-            // Own-delivery parcels are settled with the delivery guy, not a courier.
-            ->whereNotNull('delivery_account_id')
-            ->whereNotExists(fn ($query) => $query->selectRaw('1')
-                ->from('courier_settlements')
-                ->whereColumn('courier_settlements.delivery_account_id', 'orders.delivery_account_id')
-                ->where('courier_settlements.status', '!=', 'pending')
-                ->whereNull('courier_settlements.deleted_at')
-                ->whereColumn('courier_settlements.period_start', '<=', 'orders.shipped_at')
-                ->whereColumn('courier_settlements.period_end', '>=', 'orders.shipped_at'))
-            ->count();
+        $toReceive = 0.0;
+        $deliveredUnpaid = 0;
+        $lastClosed = null;
+        $lastShort = null;
 
-        $closed = CourierSettlement::where('business_id', $businessId)
-            ->where('status', '!=', 'pending');
+        if ($withCouriers) {
+            $accountId = $kind === 'account' ? $this->carrier['id'] : null;
 
-        // Only a shortfall is worth flagging here: the latest settlement
-        // where the courier sent less than it owed. An overpayment or a
-        // match reads as "all good".
-        $lastShort = (clone $closed)
-            ->where('difference_amount', '<=', -CourierSettlementService::MATCH_TOLERANCE_MAD)
-            ->latest('period_end')
-            ->first();
+            $toReceive += (float) CourierSettlement::where('business_id', $businessId)
+                ->where('status', 'pending')
+                ->when($accountId !== null, fn ($query) => $query->where('delivery_account_id', $accountId))
+                ->sum('expected_amount');
+
+            $deliveredUnpaid += Order::where('business_id', $businessId)
+                ->where('is_test', false)
+                ->where('delivery_status', OrderDeliveryStatus::DELIVERED)
+                ->whereNotNull('delivery_account_id')
+                ->when($accountId !== null, fn ($query) => $query->where('delivery_account_id', $accountId))
+                ->whereNotExists(fn ($query) => $query->selectRaw('1')
+                    ->from('courier_settlements')
+                    ->whereColumn('courier_settlements.delivery_account_id', 'orders.delivery_account_id')
+                    ->where('courier_settlements.status', '!=', 'pending')
+                    ->whereNull('courier_settlements.deleted_at')
+                    ->whereColumn('courier_settlements.period_start', '<=', 'orders.shipped_at')
+                    ->whereColumn('courier_settlements.period_end', '>=', 'orders.shipped_at'))
+                ->count();
+
+            $closed = CourierSettlement::where('business_id', $businessId)
+                ->where('status', '!=', 'pending')
+                ->when($accountId !== null, fn ($query) => $query->where('delivery_account_id', $accountId));
+
+            $lastClosed = (clone $closed)->latest('period_end')->first()?->period_end;
+            // Only a shortfall is worth flagging: the courier sent less
+            // than it owed. An overpayment or a match reads as "all good".
+            $short = (clone $closed)
+                ->where('difference_amount', '<=', -CourierSettlementService::MATCH_TOLERANCE_MAD)
+                ->latest('period_end')
+                ->first();
+
+            if ($short !== null) {
+                $lastShort = ['at' => $short->period_end, 'differenceMad' => (float) $short->difference_amount];
+            }
+        }
+
+        if ($withGuys) {
+            $guyId = $kind === 'guy' ? $this->carrier['id'] : null;
+
+            $owed = Order::where('business_id', $businessId)
+                ->where('is_test', false)
+                ->where('delivery_status', OrderDeliveryStatus::DELIVERED)
+                ->whereNotNull('delivery_guy_id')
+                ->whereNull('delivery_cash_settlement_id')
+                ->when($guyId !== null, fn ($query) => $query->where('delivery_guy_id', $guyId))
+                ->toBase()
+                ->selectRaw('count(*) as parcels, coalesce(sum(total_amount), 0) as amount')
+                ->first();
+
+            $toReceive += (float) $owed->amount;
+            $deliveredUnpaid += (int) $owed->parcels;
+
+            $handovers = DeliveryCashSettlement::where('business_id', $businessId)
+                ->when($guyId !== null, fn ($query) => $query->where('user_id', $guyId));
+
+            $lastHandover = (clone $handovers)->latest('id')->first()?->created_at;
+
+            if ($lastHandover !== null && ($lastClosed === null || $lastHandover->greaterThan($lastClosed))) {
+                $lastClosed = $lastHandover;
+            }
+
+            $short = (clone $handovers)
+                ->where('difference_amount', '<=', -CourierSettlementService::MATCH_TOLERANCE_MAD)
+                ->latest('id')
+                ->first();
+
+            if ($short !== null && ($lastShort === null || $short->created_at->greaterThan($lastShort['at']))) {
+                $lastShort = ['at' => $short->created_at, 'differenceMad' => (float) $short->difference_amount];
+            }
+        }
 
         return [
             'toReceiveMad' => round($toReceive, 2),
@@ -507,9 +657,9 @@ class DashboardController extends Controller
             'lastSettlement' => match (true) {
                 $lastShort !== null => [
                     'status' => 'difference',
-                    'differenceMad' => round((float) $lastShort->difference_amount, 2),
+                    'differenceMad' => round($lastShort['differenceMad'], 2),
                 ],
-                $closed->exists() => ['status' => 'matched', 'differenceMad' => 0.0],
+                $lastClosed !== null => ['status' => 'matched', 'differenceMad' => 0.0],
                 default => null,
             },
         ];
@@ -899,6 +1049,7 @@ class DashboardController extends Controller
             ->whereBetween('created_at', [$since->copy()->startOfDay(), $until->copy()->endOfDay()])
             ->when($storeIds !== [], fn ($query) => $query->whereIn('store_id', $storeIds))
             ->when($this->source !== null, fn ($query) => $query->where('source_platform', $this->source))
+            ->tap(fn ($query) => $this->scopeToCarrier($query))
             ->toBase()
             ->selectRaw('delivery_status, count(*) as aggregate')
             ->groupBy('delivery_status')

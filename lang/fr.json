@@ -2191,5 +2191,16 @@
     "— one per agent. Invoiced entries can't be re-invoiced.": "— une par agent. Les entrées facturées ne peuvent pas être refacturées.",
     "— vs :target% target": "— vs objectif :target %",
     "“Every order, every courier, and every store — in one place.”": "« Chaque commande, chaque transporteur et chaque boutique — au même endroit. »",
-    "“Having every store, courier, and order in one workspace changed how our confirmation team works. We stopped chasing spreadsheets and started shipping faster.”": "« Avoir chaque boutique, transporteur et commande dans un seul espace a changé la façon de travailler de notre équipe de confirmation. Nous avons arrêté de courir après les tableurs et commencé à expédier plus vite. »"
+    "“Having every store, courier, and order in one workspace changed how our confirmation team works. We stopped chasing spreadsheets and started shipping faster.”": "« Avoir chaque boutique, transporteur et commande dans un seul espace a changé la façon de travailler de notre équipe de confirmation. Nous avons arrêté de courir après les tableurs et commencé à expédier plus vite. »",
+    "Cash with this delivery guy · not handed over yet": "Argent chez ce livreur · pas encore remis",
+    "Cash with this courier · not settled yet": "Argent chez ce transporteur · pas encore réglé",
+    "Cash with your couriers and delivery guys · not settled yet": "Argent chez vos transporteurs et livreurs · pas encore réglé",
+    "Delivered by": "Livré par",
+    "All couriers & delivery guys": "Tous transporteurs et livreurs",
+    "Compare what a courier or delivery guy owes you against what they actually paid.": "Comparez ce qu'un transporteur ou un livreur vous doit avec ce qu'il a réellement payé.",
+    "Record a hand-over": "Enregistrer une remise",
+    ":count parcels": ":count colis",
+    "No hand-overs yet": "Aucune remise pour l'instant",
+    "Record a hand-over above when a delivery guy brings in his cash.": "Enregistrez une remise ci-dessus quand un livreur rapporte ses espèces.",
+    "Settled by": "Réglé par"
 }

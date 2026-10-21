@@ -6,11 +6,13 @@ use App\Events\Commission\CommissionEarned;
 use App\Events\Order\OrderDelivered;
 use App\Models\CommissionLedgerEntry;
 use App\Models\CommissionRule;
+use App\Models\Order;
 use App\Models\Scopes\BusinessScope;
 
 /**
  * Pays a delivery guy his fixed amount per parcel once he marks it
- * delivered. Never for test orders, never twice for the same parcel.
+ * delivered, and records that amount as the order's delivery cost.
+ * Never for test orders, never paid twice for the same parcel.
  */
 class CalculateDeliveryGuyCommission
 {
@@ -40,6 +42,10 @@ class CalculateDeliveryGuyCommission
             ->where('user_id', $order->delivery_guy_id)
             ->where('entry_type', 'earned')
             ->exists();
+
+        // His pay is what this parcel cost the business to deliver.
+        Order::withoutGlobalScopes()->whereKey($order->id)->update(['delivery_cost' => round((float) $rule->amount, 2)]);
+        $order->delivery_cost = round((float) $rule->amount, 2);
 
         if ($alreadyPaid) {
             return;

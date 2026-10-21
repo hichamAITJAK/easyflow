@@ -144,3 +144,62 @@ test('the admin settles the cash a delivery guy is holding', function () {
     $this->actingAs($guy)->post(route('users.cash-settlements.store', $guy))->assertForbidden();
     $this->actingAs($admin)->post(route('users.cash-settlements.store', $admin))->assertNotFound();
 });
+
+test('a delivered parcel carries the delivery guy pay as its delivery cost', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $guy = spaceGuy($admin->business_id);
+    $parcel = localParcel($guy, 'LOC-AGA-20', OrderDeliveryStatus::OUT_FOR_DELIVERY, ['delivery_cost' => 0]);
+
+    $this->actingAs($guy)->postJson(route('delivery.apply'), ['order_id' => $parcel->id, 'action' => 'livre'])->assertOk();
+
+    expect((float) $parcel->fresh()->delivery_cost)->toBe(15.0);
+});
+
+test('a hand-over records what was received and flags a short one', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $guy = spaceGuy($admin->business_id);
+    localParcel($guy, 'LOC-AGA-30', OrderDeliveryStatus::DELIVERED, ['total_amount' => 300, 'is_delivery_active' => false]);
+
+    $this->actingAs($admin)->get(route('settlements.index'))
+        ->assertInertia(fn ($page) => $page->where('deliveryGuys.0.owed', 300)->where('deliveryGuys.0.parcels', 1)->etc());
+
+    $this->actingAs($admin)->post(route('users.cash-settlements.store', $guy), ['received_amount' => 250])->assertRedirect();
+
+    $settlement = DeliveryCashSettlement::withoutGlobalScopes()->firstOrFail();
+    expect((float) $settlement->amount)->toBe(300.0)
+        ->and((float) $settlement->received_amount)->toBe(250.0)
+        ->and((float) $settlement->difference_amount)->toBe(-50.0)
+        ->and($settlement->status)->toBe('disputed');
+
+    $this->actingAs($admin)->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->where('expected.lastSettlement.status', 'difference')
+            ->where('expected.lastSettlement.differenceMad', -50)
+            ->etc());
+});
+
+test('the finance row can be scoped to one delivery guy or one courier account', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $guy = spaceGuy($admin->business_id);
+    $other = spaceGuy($admin->business_id, 'Rabat');
+    localParcel($guy, 'LOC-AGA-40', OrderDeliveryStatus::DELIVERED, ['total_amount' => 120, 'is_delivery_active' => false]);
+    localParcel($guy, 'LOC-AGA-41', OrderDeliveryStatus::OUT_FOR_DELIVERY);
+    localParcel($other, 'LOC-RAB-40', OrderDeliveryStatus::DELIVERED, ['total_amount' => 80, 'is_delivery_active' => false]);
+
+    $this->actingAs($admin)->get(route('dashboard', ['carrier' => 'guy:'.$guy->id]))
+        ->assertInertia(fn ($page) => $page
+            ->where('filters.carrier', 'guy:'.$guy->id)
+            ->where('expected.toReceiveMad', 120)
+            ->where('expected.deliveredUnpaid', 1)
+            ->where('parcels.total', 2)
+            ->where('carriers.0.kind', 'guy')
+            ->etc());
+
+    // Everyone: both guys' cash.
+    $this->actingAs($admin)->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page->where('filters.carrier', null)->where('expected.toReceiveMad', 200)->where('parcels.total', 3)->etc());
+
+    // An unknown carrier is ignored, not an empty page.
+    $this->actingAs($admin)->get(route('dashboard', ['carrier' => 'guy:999']))
+        ->assertInertia(fn ($page) => $page->where('filters.carrier', null)->etc());
+});

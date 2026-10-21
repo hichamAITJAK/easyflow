@@ -22,3 +22,29 @@ export type CourierSettlement = {
     created_at: string;
     updated_at: string;
 };
+
+export type DeliveryCashSettlementStatus = 'reconciled' | 'disputed';
+
+/** One hand-over of COD cash from a delivery guy. */
+export type DeliveryCashSettlement = {
+    id: number;
+    user_id: number;
+    delivery_guy?: { id: number; name: string } | null;
+    settled_by?: { id: number; name: string } | null;
+    /** What the parcels added up to. */
+    amount: string;
+    received_amount: string | null;
+    difference_amount: string;
+    parcels_count: number;
+    status: DeliveryCashSettlementStatus;
+    note: string | null;
+    created_at: string;
+};
+
+/** A delivery guy and the cash he is holding right now. */
+export type DeliveryGuyCash = {
+    id: number;
+    name: string;
+    owed: number;
+    parcels: number;
+};

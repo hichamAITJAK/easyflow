@@ -24,6 +24,13 @@ export type SimpleOption = { id: number; name: string };
 /** A platform (Shopify…) or a manual channel (WhatsApp…) orders come from. */
 export type SourceOption = { value: string; label: string };
 
+/** A courier account (`acc:<id>`) or a delivery guy (`guy:<id>`). */
+export type CarrierOption = {
+    value: string;
+    label: string;
+    kind: 'account' | 'guy';
+};
+
 const ALL_SOURCES = 'all';
 
 export type DashboardFilterValues = {
@@ -37,6 +44,8 @@ export type DashboardFilterValues = {
     date_to?: string;
     /** Per-card agent scope for the Rates card, not a page-level filter. */
     agent_id?: string;
+    /** Per-row carrier scope for the finance row (income, expected, parcels). */
+    carrier?: string;
 };
 
 export const CUSTOM_PERIOD = 'custom';

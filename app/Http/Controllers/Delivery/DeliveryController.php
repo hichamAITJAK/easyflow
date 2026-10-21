@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\OrderStatusEvent;
 use App\Models\User;
 use App\Services\Operations\Orders\OrderService;
+use App\Services\Operations\Settlements\DeliveryCashSettlementService;
 use App\Support\TrackingNumberExtractor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -321,10 +322,7 @@ class DeliveryController extends Controller
     /** @return Builder<Order> */
     private function owedParcels(User $user)
     {
-        return Order::where('business_id', $user->business_id)
-            ->where('delivery_guy_id', $user->id)
-            ->where('delivery_status', OrderDeliveryStatus::DELIVERED)
-            ->whereNull('delivery_cash_settlement_id');
+        return app(DeliveryCashSettlementService::class)->owedParcels($user);
     }
 
     /**
