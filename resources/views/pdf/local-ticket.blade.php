@@ -36,7 +36,6 @@
         .barcode img { height: 10mm; width: 70mm; }
         .cod { font-weight: bold; font-size: 15px; text-align: center; padding: 2px; }
         .flags td { width: 50%; text-align: center; font-weight: bold; font-size: 9px; padding: 2px; }
-        .guy { text-align: center; font-size: 8px; margin-top: 1mm; }
     </style>
 </head>
 <body>
@@ -115,7 +114,6 @@
             </tr>
         </table>
 
-        <div class="guy">Livreur : {{ $order->deliveryGuy?->name }} · {{ $order->deliveryGuy?->delivery_city }}</div>
     </div>
 @endforeach
 </body>
