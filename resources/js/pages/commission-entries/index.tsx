@@ -104,8 +104,6 @@ type CommissionFilters = {
     agent_id?: string;
     date_from?: string;
     date_to?: string;
-    min_amount?: string;
-    max_amount?: string;
     /** Entries tab: an invoice status, or `uninvoiced` for entries with none. */
     status?: string;
     /** Invoices tab — kept separate so the two tabs filter independently. */
@@ -221,10 +219,6 @@ function entryChipClass(status: InvoiceStatus): string {
     return 'bg-[#468FA5]/12 text-[#2E7389] dark:text-[#7DB5C7]';
 }
 
-function money(value: string | number): string {
-    return `${Number(value).toFixed(2)} MAD`;
-}
-
 export default function CommissionEntriesIndex({
     entries,
     totalsByAgent,
@@ -292,28 +286,12 @@ export default function CommissionEntriesIndex({
         useTableFilters<CommissionFilters>(
             commissionEntriesIndex().url,
             filters,
-            [
-                'agent_id',
-                'date_from',
-                'date_to',
-                'min_amount',
-                'max_amount',
-                'status',
-            ],
+            ['agent_id', 'date_from', 'date_to', 'status'],
         );
 
     /** Only the entry-scoping filters — pagination keys must not ride along. */
     const activeFilterQuery = Object.fromEntries(
-        (
-            [
-                'agent_id',
-                'date_from',
-                'date_to',
-                'min_amount',
-                'max_amount',
-                'status',
-            ] as const
-        )
+        (['agent_id', 'date_from', 'date_to', 'status'] as const)
             .filter((key) => filters[key])
             .map((key) => [key, filters[key] as string]),
     );
@@ -333,8 +311,6 @@ export default function CommissionEntriesIndex({
         filters.date_from || filters.date_to
             ? `${t('dates')}: ${filters.date_from ?? t('any')} → ${filters.date_to ?? t('any')}`
             : null,
-        filters.min_amount ? `${t('min')} ${money(filters.min_amount)}` : null,
-        filters.max_amount ? `${t('max')} ${money(filters.max_amount)}` : null,
         filters.status
             ? `${t('status')}: ${
                   filters.status === UNINVOICED
@@ -392,8 +368,6 @@ export default function CommissionEntriesIndex({
             status: undefined,
             date_from: undefined,
             date_to: undefined,
-            min_amount: undefined,
-            max_amount: undefined,
         });
         setTab('entries');
     };
@@ -747,50 +721,6 @@ export default function CommissionEntriesIndex({
                                         }
                                         placeholder={t('Any date')}
                                         className={cn(FIELD, 'font-mono')}
-                                    />
-                                </div>
-
-                                <div className="grid gap-1.5">
-                                    <Label className={FILTER_LABEL}>
-                                        {t('Min amount')}
-                                    </Label>
-                                    <Input
-                                        type="number"
-                                        inputMode="decimal"
-                                        placeholder="0"
-                                        className={cn(
-                                            FIELD,
-                                            'font-mono tabular-nums',
-                                        )}
-                                        value={draft.min_amount ?? ''}
-                                        onChange={(e) =>
-                                            updateFilters({
-                                                min_amount:
-                                                    e.target.value || undefined,
-                                            })
-                                        }
-                                    />
-                                </div>
-
-                                <div className="grid gap-1.5">
-                                    <Label className={FILTER_LABEL}>
-                                        {t('Max amount')}
-                                    </Label>
-                                    <Input
-                                        type="number"
-                                        inputMode="decimal"
-                                        placeholder={t('Any')}
-                                        className={cn(
-                                            FIELD,
-                                            'font-mono tabular-nums',
-                                        )}
-                                        value={draft.max_amount ?? ''}
-                                        onChange={(e) =>
-                                            updateFilters({
-                                                max_amount:
-                                                    e.target.value || undefined,
-                                            })
-                                        }
                                     />
                                 </div>
 

@@ -59,7 +59,7 @@ test('agent totals cover the whole ledger, not the entries filters', function ()
     commissionsPageEntry($admin, $agent, 25, '2026-10-02 10:00:00');
 
     $this->actingAs($admin)
-        ->get(route('commission-entries.index', ['min_amount' => 20]))
+        ->get(route('commission-entries.index', ['date_from' => '2026-10-01']))
         ->assertInertia(fn ($page) => $page
             ->where('entries.total', 1)
             ->where("totalsByAgent.{$agent->id}.entries", 2)

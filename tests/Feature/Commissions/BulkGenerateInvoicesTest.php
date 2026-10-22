@@ -66,21 +66,6 @@ test('bulk generate respects the agent filter', function () {
     expect($untouched->fresh()->invoice_id)->toBeNull();
 });
 
-test('bulk generate respects the max amount filter', function () {
-    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
-    $agent = makeAgentFor($admin);
-
-    $small = makeEntry($admin->business_id, $agent->id, ['amount' => 10]);
-    $large = makeEntry($admin->business_id, $agent->id, ['amount' => 500]);
-
-    $this->actingAs($admin)
-        ->post(route('commission-entries.invoices.from-filters', ['max_amount' => 100]))
-        ->assertRedirect();
-
-    expect($small->fresh()->invoice_id)->not->toBeNull();
-    expect($large->fresh()->invoice_id)->toBeNull();
-});
-
 test('bulk generate respects the date range filter', function () {
     $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
     $agent = makeAgentFor($admin);

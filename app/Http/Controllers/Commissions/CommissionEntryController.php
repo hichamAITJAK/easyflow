@@ -154,13 +154,13 @@ class CommissionEntryController extends Controller
             'agents' => $agents,
             'invoices' => $invoices,
             'isAdmin' => $isAdmin,
-            'filters' => $request->only(['per_page', 'agent_id', 'date_from', 'date_to', 'min_amount', 'max_amount', 'status', 'invoice_status', 'invoices_per_page', 'sort', 'direction']),
+            'filters' => $request->only(['per_page', 'agent_id', 'date_from', 'date_to', 'status', 'invoice_status', 'invoices_per_page', 'sort', 'direction']),
         ]);
     }
 
     /**
-     * The `agent_id` / `date_from` / `date_to` / `min_amount` / `max_amount`
-     * filter set behind the entries list.
+     * The `agent_id` / `date_from` / `date_to` / `status` filter set
+     * behind the entries list.
      *
      * Shared by index() and generateInvoicesFromFilters() on purpose: the
      * bulk action invoices whatever the current filter selects, so if the
@@ -176,8 +176,6 @@ class CommissionEntryController extends Controller
         $agentId = $request->integer('agent_id');
         $dateFrom = $request->date('date_from');
         $dateTo = $request->date('date_to');
-        $minAmount = $request->input('min_amount');
-        $maxAmount = $request->input('max_amount');
         $status = $request->string('status')->toString();
 
         return $query
@@ -186,8 +184,6 @@ class CommissionEntryController extends Controller
             ->when($isAdmin && $agentId, fn ($q) => $q->where('commission_ledger_entries.user_id', $agentId))
             ->when($dateFrom, fn ($q, $date) => $q->whereDate('commission_ledger_entries.created_at', '>=', $date))
             ->when($dateTo, fn ($q, $date) => $q->whereDate('commission_ledger_entries.created_at', '<=', $date))
-            ->when(is_numeric($minAmount), fn ($q) => $q->where('commission_ledger_entries.amount', '>=', $minAmount))
-            ->when(is_numeric($maxAmount), fn ($q) => $q->where('commission_ledger_entries.amount', '<=', $maxAmount))
             // An entry has no status of its own — what the Status column shows
             // is the parent invoice's, or "Not invoiced" when there is none.
             // `uninvoiced` is the operationally useful one: it is exactly the
