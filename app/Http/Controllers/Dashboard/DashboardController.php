@@ -1260,7 +1260,7 @@ class DashboardController extends Controller
             ->filter()
             ->unique('slug')
             // YouCan is deliberately left out of the picker (product decision).
-            ->reject(fn ($platform) => in_array($platform->slug, ['manual', 'youcan'], true))
+            ->reject(fn ($platform) => in_array(strtolower($platform->slug), ['manual', 'youcan'], true))
             ->sortBy('name')
             ->map(fn ($platform) => ['value' => $platform->slug, 'label' => $platform->name]);
 
