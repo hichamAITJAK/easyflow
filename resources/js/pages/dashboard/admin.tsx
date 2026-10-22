@@ -1013,10 +1013,7 @@ function FinanceRow({
                                                     {s.label}
                                                 </span>
                                                 <span className="text-sm font-semibold tabular-nums">
-                                                    {n(s.count)}{' '}
-                                                    <span className="ml-1 font-normal text-muted-foreground">
-                                                        {s.ratePct}%
-                                                    </span>
+                                                    {n(s.count)}
                                                 </span>
                                             </div>
                                             <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
