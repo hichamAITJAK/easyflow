@@ -1,4 +1,5 @@
 import {
+    Banknote,
     Calculator,
     Clapperboard,
     LayoutGrid,
@@ -22,6 +23,7 @@ import {
     parcels as deliveryParcels,
 } from '@/routes/delivery';
 import { index as deliveryCouriersIndex } from '@/routes/delivery-couriers';
+import { index as cashTrackingIndex } from '@/routes/finance/cash';
 import {
     index as fulfillmentIndex,
     local as fulfillmentLocal,
@@ -87,6 +89,12 @@ export const mainNavItems: NavItem[] = [
         icon: Wallet,
     },
     {
+        title: 'Cash tracking',
+        group: 'Finance',
+        href: cashTrackingIndex(),
+        icon: Banknote,
+    },
+    {
         title: 'Settlements',
         group: 'Finance',
         href: settlementsIndex(),
@@ -138,6 +146,7 @@ export const navItemRoles: Partial<Record<string, UserRole[]>> = {
     Creatives: ['admin'],
     Stores: ['super_admin', 'admin'],
     'Delivery Couriers': ['super_admin', 'admin'],
+    'Cash tracking': ['super_admin', 'admin'],
     Settlements: ['super_admin', 'admin'],
     Reports: ['super_admin', 'admin'],
     'Profit Calculator': ['super_admin', 'admin'],

@@ -20,6 +20,7 @@ use App\Http\Controllers\Orders\ParcelController;
 use App\Http\Controllers\Products\ProductController;
 use App\Http\Controllers\Products\ProductInventoryController;
 use App\Http\Controllers\Reports\ReportController;
+use App\Http\Controllers\Finance\CashTrackingController;
 use App\Http\Controllers\Settlements\CourierSettlementController;
 use App\Http\Controllers\Stores\LightfunnelsConnectionController;
 use App\Http\Controllers\Stores\ShopifyConnectionController;
@@ -306,6 +307,10 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
         Route::get('/invoices/{invoice}/download', [CommissionEntryController::class, 'downloadInvoice'])->name('invoices.download');
         Route::get('/invoices/{invoice}', [CommissionEntryController::class, 'showInvoice'])->name('invoices.show');
     });
+
+    // Finance › Cash tracking: read-only view of the cash each courier
+    // account and delivery guy is holding. Settling happens elsewhere.
+    Route::middleware('can:manage-users')->get('finance/cash', [CashTrackingController::class, 'index'])->name('finance.cash.index');
 
     Route::prefix('settlements')->name('settlements.')->middleware('can:manage-users')->group(function () {
         Route::get('/', [CourierSettlementController::class, 'index'])->name('index');
