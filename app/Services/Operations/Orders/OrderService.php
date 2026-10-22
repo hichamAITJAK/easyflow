@@ -21,12 +21,14 @@ use App\Events\Order\OrderSubmittedToCourier;
 use App\Events\Order\ParcelReadyForPickup;
 use App\Events\Order\ParcelReturnReceived;
 use App\Jobs\RebuildBusinessStatsJob;
+use App\Models\CommissionLedgerEntry;
 use App\Models\DeleveryCourrierCity;
 use App\Models\DeliveryAccount;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Scopes\BusinessScope;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Operations\IntegrationManagerService;
@@ -556,12 +558,36 @@ class OrderService
 
     /**
      * Soft-delete an order, then recount the dashboard stats without it.
+     *
+     * The commissions earned on it (confirmation agent, delivery, …) are
+     * kept unless the caller asks otherwise: an order can be deleted for
+     * bookkeeping reasons after the agent has genuinely done the work.
+     * Entries already on an invoice are never touched, since the invoice
+     * total would no longer add up.
      */
-    public function destroy(Order $order): void
+    public function destroy(Order $order, bool $deleteCommissions = false): void
     {
+        if ($deleteCommissions) {
+            $this->deleteUninvoicedCommissions($order->business_id, [$order->id]);
+        }
+
         $order->delete();
 
         RebuildBusinessStatsJob::dispatch($order->business_id);
+    }
+
+    /**
+     * Drop the not-yet-invoiced ledger entries of the given orders.
+     *
+     * @param  array<int, int>  $orderIds
+     */
+    private function deleteUninvoicedCommissions(int $businessId, array $orderIds): void
+    {
+        CommissionLedgerEntry::withoutGlobalScope(BusinessScope::class)
+            ->where('business_id', $businessId)
+            ->whereIn('order_id', $orderIds)
+            ->whereNull('invoice_id')
+            ->delete();
     }
 
     /**
@@ -570,8 +596,15 @@ class OrderService
      *
      * @param  array<int, int>  $ids
      */
-    public function bulkDestroy(int $businessId, array $ids): int
+    public function bulkDestroy(int $businessId, array $ids, bool $deleteCommissions = false): int
     {
+        if ($deleteCommissions) {
+            // Only the ids that really belong to this business, resolved
+            // here rather than trusting the posted list.
+            $owned = Order::where('business_id', $businessId)->whereIn('id', $ids)->pluck('id')->all();
+            $this->deleteUninvoicedCommissions($businessId, $owned);
+        }
+
         $count = Order::where('business_id', $businessId)
             ->whereIn('id', $ids)
             ->delete();

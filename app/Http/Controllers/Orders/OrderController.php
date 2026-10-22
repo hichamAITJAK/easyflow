@@ -500,7 +500,11 @@ class OrderController extends Controller
     {
         abort_unless($order->business_id === $request->user()->business_id, 403);
 
-        $this->orders->destroy($order);
+        $data = $request->validate([
+            'delete_commissions' => ['sometimes', 'boolean'],
+        ]);
+
+        $this->orders->destroy($order, (bool) ($data['delete_commissions'] ?? false));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Order deleted.')]);
 
@@ -516,9 +520,14 @@ class OrderController extends Controller
         $data = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer'],
+            'delete_commissions' => ['sometimes', 'boolean'],
         ]);
 
-        $count = $this->orders->bulkDestroy($request->user()->business_id, $data['ids']);
+        $count = $this->orders->bulkDestroy(
+            $request->user()->business_id,
+            $data['ids'],
+            (bool) ($data['delete_commissions'] ?? false),
+        );
 
         Inertia::flash('toast', [
             'type' => 'success',
