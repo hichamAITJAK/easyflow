@@ -1038,7 +1038,7 @@ function FinanceRow({
 }
 
 /* ---------- breakdown ---------- */
-type BdTab = 'stores' | 'sources' | 'products' | 'couriers';
+type BdTab = 'stores' | 'sources' | 'products';
 type SortKey = 'name' | 'orders' | 'conf' | 'deliv' | 'ret';
 
 function Metric({ cell, color }: { cell: Pair | null; color: string }) {
@@ -1130,7 +1130,6 @@ export function BreakdownSection({
         return () => window.removeEventListener('ef:inspect-products', handler);
     }, []);
 
-    const isC = tab === 'couriers';
     const rows = useMemo(
         () =>
             [...breakdown[tab]].sort((a, b) => {
@@ -1143,20 +1142,8 @@ export function BreakdownSection({
     );
     const cols: { key: SortKey; label: string; cls: string }[] = [
         { key: 'name', label: t('Name'), cls: 'px-6 text-left' },
-        {
-            key: 'orders',
-            label: isC ? t('Parcels') : t('Orders'),
-            cls: 'w-28 px-4 text-left',
-        },
-        ...(isC
-            ? []
-            : [
-                  {
-                      key: 'conf' as SortKey,
-                      label: t('Confirmed'),
-                      cls: 'w-44 px-4 text-left',
-                  },
-              ]),
+        { key: 'orders', label: t('Orders'), cls: 'w-28 px-4 text-left' },
+        { key: 'conf', label: t('Confirmed'), cls: 'w-44 px-4 text-left' },
         { key: 'deliv', label: t('Delivered'), cls: 'w-44 px-4 text-left' },
         { key: 'ret', label: t('Returned'), cls: 'w-44 px-4 text-left' },
     ];
@@ -1171,7 +1158,6 @@ export function BreakdownSection({
         stores: t('Stores'),
         sources: t('Sources'),
         products: t('Products'),
-        couriers: t('Couriers'),
     };
 
     return (
@@ -1188,37 +1174,32 @@ export function BreakdownSection({
                             {t('Breakdown')}
                         </h2>
                         <p className="mt-0.5 text-sm text-muted-foreground">
-                            {t('How each store, product and courier is doing')}
+                            {t('How each store, source and product is doing')}
                         </p>
                     </div>
                     <div
                         className="flex rounded-full bg-muted p-1"
                         role="tablist"
                     >
-                        {(
-                            [
-                                'stores',
-                                'sources',
-                                'products',
-                                'couriers',
-                            ] as BdTab[]
-                        ).map((tb) => (
-                            <button
-                                key={tb}
-                                type="button"
-                                role="tab"
-                                aria-selected={tab === tb}
-                                onClick={() => setTab(tb)}
-                                className={cn(
-                                    'rounded-full px-4 py-1.5 text-sm font-medium',
-                                    tab === tb
-                                        ? 'bg-card text-foreground shadow-xs'
-                                        : 'text-muted-foreground',
-                                )}
-                            >
-                                {tabLabels[tb]}
-                            </button>
-                        ))}
+                        {(['stores', 'sources', 'products'] as BdTab[]).map(
+                            (tb) => (
+                                <button
+                                    key={tb}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={tab === tb}
+                                    onClick={() => setTab(tb)}
+                                    className={cn(
+                                        'rounded-full px-4 py-1.5 text-sm font-medium',
+                                        tab === tb
+                                            ? 'bg-card text-foreground shadow-xs'
+                                            : 'text-muted-foreground',
+                                    )}
+                                >
+                                    {tabLabels[tb]}
+                                </button>
+                            ),
+                        )}
                     </div>
                 </div>
                 <div className="overflow-x-auto">
@@ -1294,14 +1275,12 @@ export function BreakdownSection({
                                     <td className="px-4 py-4 font-semibold tabular-nums">
                                         {n(r.orders)}
                                     </td>
-                                    {!isC && (
-                                        <td className="px-4 py-4">
-                                            <Metric
-                                                cell={r.conf}
-                                                color={C.purple}
-                                            />
-                                        </td>
-                                    )}
+                                    <td className="px-4 py-4">
+                                        <Metric
+                                            cell={r.conf}
+                                            color={C.purple}
+                                        />
+                                    </td>
                                     <td className="px-4 py-4">
                                         <Metric
                                             cell={r.deliv}
