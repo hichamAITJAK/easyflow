@@ -558,11 +558,12 @@ class DashboardController extends Controller
     }
 
     /**
-     * Cash not yet in hand: what pending courier settlements say couriers
-     * still owe plus what delivery guys hold on delivered parcels, the
-     * delivered parcels no settlement covers, and how the last hand-over
-     * squared. A picked carrier narrows it to that courier account or
-     * that delivery guy.
+     * Cash not yet in hand, net of delivery cost: for every delivered
+     * parcel no closed settlement or hand-over covers yet, the order total
+     * minus what the carrier charges to deliver it. Couriers and delivery
+     * guys use the same rule, so "All" is simply both added together. Also
+     * how the last settlement / hand-over squared. A picked carrier narrows
+     * it to that courier account or that delivery guy.
      *
      * @return array<string, mixed>
      */
@@ -580,12 +581,7 @@ class DashboardController extends Controller
         if ($withCouriers) {
             $accountId = $kind === 'account' ? $this->carrier['id'] : null;
 
-            $toReceive += (float) CourierSettlement::where('business_id', $businessId)
-                ->where('status', 'pending')
-                ->when($accountId !== null, fn ($query) => $query->where('delivery_account_id', $accountId))
-                ->sum('expected_amount');
-
-            $deliveredUnpaid += Order::where('business_id', $businessId)
+            $uncovered = Order::where('business_id', $businessId)
                 ->where('is_test', false)
                 ->where('delivery_status', OrderDeliveryStatus::DELIVERED)
                 ->whereNotNull('delivery_account_id')
@@ -597,7 +593,12 @@ class DashboardController extends Controller
                     ->whereNull('courier_settlements.deleted_at')
                     ->whereColumn('courier_settlements.period_start', '<=', 'orders.shipped_at')
                     ->whereColumn('courier_settlements.period_end', '>=', 'orders.shipped_at'))
-                ->count();
+                ->toBase()
+                ->selectRaw('count(*) as parcels, coalesce(sum(total_amount - coalesce(delivery_cost, 0)), 0) as amount')
+                ->first();
+
+            $toReceive += (float) $uncovered->amount;
+            $deliveredUnpaid += (int) $uncovered->parcels;
 
             $closed = CourierSettlement::where('business_id', $businessId)
                 ->where('status', '!=', 'pending')

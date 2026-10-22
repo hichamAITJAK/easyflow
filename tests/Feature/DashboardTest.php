@@ -779,6 +779,57 @@ test('the income chart follows the selected period', function () {
         ->assertInertia(fn ($page) => $page->has('income.buckets', 6)->where('income.grain', 'month'));
 });
 
+test('expected cash is the delivered total net of delivery cost, for couriers and delivery guys alike', function () {
+    $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
+    $courier = DeliveryCourrier::factory()->create();
+    $account = DeliveryAccount::factory()->create(['business_id' => $admin->business_id, 'courier_id' => $courier->id]);
+    $guy = User::factory()->create(['business_id' => $admin->business_id, 'role' => UserRole::DELIVERY_GUY]);
+
+    // Courier: 300 collected, 30 delivery cost, no settlement yet.
+    makeOrder($admin->business_id, [
+        'delivery_status' => OrderDeliveryStatus::DELIVERED,
+        'delivery_account_id' => $account->id,
+        'shipped_at' => now()->subDays(3),
+        'total_amount' => 300,
+        'delivery_cost' => 30,
+    ]);
+    // Delivery guy: 200 collected, 20 delivery cost, not handed over.
+    makeOrder($admin->business_id, [
+        'delivery_status' => OrderDeliveryStatus::DELIVERED,
+        'delivery_guy_id' => $guy->id,
+        'total_amount' => 200,
+        'delivery_cost' => 20,
+    ]);
+    // A test order never counts.
+    makeOrder($admin->business_id, [
+        'delivery_status' => OrderDeliveryStatus::DELIVERED,
+        'delivery_account_id' => $account->id,
+        'shipped_at' => now()->subDays(3),
+        'total_amount' => 999,
+        'is_test' => true,
+    ]);
+
+    $this->actingAs($admin);
+
+    // All: both sides added together.
+    $this->get(route('dashboard'))->assertInertia(fn ($page) => $page
+        ->where('expected.toReceiveMad', 450)
+        ->where('expected.deliveredUnpaid', 2)
+        ->etc());
+
+    // One courier account only.
+    $this->get(route('dashboard', ['carrier' => 'acc:'.$account->id]))->assertInertia(fn ($page) => $page
+        ->where('expected.toReceiveMad', 270)
+        ->where('expected.deliveredUnpaid', 1)
+        ->etc());
+
+    // One delivery guy only.
+    $this->get(route('dashboard', ['carrier' => 'guy:'.$guy->id]))->assertInertia(fn ($page) => $page
+        ->where('expected.toReceiveMad', 180)
+        ->where('expected.deliveredUnpaid', 1)
+        ->etc());
+});
+
 test('the last settlement card shows the latest shortfall', function () {
     $admin = makeBusinessUser(['role' => UserRole::ADMIN]);
     $courier = DeliveryCourrier::factory()->create(['name' => 'OzonExpress']);
