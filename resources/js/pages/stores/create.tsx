@@ -1,6 +1,7 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Store as StoreIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
+import ShopifyConnectionController from '@/actions/App/Http/Controllers/Stores/ShopifyConnectionController';
 import StoreConnectionController from '@/actions/App/Http/Controllers/Stores/StoreConnectionController';
 import StoreepConnectionController from '@/actions/App/Http/Controllers/Stores/StoreepConnectionController';
 import WooCommerceConnectionController from '@/actions/App/Http/Controllers/Stores/WooCommerceConnectionController';
@@ -46,7 +47,7 @@ const PLATFORMS_REQUIRING_INPUT = ['Shopify', 'Storeep', 'WooCommerce'];
 // platform. That makes them Inertia form submissions (with server-side
 // validation errors rendered inline) rather than the plain GET form the
 // redirect-based platforms use.
-const PASTED_CREDENTIAL_SLUGS = ['Storeep', 'WooCommerce'];
+const PASTED_CREDENTIAL_SLUGS = ['Shopify', 'Storeep', 'WooCommerce'];
 
 export default function StoresCreate({
     platforms,
@@ -92,7 +93,7 @@ export default function StoresCreate({
         ? PASTED_CREDENTIAL_SLUGS.includes(selected.slug)
         : false;
 
-    const canSubmit = !isShopify || shop.trim() !== '';
+    const canSubmit = true;
 
     // Split rather than sorted: a merchant scanning for their platform needs
     // to know which of these they can actually connect today. A sorted-but-
@@ -204,11 +205,7 @@ export default function StoresCreate({
                                   })
                                 : '#'
                         }
-                    >
-                        {isShopify && (
-                            <input type="hidden" name="shop" value={shop} />
-                        )}
-                    </form>
+                    ></form>
                 )}
             </div>
 
@@ -221,6 +218,125 @@ export default function StoresCreate({
                 }}
             >
                 <DialogContent>
+                    {selected && isShopify && (
+                        <Form
+                            {...ShopifyConnectionController.store.form()}
+                            onError={() => setConnecting(false)}
+                            onSubmit={() => setConnecting(true)}
+                            className="space-y-6"
+                        >
+                            {({ processing, errors }) => (
+                                <>
+                                    <DialogHeader>
+                                        <DialogTitle>
+                                            {t('Connect :name', {
+                                                name: selected.name,
+                                            })}
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            {t(
+                                                'Enter your store domain and the keys of your own Shopify app. You will finish the connection in Shopify on the next step.',
+                                            )}
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <FieldGroup>
+                                        <Field>
+                                            <FieldLabel htmlFor="shopify-shop">
+                                                {t('Shopify store domain')}
+                                            </FieldLabel>
+                                            <Input
+                                                id="shopify-shop"
+                                                name="shop"
+                                                required
+                                                autoFocus
+                                                value={shop}
+                                                onChange={(event) =>
+                                                    setShop(event.target.value)
+                                                }
+                                                placeholder={t(
+                                                    'my-store or my-store.myshopify.com',
+                                                )}
+                                                aria-invalid={!!errors.shop}
+                                            />
+                                            {errors.shop && (
+                                                <FieldError>
+                                                    {errors.shop}
+                                                </FieldError>
+                                            )}
+                                        </Field>
+
+                                        <Field>
+                                            <FieldLabel htmlFor="shopify-client-id">
+                                                {t('Client ID')}
+                                            </FieldLabel>
+                                            <Input
+                                                id="shopify-client-id"
+                                                name="client_id"
+                                                required
+                                                autoComplete="off"
+                                                spellCheck={false}
+                                                placeholder="e7345164919c60258985cd3fdbf96009"
+                                                aria-invalid={
+                                                    !!errors.client_id
+                                                }
+                                            />
+                                            <FieldDescription>
+                                                {t(
+                                                    'In the Shopify Dev Dashboard, open your app → Settings. The Client ID and Client secret are at the top.',
+                                                )}
+                                            </FieldDescription>
+                                            {errors.client_id && (
+                                                <FieldError>
+                                                    {errors.client_id}
+                                                </FieldError>
+                                            )}
+                                        </Field>
+
+                                        <Field>
+                                            <FieldLabel htmlFor="shopify-client-secret">
+                                                {t('Client secret')}
+                                            </FieldLabel>
+                                            <Input
+                                                id="shopify-client-secret"
+                                                name="client_secret"
+                                                type="password"
+                                                required
+                                                autoComplete="off"
+                                                spellCheck={false}
+                                                aria-invalid={
+                                                    !!errors.client_secret
+                                                }
+                                            />
+                                            <FieldDescription>
+                                                {t(
+                                                    'Stored encrypted. Used to verify the orders Shopify sends to EasyFlow.',
+                                                )}
+                                            </FieldDescription>
+                                            {errors.client_secret && (
+                                                <FieldError>
+                                                    {errors.client_secret}
+                                                </FieldError>
+                                            )}
+                                        </Field>
+                                    </FieldGroup>
+
+                                    <DialogFooter className="flex-col items-stretch gap-2 sm:flex-col">
+                                        <Button
+                                            type="submit"
+                                            disabled={processing}
+                                        >
+                                            {processing && <Spinner />}
+                                            {processing
+                                                ? t('Saving…')
+                                                : t('Continue')}
+                                        </Button>
+                                    </DialogFooter>
+                                </>
+                            )}
+                        </Form>
+                    )}
+
                     {selected && isStoreep && (
                         <Form
                             {...StoreepConnectionController.store.form()}
@@ -534,29 +650,6 @@ export default function StoresCreate({
                                     )}
                                 </DialogDescription>
                             </DialogHeader>
-
-                            {isShopify && (
-                                <FieldGroup>
-                                    <Field>
-                                        <FieldLabel htmlFor="shop">
-                                            {t('Shopify store domain')}
-                                        </FieldLabel>
-                                        <Input
-                                            id="shop"
-                                            name="shop"
-                                            required
-                                            autoFocus
-                                            value={shop}
-                                            onChange={(event) =>
-                                                setShop(event.target.value)
-                                            }
-                                            placeholder={t(
-                                                'my-store or my-store.myshopify.com',
-                                            )}
-                                        />
-                                    </Field>
-                                </FieldGroup>
-                            )}
 
                             <DialogFooter className="flex-col items-stretch gap-2 sm:flex-col">
                                 <Button

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Webhooks\Concerns;
 
 use App\Models\Store;
+use App\Services\Connectivity\Shopify\ShopifyCredentials;
 use Illuminate\Http\Request;
 
 /**
@@ -20,12 +21,15 @@ trait VerifiesShopifyWebhooks
      */
     protected function hasValidShopifySignature(Request $request): bool
     {
-        $computed = base64_encode(hash_hmac(
-            'sha256',
-            $request->getContent(),
-            (string) config('services.shopify.client_secret'),
-            true,
-        ));
+        // Shop-scoped topics carry no {store}: the secret is the one the
+        // store named in X-Shopify-Shop-Domain connected with, falling back
+        // to the platform-wide app for stores that predate per-store keys.
+        $store = $this->resolveStoreFromShopDomain($request);
+        $secret = $store !== null
+            ? ShopifyCredentials::fromStore($store)->clientSecret
+            : ShopifyCredentials::fromConfig()->clientSecret;
+
+        $computed = base64_encode(hash_hmac('sha256', $request->getContent(), $secret, true));
 
         return hash_equals($computed, (string) $request->header('X-Shopify-Hmac-Sha256', ''));
     }

@@ -6,6 +6,7 @@ use App\Events\Webhook\WebhookSignatureVerificationFailed;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessShopifyOrderWebhookJob;
 use App\Models\Store;
+use App\Services\Connectivity\Shopify\ShopifyCredentials;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -24,7 +25,7 @@ class ShopifyWebhookController extends Controller
         $computed = base64_encode(hash_hmac(
             'sha256',
             $request->getContent(),
-            (string) config('services.shopify.client_secret'),
+            ShopifyCredentials::fromStore($store)->clientSecret,
             true,
         ));
 

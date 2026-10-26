@@ -140,6 +140,11 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
             Route::post('/manual', [StoreController::class, 'storeManual'])->name('manual.store');
 
             Route::get('/connect/youcan/callback', [YouCanConnectionController::class, 'callback'])->name('connect.youcan.callback');
+            // Shopify: the merchant saves their own app keys first, then
+            // finishes in Shopify; both the authorize redirect and the
+            // app's install link land on the same callback.
+            Route::post('/connect/shopify', [ShopifyConnectionController::class, 'store'])->name('connect.shopify.store');
+            Route::get('/connect/shopify/finish/{pending}', [ShopifyConnectionController::class, 'finish'])->name('connect.shopify.finish');
             Route::get('/connect/shopify/callback', [ShopifyConnectionController::class, 'callback'])->name('connect.shopify.callback');
             Route::get('/connect/lightfunnels/callback', [LightfunnelsConnectionController::class, 'callback'])->name('connect.lightfunnels.callback');
 

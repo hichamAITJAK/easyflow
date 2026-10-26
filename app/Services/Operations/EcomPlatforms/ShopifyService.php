@@ -7,21 +7,24 @@ use App\DTOs\Shopify\ShopifyProductDTO;
 use App\DTOs\Shopify\ShopifyStoreDTO;
 use App\DTOs\Shopify\ShopifyTokenDTO;
 use App\Interfaces\EcomPlatformInterface;
+use App\Models\ShopifyConnectionRequest;
 use App\Models\Store;
 use App\Services\Connectivity\Shopify\ShopifyAuthService;
 use App\Services\Connectivity\Shopify\ShopifyClient;
+use App\Services\Connectivity\Shopify\ShopifyCredentials;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
 
 /**
- * Handles the Shopify OAuth connect flow: generating the authorization
- * URL and exchanging the callback code for an access token. Mirrors
- * YouCanService's cache-token connect/authentication pattern, since no
- * store exists yet at the point the merchant is redirected to Shopify.
+ * Handles the Shopify OAuth connect flow — the authorize URL and the
+ * code-for-token exchange — and the per-store API bridge. Every merchant
+ * connects with their own Shopify app, so the keys come from the pending
+ * connection request (before the store exists) or from the store's own
+ * credentials (after), never from one platform-wide .env app, except as a
+ * fallback for stores connected before this.
  */
 class ShopifyService implements EcomPlatformInterface
 {
@@ -40,85 +43,38 @@ class ShopifyService implements EcomPlatformInterface
     }
 
     /**
-     * Cache the business + shop awaiting this connection and return the
-     * Shopify authorization URL to redirect the merchant to, with a
-     * `state` param that maps back to them once Shopify redirects back.
+     * The Shopify authorize URL for a pending connection: the merchant's
+     * own app id, our callback, the scopes, and the request's state so the
+     * callback can find the request again.
      */
-    public function connect(int $businessId, string $shop): string
-    {
-        $shop = self::normalizeShop($shop);
-        $token = Str::random(40);
-
-        Cache::put(self::cacheKey($token), [
-            'business_id' => $businessId,
-            'shop' => $shop,
-        ], now()->addMinutes(30));
-
-        return $this->authorization($token, $shop);
-    }
-
-    /**
-     * Resolve (and forget) the business id + shop cached for a connect token.
-     *
-     * @return array{business_id: int, shop: string}|null
-     */
-    public static function resolveConnection(string $token): ?array
-    {
-        return Cache::pull(self::cacheKey($token));
-    }
-
-    /**
-     * Build the Shopify OAuth authorization URL to redirect the merchant to.
-     */
-    public function authorization(string $token, string $shop): string
+    public function authorizationUrlFor(ShopifyConnectionRequest $pending): string
     {
         return ShopifyAuthService::getAuthorizationUrl(
-            shop: $shop,
-            clientId: $this->getClientId(),
+            shop: $pending->shop,
+            clientId: $pending->client_id,
             redirectUri: route('stores.connect.shopify.callback', absolute: true),
             scopes: config('services.shopify.scopes'),
-            state: $token,
+            state: $pending->state,
         );
     }
 
     /**
-     * Exchange an OAuth authorization code for an access token.
+     * Exchange an OAuth authorization code for an access token, with the
+     * app keys the merchant connected with.
      *
      * Single responsibility: return the token response — persisting it
      * against a store is the caller's job (the store may not exist yet).
      */
-    public function authentication(string $code, string $shop): ShopifyTokenDTO
+    public function authentication(string $code, string $shop, string $clientId, string $clientSecret): ShopifyTokenDTO
     {
         return ShopifyTokenDTO::fromArray(
             ShopifyAuthService::exchangeToken(
                 shop: $shop,
-                clientId: $this->getClientId(),
-                clientSecret: (string) config('services.shopify.client_secret'),
+                clientId: $clientId,
+                clientSecret: $clientSecret,
                 code: $code,
             )
         );
-    }
-
-    /**
-     * Build the cache key used to map a connect token to a business id + shop.
-     */
-    private static function cacheKey(string $token): string
-    {
-        return "shopify_connect.{$token}";
-    }
-
-    /**
-     * Retrieve and validate the Shopify client ID configuration.
-     */
-    private function getClientId(): string
-    {
-        $clientId = config('services.shopify.client_id');
-
-        if (! is_string($clientId) || trim($clientId) === '') {
-            throw new \RuntimeException('Shopify client ID is not configured or is invalid.');
-        }
-
-        return $clientId;
     }
 
     /**
@@ -164,18 +120,25 @@ class ShopifyService implements EcomPlatformInterface
     private function refreshToken(): void
     {
         $credentials = json_decode($this->store->api_credentials, true) ?? [];
+        $keys = ShopifyCredentials::fromCredentials($credentials);
 
         $response = ShopifyAuthService::refreshToken(
             shop: $this->store->external_store_id,
-            clientId: $this->getClientId(),
-            clientSecret: (string) config('services.shopify.client_secret'),
+            clientId: $keys->clientId,
+            clientSecret: $keys->clientSecret,
             refreshToken: $credentials['refresh_token'] ?? '',
         );
 
         $token = ShopifyTokenDTO::fromArray($response);
 
+        // The app keys stay with the new token: they are the store's, not
+        // the token's.
         $this->store->update([
-            'api_credentials' => json_encode($token->toArray()),
+            'api_credentials' => json_encode([
+                ...$token->toArray(),
+                'client_id' => $keys->clientId,
+                'client_secret' => $keys->clientSecret,
+            ]),
         ]);
     }
 
