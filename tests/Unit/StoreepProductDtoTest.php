@@ -124,3 +124,49 @@ test('toArray emits the keys ProductSyncService reads', function () {
         'available' => true,
     ]);
 });
+
+test('option rows get their axis values from their position, and are named by them without a sku', function () {
+    // The exact shape of a live Storeep store: one Color axis, three
+    // option rows whose ids 0/1/2 index into its values.
+    $dto = StoreepProductDTO::fromArray([
+        'id' => 373353392703019593,
+        'name' => 'markaz al ihssan',
+        'media' => [['type' => 'image', 'url' => 'https://cdn.storeep.com/m/1/1.webp']],
+        'variants' => [
+            ['name' => 'color', 'type' => 'color', 'options' => [
+                ['color' => '#a50d0d', 'value' => 'red'],
+                ['color' => '#ffffff', 'value' => 'white'],
+                ['color' => '#0da536', 'value' => 'green'],
+            ]],
+        ],
+        'is_published' => true,
+        'options' => [
+            ['id' => 0, 'sku' => null, 'markets' => [['market' => 'MA', 'currency' => 'MAD', 'price' => 399, 'discounted_price' => 299]]],
+            ['id' => 1, 'sku' => null, 'markets' => [['market' => 'MA', 'currency' => 'MAD', 'price' => 399, 'discounted_price' => 199]]],
+            ['id' => 2, 'sku' => null, 'markets' => [['market' => 'MA', 'currency' => 'MAD', 'price' => 199, 'discounted_price' => null]]],
+        ],
+    ], 'MA');
+
+    expect($dto->optionAxes)->toBe([['name' => 'color', 'type' => 'color', 'values' => ['red', 'white', 'green']]]);
+    expect(array_map(fn ($v) => $v->optionValues, $dto->variants))->toBe([
+        ['color' => 'red'], ['color' => 'white'], ['color' => 'green'],
+    ]);
+    expect(array_map(fn ($v) => $v->title, $dto->variants))->toBe(['red', 'white', 'green']);
+    expect(array_map(fn ($v) => $v->price, $dto->variants))->toBe([299.0, 199.0, 199.0]);
+});
+
+test('two axes decode with the last axis varying fastest', function () {
+    $dto = StoreepProductDTO::fromArray(storeepProduct([
+        'variants' => [
+            ['name' => 'Color', 'type' => 'color', 'options' => [['value' => 'red'], ['value' => 'white']]],
+            ['name' => 'Size', 'type' => 'text', 'options' => [['value' => 'S'], ['value' => 'M'], ['value' => 'L']]],
+        ],
+        'options' => [
+            ['id' => 4, 'sku' => 'X-WHITE-M', 'markets' => [['market' => 'US', 'currency' => 'USD', 'price' => 10]]],
+        ],
+    ]));
+
+    expect($dto->variants[0]->optionValues)->toBe(['Color' => 'white', 'Size' => 'M']);
+    // A sku still wins as the title.
+    expect($dto->variants[0]->title)->toBe('X-WHITE-M');
+});

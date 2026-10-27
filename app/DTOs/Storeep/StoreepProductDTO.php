@@ -57,9 +57,18 @@ readonly class StoreepProductDTO implements Arrayable
     public static function fromArray(array $data, ?string $preferredMarket = null): self
     {
         $product = $data['product'] ?? $data;
+        $axes = self::optionAxesFrom($product['variants'] ?? []);
 
+        // Storeep does link the two after all: an option row's `id` is its
+        // position in the enumeration of every axis-value combination
+        // (0 = first value of every axis, then the last axis varies
+        // fastest). Decoding it gives the row its Color/Size values.
         $variants = array_map(
-            fn (array $option) => StoreepProductVariantDTO::fromArray($option, $preferredMarket),
+            fn (array $option) => StoreepProductVariantDTO::fromArray(
+                $option,
+                $preferredMarket,
+                self::optionValuesAt((int) ($option['id'] ?? 0), $axes),
+            ),
             $product['options'] ?? []
         );
 
@@ -80,7 +89,7 @@ readonly class StoreepProductDTO implements Arrayable
             imageUrl: self::firstImageUrl($product['media'] ?? []),
             publicUrl: $product['public_url'] ?? $product['url'] ?? null,
             variants: $variants,
-            optionAxes: self::optionAxesFrom($product['variants'] ?? []),
+            optionAxes: $axes,
             createdAt: $product['created_at'] ?? null,
             updatedAt: $product['updated_at'] ?? null,
         );
@@ -126,13 +135,41 @@ readonly class StoreepProductDTO implements Arrayable
             fn (array $axis) => [
                 'name' => $axis['name'] ?? null,
                 'type' => $axis['type'] ?? null,
+                // Values arrive as `value` (with a swatch `color` next to
+                // it); older payloads used `name`.
                 'values' => array_values(array_filter(array_map(
-                    fn (array $value) => (string) ($value['name'] ?? ''),
+                    fn (array $value) => (string) ($value['value'] ?? $value['name'] ?? ''),
                     $axis['options'] ?? []
                 ), fn (string $value) => $value !== '')),
             ],
             $axes
         ));
+    }
+
+    /**
+     * The axis values an option row at position $index stands for, as
+     * name => value. Mixed-radix over the axis sizes, last axis fastest:
+     * with Color[red, white] and Size[S, M, L], index 4 is white / M.
+     *
+     * @param  array<int, array{name: ?string, type: ?string, values: array<int, string>}>  $axes
+     * @return array<string, string>
+     */
+    private static function optionValuesAt(int $index, array $axes): array
+    {
+        $values = [];
+
+        foreach (array_reverse($axes) as $axis) {
+            $size = count($axis['values']);
+
+            if ($size === 0 || $axis['name'] === null) {
+                continue;
+            }
+
+            $values[$axis['name']] = $axis['values'][$index % $size];
+            $index = intdiv($index, $size);
+        }
+
+        return array_reverse($values, true);
     }
 
     /**

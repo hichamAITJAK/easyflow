@@ -44,8 +44,9 @@ readonly class StoreepProductVariantDTO
      * }  $data
      * @param  string|null  $preferredMarket  Pick this market's pricing row when the
      *                                        option is priced in several markets.
+     * @param  array<string, string>  $optionValues  Axis name => value this row stands for.
      */
-    public static function fromArray(array $data, ?string $preferredMarket = null): self
+    public static function fromArray(array $data, ?string $preferredMarket = null, array $optionValues = []): self
     {
         $market = self::resolveMarket($data['markets'] ?? [], $preferredMarket);
 
@@ -57,7 +58,8 @@ readonly class StoreepProductVariantDTO
 
         return new self(
             id: (string) ($data['id'] ?? ''),
-            title: $data['sku'] ?? null,
+            // "red" or "white / M" when there is no SKU to name it by.
+            title: $data['sku'] ?? ($optionValues === [] ? null : implode(' / ', $optionValues)),
             sku: $data['sku'] ?? null,
             price: (float) $price,
             // Storeep's products endpoint exposes no stock level at all —
@@ -65,7 +67,7 @@ readonly class StoreepProductVariantDTO
             // "out of stock" and is a different claim entirely.
             inventoryQuantity: null,
             available: true,
-            optionValues: [],
+            optionValues: $optionValues,
             barcode: $data['barcode'] ?? null,
             weight: isset($data['weight']) ? (float) $data['weight'] : null,
             currency: $market['currency'] ?? null,
