@@ -54,19 +54,40 @@ function CountWithRate({
     tone?: 'success' | 'destructive';
 }) {
     return (
-        <div className="tabular-nums">
-            <span className="font-semibold">{formatNumber(count)}</span>
+        <div className="max-w-32 tabular-nums">
+            <p>
+                <span className="font-semibold">{formatNumber(count)}</span>
+                {pct !== null && (
+                    <span
+                        className={cn(
+                            'ml-1.5 text-xs',
+                            tone === 'success' && 'text-success',
+                            tone === 'destructive' && 'text-destructive',
+                            !tone && 'text-muted-foreground',
+                        )}
+                    >
+                        {pct}%
+                    </span>
+                )}
+            </p>
             {pct !== null && (
-                <span
-                    className={cn(
-                        'ml-1.5 text-xs',
-                        tone === 'success' && 'text-success',
-                        tone === 'destructive' && 'text-destructive',
-                        !tone && 'text-muted-foreground',
-                    )}
+                <div
+                    className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted"
+                    role="progressbar"
+                    aria-valuenow={pct}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
                 >
-                    {pct}%
-                </span>
+                    <div
+                        className={cn(
+                            'h-full rounded-full',
+                            tone === 'success' && 'bg-success',
+                            tone === 'destructive' && 'bg-destructive',
+                            !tone && 'bg-muted-foreground/40',
+                        )}
+                        style={{ width: `${Math.min(pct, 100)}%` }}
+                    />
+                </div>
             )}
         </div>
     );
