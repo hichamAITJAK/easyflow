@@ -24,6 +24,8 @@ readonly class StoreepLineItemDTO
         public int $quantity,
         public float $price,
         public ?float $weight,
+        /** @var array<string, string> axis name => ordered value, e.g. ['color' => 'red'] */
+        public array $optionValues = [],
     ) {}
 
     /**
@@ -47,7 +49,49 @@ readonly class StoreepLineItemDTO
             quantity: (int) ($data['quantity'] ?? 1),
             price: (float) ($data['price'] ?? 0),
             weight: isset($data['weight']) ? (float) $data['weight'] : null,
+            optionValues: self::optionValuesFrom($data['variants'] ?? []),
         );
+    }
+
+    /**
+     * The ordered axis values as name => value.
+     *
+     * A live order lists each axis flat — `{name: "color", value: "red"}` —
+     * while the older shape nested the picked value under `options[]`.
+     * Both are read.
+     *
+     * @param  array<int, array<string, mixed>>  $variants
+     * @return array<string, string>
+     */
+    private static function optionValuesFrom(array $variants): array
+    {
+        $values = [];
+
+        foreach ($variants as $axis) {
+            $name = (string) ($axis['name'] ?? '');
+
+            if ($name === '') {
+                continue;
+            }
+
+            $value = $axis['value'] ?? null;
+
+            if ($value === null) {
+                foreach ($axis['options'] ?? [] as $option) {
+                    $value = $option['value'] ?? $option['name'] ?? null;
+
+                    if ($value !== null) {
+                        break;
+                    }
+                }
+            }
+
+            if ($value !== null && (string) $value !== '') {
+                $values[$name] = (string) $value;
+            }
+        }
+
+        return $values;
     }
 
     /**
@@ -62,15 +106,7 @@ readonly class StoreepLineItemDTO
      */
     private static function variantTitleFrom(array $variants): ?string
     {
-        $values = [];
-
-        foreach ($variants as $axis) {
-            foreach ($axis['options'] ?? [] as $option) {
-                if (! empty($option['name'])) {
-                    $values[] = (string) $option['name'];
-                }
-            }
-        }
+        $values = array_values(self::optionValuesFrom($variants));
 
         return $values === [] ? null : implode(' / ', $values);
     }
@@ -92,6 +128,7 @@ readonly class StoreepLineItemDTO
      *     quantity: int,
      *     price: float,
      *     weight: ?float,
+     *     option_values: array<string, string>,
      * }
      */
     public function toArray(): array
@@ -110,6 +147,7 @@ readonly class StoreepLineItemDTO
             'quantity' => $this->quantity,
             'price' => $this->price,
             'weight' => $this->weight,
+            'option_values' => $this->optionValues,
         ];
     }
 }

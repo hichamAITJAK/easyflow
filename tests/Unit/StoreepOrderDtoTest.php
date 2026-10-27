@@ -151,3 +151,29 @@ test('toArray emits the keys OrderSyncService reads', function () {
     expect($data['line_items'][0]['quantity'])->toBe(2);
     expect($data['line_items'][0]['price'])->toBe(29.99);
 });
+
+test('a live order lists its item axes flat, as name and value', function () {
+    $item = StoreepOrderDTO::fromArray([
+        'id' => 373372475985106026,
+        'number' => 1,
+        'total' => 299,
+        'currency' => 'MAD',
+        'market' => 'MA',
+        'created_at' => '2026-10-27 07:28:55',
+        'items' => [[
+            'name' => 'markaz al ihssan',
+            'price' => 299,
+            'quantity' => 1,
+            'sku' => null,
+            'barcode' => null,
+            'weight' => 0,
+            'variants' => [['name' => 'color', 'type' => 'color', 'color' => '#a50d0d', 'value' => 'red']],
+        ]],
+        'addresses' => [['type' => 'shipping', 'fullname' => 'Hicham AITJAK', 'city' => 'Casablanca', 'phone' => '+212646437398', 'address1' => 'Block 8']],
+    ])->toArray()['line_items'][0];
+
+    expect($item['title'])->toBe('markaz al ihssan');
+    expect($item['variant_title'])->toBe('red');
+    expect($item['option_values'])->toBe(['color' => 'red']);
+    expect($item['sku'])->toBeNull();
+});

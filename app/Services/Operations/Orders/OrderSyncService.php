@@ -101,7 +101,7 @@ class OrderSyncService
     public function syncOne(Store $store, array $data): Order
     {
         $productsByExternalId = Product::where('store_id', $store->id)
-            ->get(['id', 'external_product_id', 'is_test'])
+            ->get(['id', 'external_product_id', 'name', 'is_test'])
             ->keyBy('external_product_id');
 
         $variantsByProductId = $this->loadVariantsByProductId($productsByExternalId);
@@ -151,6 +151,7 @@ class OrderSyncService
     private function loadVariantsByProductId(Collection $productsByExternalId): Collection
     {
         return ProductVariant::whereIn('product_id', $productsByExternalId->pluck('id'))
+            ->with('optionValues.option')
             ->get()
             ->groupBy('product_id');
     }
@@ -285,7 +286,8 @@ class OrderSyncService
         $keptItemIds = [];
 
         foreach ($lineItems as $lineItem) {
-            $product = $productsByExternalId->get((string) ($lineItem['product_id'] ?? ''));
+            $product = $productsByExternalId->get((string) ($lineItem['product_id'] ?? ''))
+                ?? $this->matchProductByName($productsByExternalId, $lineItem);
             $variant = $this->matchVariant($product, $lineItem, $variantsByProductId);
 
             // Folding the variant title into the snapshot (rather than
@@ -352,9 +354,55 @@ class OrderSyncService
         }
 
         if (! empty($lineItem['sku'])) {
-            return $variantsForProduct->firstWhere('sku', $lineItem['sku']);
+            $bySku = $variantsForProduct->firstWhere('sku', $lineItem['sku']);
+
+            if ($bySku) {
+                return $bySku;
+            }
         }
 
-        return null;
+        // Storeep names neither the product nor the variant by id, and its
+        // items often carry no sku either: the ordered axis values
+        // ("color" => "red") are all that identifies the variant.
+        $wanted = $lineItem['option_values'] ?? [];
+
+        if ($wanted === []) {
+            return null;
+        }
+
+        return $variantsForProduct->first(function (ProductVariant $variant) use ($wanted) {
+            $has = $variant->optionValues
+                ->mapWithKeys(fn ($value) => [mb_strtolower($value->option->name) => mb_strtolower($value->value)])
+                ->all();
+
+            foreach ($wanted as $name => $value) {
+                if (($has[mb_strtolower((string) $name)] ?? null) !== mb_strtolower((string) $value)) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    }
+
+    /**
+     * A platform whose line items carry no product id (Storeep) still
+     * names the product: fall back to its title, which product sync stored
+     * verbatim as the product name.
+     *
+     * @param  Collection<string, Product>  $productsByExternalId
+     * @param  array<string, mixed>  $lineItem
+     */
+    private function matchProductByName(Collection $productsByExternalId, array $lineItem): ?Product
+    {
+        $title = trim((string) ($lineItem['title'] ?? ''));
+
+        if ($title === '') {
+            return null;
+        }
+
+        return $productsByExternalId->first(
+            fn (Product $product) => mb_strtolower(trim((string) $product->name)) === mb_strtolower($title)
+        );
     }
 }
