@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Mobile;
 
 use App\Enums\OrderDeliveryStatus;
+use App\Enums\OrderReturnReason;
 use App\Http\Controllers\Concerns\ScopesAgentAccess;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
@@ -37,9 +38,9 @@ use Log;
  * go through it, so the two can never disagree about what's allowed.
  *
  * Every scanned parcel previews — the agent always gets to see what they
- * scanned and why nothing can be done with it. Only two statuses carry an
- * action: awaiting_pickup (→ ready_for_pickup, outbound staging) and
- * returned_in_transit (→ return_received, inbound receipt). For anything
+ * scanned and why nothing can be done with it. Only these statuses carry an
+ * action: awaiting_pickup (→ ready_for_pickup, outbound staging), and
+ * returned_in_transit or refused (→ return_received, inbound receipt). For anything
  * else `action` is null and the client shows the card with no button.
  */
 class FulfillmentController extends Controller
@@ -64,8 +65,10 @@ class FulfillmentController extends Controller
             'ready_to_prepare' => $this->applyFulfilmentStoreScope(Order::where('business_id', $businessId), $request->user())
                 ->where('delivery_status', OrderDeliveryStatus::AWAITING_PICKUP)
                 ->count(),
+            // A refused parcel is on its way back too (a delivery guy brings
+            // it straight to the warehouse, with no "returned" step first).
             'returns_pending' => $this->applyFulfilmentStoreScope(Order::where('business_id', $businessId), $request->user())
-                ->where('delivery_status', OrderDeliveryStatus::RETURNED_IN_TRANSIT)
+                ->whereIn('delivery_status', [OrderDeliveryStatus::RETURNED_IN_TRANSIT, OrderDeliveryStatus::REFUSED])
                 ->count(),
         ]);
     }
@@ -178,6 +181,7 @@ class FulfillmentController extends Controller
                     ->whereIn('reversal.to_status', [
                         OrderDeliveryStatus::AWAITING_PICKUP->value,
                         OrderDeliveryStatus::RETURNED_IN_TRANSIT->value,
+                        OrderDeliveryStatus::REFUSED->value,
                     ]);
             })
             ->orderByDesc('created_at')
@@ -241,13 +245,24 @@ class FulfillmentController extends Controller
             ]);
         }
 
+        // A return goes back to where it came from: returned in transit,
+        // or refused when it was received straight from a refusal.
         $revertTo = $event->to_status === OrderDeliveryStatus::READY_FOR_PICKUP->value
             ? OrderDeliveryStatus::AWAITING_PICKUP
-            : OrderDeliveryStatus::RETURNED_IN_TRANSIT;
+            : ($event->from_status === OrderDeliveryStatus::REFUSED->value
+                ? OrderDeliveryStatus::REFUSED
+                : OrderDeliveryStatus::RETURNED_IN_TRANSIT);
 
         // Undoing a scan-out puts its items back in stock.
         [$order, $stockChanges] = DB::transaction(function () use ($order, $revertTo, $request) {
-            $order = $this->orders->updateDeliveryStatus($order, $revertTo, $request->user());
+            $order = $this->orders->updateDeliveryStatus(
+                $order,
+                $revertTo,
+                $request->user(),
+                $revertTo === OrderDeliveryStatus::RETURNED_IN_TRANSIT
+                    ? ($order->return_reason_code ?? OrderReturnReason::OTHER)
+                    : null,
+            );
 
             return [$order, $revertTo === OrderDeliveryStatus::AWAITING_PICKUP ? $this->stock->restoreForOrder($order) : []];
         });
@@ -265,7 +280,10 @@ class FulfillmentController extends Controller
     {
         return match ($status) {
             OrderDeliveryStatus::AWAITING_PICKUP => OrderDeliveryStatus::READY_FOR_PICKUP,
-            OrderDeliveryStatus::RETURNED_IN_TRANSIT => OrderDeliveryStatus::RETURN_RECEIVED,
+            // Receiving a return never puts its items back in stock: some
+            // come back damaged, so restocking stays a manual decision.
+            OrderDeliveryStatus::RETURNED_IN_TRANSIT,
+            OrderDeliveryStatus::REFUSED => OrderDeliveryStatus::RETURN_RECEIVED,
             default => null,
         };
     }

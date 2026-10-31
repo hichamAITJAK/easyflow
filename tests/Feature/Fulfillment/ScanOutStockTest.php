@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\OrderDeliveryStatus;
+use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusEvent;
 use App\Models\Product;
@@ -96,4 +97,41 @@ test('stock never goes below zero and untracked stock is left alone', function (
 
     expect($low->fresh()->inventory_quantity)->toBe(0)
         ->and($untracked->fresh()->inventory_quantity)->toBeNull();
+});
+
+test('a refused parcel can be received back, its stock stays untouched, and undo puts it back to refused', function () {
+    [, $token, $variant, $pillow, $orderId] = parcelWithStock();
+    Order::whereKey($orderId)->update(['delivery_status' => OrderDeliveryStatus::REFUSED]);
+    $api = fn (string $route, array $body) => $this->withHeader('Authorization', "Bearer {$token}")->postJson(route($route), $body);
+
+    $api('api.mobile.fulfillment.scan', ['qr_value' => 'TRACK-S'])->assertOk()->assertJsonPath('action', 'return_received');
+
+    $api('api.mobile.fulfillment.confirm', ['order_id' => $orderId])
+        ->assertOk()
+        ->assertJsonPath('order.delivery_status', 'return_received')
+        ->assertJsonPath('stock_changes', []);
+
+    // Returns may come back damaged: nothing goes back on the shelf.
+    expect($variant->fresh()->inventory_quantity)->toBe(10)
+        ->and($pillow->fresh()->inventory_quantity)->toBe(5)
+        ->and(StockMovement::withoutGlobalScopes()->count())->toBe(0);
+
+    $eventId = OrderStatusEvent::where('order_id', $orderId)->where('to_status', 'return_received')->value('id');
+    $api('api.mobile.fulfillment.undo', ['event_id' => $eventId])
+        ->assertOk()
+        ->assertJsonPath('order.delivery_status', 'refused');
+});
+
+test('undoing a received return from transit puts it back in transit', function () {
+    [, $token, $variant, , $orderId] = parcelWithStock();
+    Order::whereKey($orderId)->update(['delivery_status' => OrderDeliveryStatus::RETURNED_IN_TRANSIT]);
+    $api = fn (string $route, array $body) => $this->withHeader('Authorization', "Bearer {$token}")->postJson(route($route), $body);
+
+    $api('api.mobile.fulfillment.confirm', ['order_id' => $orderId])->assertOk()->assertJsonPath('stock_changes', []);
+    expect($variant->fresh()->inventory_quantity)->toBe(10);
+
+    $eventId = OrderStatusEvent::where('order_id', $orderId)->where('to_status', 'return_received')->value('id');
+    $api('api.mobile.fulfillment.undo', ['event_id' => $eventId])
+        ->assertOk()
+        ->assertJsonPath('order.delivery_status', 'returned_in_transit');
 });
