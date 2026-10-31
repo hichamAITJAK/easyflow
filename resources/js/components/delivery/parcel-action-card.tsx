@@ -23,6 +23,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
@@ -94,6 +101,10 @@ export function ParcelActionCard({
             action.status === 'out_for_delivery',
     );
     const others = actions.filter((action) => !primary.includes(action));
+    // The exceptions sit in one dropdown, applied with Save: a wrong pick
+    // in a list on the road must not change the parcel by itself.
+    const [picked, setPicked] = useState('');
+    const pickedAction = others.find((action) => action.key === picked);
 
     const choose = (action: DeliveryAction) => {
         if (action.needs_date) {
@@ -278,21 +289,53 @@ export function ParcelActionCard({
                             ))}
 
                             {others.length > 0 && (
-                                <div className="grid grid-cols-2 gap-2">
-                                    {others.map((action) => (
-                                        <Button
-                                            key={action.key}
-                                            variant="outline"
+                                <div className="flex gap-2">
+                                    <Select
+                                        value={pickedAction?.key ?? ''}
+                                        onValueChange={setPicked}
+                                        disabled={applying}
+                                    >
+                                        <SelectTrigger
                                             className={cn(
-                                                'h-11 whitespace-normal',
-                                                toneFor(action),
+                                                'h-11 min-w-0 flex-1',
+                                                pickedAction &&
+                                                    toneFor(pickedAction),
                                             )}
-                                            disabled={applying}
-                                            onClick={() => choose(action)}
+                                            aria-label={t(
+                                                'Choose what happened',
+                                            )}
                                         >
-                                            {action.label}
-                                        </Button>
-                                    ))}
+                                            <SelectValue
+                                                placeholder={t(
+                                                    'Choose what happened',
+                                                )}
+                                            />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {others.map((action) => (
+                                                <SelectItem
+                                                    key={action.key}
+                                                    value={action.key}
+                                                    className={toneFor(action)}
+                                                >
+                                                    {action.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <Button
+                                        type="button"
+                                        className="h-11 shrink-0"
+                                        disabled={!pickedAction || applying}
+                                        onClick={() => {
+                                            if (pickedAction) {
+                                                setPicked('');
+                                                choose(pickedAction);
+                                            }
+                                        }}
+                                    >
+                                        {t('Save')}
+                                    </Button>
                                 </div>
                             )}
                         </div>
