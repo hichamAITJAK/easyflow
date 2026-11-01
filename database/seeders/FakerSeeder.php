@@ -13,6 +13,7 @@ use App\Enums\OrderConfirmationStatus;
 use App\Enums\OrderDeliveryStatus;
 use App\Enums\OrderReturnReason;
 use App\Enums\OrderSource;
+use App\Enums\StoreConnectionStatus;
 use App\Enums\UserRole;
 use App\Models\AgentScope;
 use App\Models\Business;
@@ -61,6 +62,12 @@ use Illuminate\Support\Str;
  * (WhatsApp, Instagram, …), go out with the couriers or with our own
  * delivery guys, and only recent orders are still in progress.
  *
+ * Two businesses, each with its own team, catalogue, customers, orders,
+ * money and creatives (see businesses()):
+ *  - EasyFlow: five connected platform stores plus the manual channels;
+ *  - Souk Lbaraka: two manual stores only — no online shop, every order
+ *    typed in from WhatsApp, Instagram, Facebook, TikTok or a phone call.
+ *
  * Never call from DatabaseSeeder; run explicitly via
  * `php artisan db:seed --class=FakerSeeder`.
  */
@@ -104,6 +111,12 @@ class FakerSeeder extends Seeder
     /** @var list<Customer> */
     private array $blacklistedCustomers = [];
 
+    /** @var array<string, mixed> the business being seeded, from businesses() */
+    private array $profile = [];
+
+    /** Names already given to a staff member, across every business, so logins never collide. */
+    private array $usedNames = [];
+
     public function run(): void
     {
         if (! app()->environment('local')) {
@@ -117,9 +130,28 @@ class FakerSeeder extends Seeder
         // all idempotent, so this is harmless when db:seed already ran.
         $this->call([SuperAdminSeeder::class, EcommercePlatformSeeder::class, DeliveryCourrierSeeder::class]);
 
+        $profiles = $this->businesses();
+
+        // Every fixed login name is reserved up front, so a generated
+        // colleague in one business can never take another's name/email.
+        foreach ($profiles as $profile) {
+            foreach ($profile['logins'] as [, $name]) {
+                $this->usedNames[] = $name;
+            }
+        }
+
+        foreach ($profiles as $profile) {
+            $this->resetState($profile);
+            $this->seedBusiness();
+        }
+    }
+
+    /** One business, start to finish, from the current profile. */
+    private function seedBusiness(): void
+    {
         $business = Business::create([
-            'name' => 'EasyFlow',
-            'slug' => 'no-sheet-cod',
+            'name' => $this->profile['name'],
+            'slug' => $this->profile['slug'],
             'status' => BusinessStatus::ACTIVE,
         ]);
 
@@ -141,9 +173,112 @@ class FakerSeeder extends Seeder
     }
 
     /**
-     * The fixed logins (admin@, agent@, fulfilment@, delivery@,
-     * creatives@email.com, all "password") plus a few colleagues so team
-     * reports have variety.
+     * The demo businesses. Logins are all "password".
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function businesses(): array
+    {
+        return [
+            [
+                'name' => 'EasyFlow',
+                'slug' => 'no-sheet-cod',
+                'logins' => [
+                    'admin' => ['admin@email.com', 'Karim Benjelloun'],
+                    'agent' => ['agent@email.com', 'Salma Idrissi'],
+                    'fulfilment' => ['fulfilment@email.com', 'Ayoub Ouazzani'],
+                    'delivery' => ['delivery@email.com', 'Abdelilah Chraibi'],
+                    'creatives' => ['creatives@email.com', 'Hiba Lamrani'],
+                ],
+                // city => pay per delivered parcel; the first one gets the fixed login.
+                'delivery_cities' => ['Casablanca' => 25, 'Rabat' => 25, 'Marrakech' => 20],
+                // null: the five connected platform stores.
+                'manual_stores' => null,
+                // null: the whole catalogue.
+                'catalogue' => null,
+                'sku_prefix' => 'EF',
+                'customers' => 240,
+                'orders' => 400,
+                'creatives' => [
+                    'hero' => ['name' => 'Montre Connectée Ultra 8', 'links' => ['https://casagadgets.ma/products/montre-connectee-ultra-8'],
+                        'description' => 'Montrer les notifications WhatsApp et le suivi sport. Public 20-35 ans.'],
+                    'second' => ['name' => "Huile d'Argan Bio 100ml", 'price' => 149, 'links' => ['https://atlasbeauty.ma/products/huile-argan-bio'],
+                        'description' => 'Insister sur le 100% bio et l\'origine Souss. Avant / après cheveux.'],
+                    'third' => ['name' => 'Friteuse à Air 5L', 'links' => ['https://dardeals.ma/products/friteuse-air-5l'],
+                        'description' => 'Recettes marocaines sans huile : msemen, frites, poulet. Format cuisine réelle.',
+                        'note' => 'Les recettes du Ramadan marchent bien, on continue.'],
+                    'pack' => ['name' => 'Pack Beauté Ghassoul & Argan', 'links' => ['https://atlasbeauty.ma/products/kit-ghassoul-savon-beldi', 'https://atlasbeauty.ma/products/huile-argan-bio'],
+                        'description' => 'Routine hammam à la maison, ambiance chaleureuse.',
+                        'note' => 'Push du jour : 2 vidéos routine hammam.'],
+                    'testing' => ['name' => 'Mini Projecteur HD', 'links' => ['https://casagadgets.ma/products/mini-projecteur-hd'],
+                        'description' => 'Produit en test : 3 angles différents pour trouver le bon message.',
+                        'directions' => ['Angle "cinéma à la maison" : salon le soir, lumières éteintes', 'Angle "cadeau" : unboxing rapide', '']],
+                    'inactive' => ['name' => 'Ceinture Amincissante', 'links' => ['https://bladishop.ma/products/ceinture-amincissante'], 'description' => null],
+                ],
+            ],
+            [
+                'name' => 'Souk Lbaraka',
+                'slug' => 'souk-lbaraka',
+                'logins' => [
+                    'admin' => ['admin2@email.com', 'Nadia Berrada'],
+                    'agent' => ['agent2@email.com', 'Imane Tahiri'],
+                    'fulfilment' => ['fulfilment2@email.com', 'Omar Skalli'],
+                    'delivery' => ['delivery2@email.com', 'Rachid Amzil'],
+                    'creatives' => ['creatives2@email.com', 'Kawtar Fikri'],
+                ],
+                'delivery_cities' => ['Casablanca' => 25, 'Fès' => 20, 'Tanger' => 22],
+                // A brand with no online shop: two manual stores only.
+                'manual_stores' => ['Lbaraka Style', 'Lbaraka Maison'],
+                'catalogue' => [
+                    'Caftan Brodé Femme', 'Djellaba Homme Lin', 'Babouches Cuir de Fès', 'Sac à Main Cuir',
+                    "Huile d'Argan Bio 100ml", 'Sérum Vitamine C', 'Kit Ghassoul & Savon Beldi', 'Parfum Musc Tahara',
+                    'Service à Thé Marocain 6 verres', 'Tapis de Prière Mousse', 'Bouilloire Électrique Inox',
+                    'Set Couteaux Cuisine 6 pièces', 'Coussin Orthopédique', 'Produit Test - Échantillon',
+                ],
+                'sku_prefix' => 'SL',
+                'customers' => 160,
+                'orders' => 260,
+                'creatives' => [
+                    'hero' => ['name' => 'Caftan Brodé Femme', 'links' => ['https://www.instagram.com/lbaraka.style/'],
+                        'description' => 'Défilé à la maison, lumière naturelle, montrer la broderie de près.'],
+                    'second' => ['name' => 'Kit Ghassoul & Savon Beldi', 'price' => 129, 'links' => ['https://www.instagram.com/lbaraka.maison/'],
+                        'description' => 'Routine hammam traditionnelle, voix off en darija.'],
+                    'third' => ['name' => 'Service à Thé Marocain 6 verres', 'links' => ['https://www.instagram.com/lbaraka.maison/'],
+                        'description' => 'Ambiance Ftour : thé versé de haut, plateau doré.',
+                        'note' => 'On prépare le Ramadan, misez sur la table du Ftour.'],
+                    'pack' => ['name' => 'Pack Mariage Babouches & Sac', 'links' => ['https://www.instagram.com/lbaraka.style/', 'https://www.facebook.com/lbaraka.style'],
+                        'description' => 'Tenue complète pour les fêtes : babouches assorties au sac.',
+                        'note' => 'Push du jour : 2 vidéos look de fête.'],
+                    'testing' => ['name' => 'Djellaba Homme Lin', 'links' => ['https://www.instagram.com/lbaraka.style/'],
+                        'description' => 'Produit en test pour l\'Aïd : 3 angles différents.',
+                        'directions' => ['Angle "Aïd" : sortie de la mosquée en famille', 'Angle "confort" : le lin en été', '']],
+                    'inactive' => ['name' => 'Tapis de Prière Mousse', 'links' => ['https://www.instagram.com/lbaraka.maison/'], 'description' => null],
+                ],
+            ],
+        ];
+    }
+
+    /** Start a business from a clean slate: nothing carries over from the previous one. */
+    private function resetState(array $profile): void
+    {
+        $this->profile = $profile;
+        $this->agents = [];
+        $this->fulfilmentAgents = [];
+        $this->deliveryGuys = [];
+        $this->deliveryGuyRates = [];
+        $this->creativesEditors = [];
+        $this->stores = [];
+        $this->deliveryAccounts = [];
+        $this->products = [];
+        $this->variantsByProduct = [];
+        $this->customers = [];
+        $this->loyalCustomers = [];
+        $this->blacklistedCustomers = [];
+    }
+
+    /**
+     * The business's fixed logins (see businesses(), all "password") plus
+     * a few colleagues so team reports have variety.
      */
     private function seedUsers(Business $business): void
     {
@@ -157,38 +292,38 @@ class FakerSeeder extends Seeder
             ...$extra,
         ]);
 
-        $used = ['Karim Benjelloun', 'Salma Idrissi', 'Ayoub Ouazzani', 'Abdelilah Chraibi', 'Hiba Lamrani'];
-        $colleague = function (bool $female) use (&$used): array {
+        $colleague = function (bool $female): array {
             do {
                 $person = MoroccanData::person($female);
-            } while (in_array($person['name'], $used, true));
+            } while (in_array($person['name'], $this->usedNames, true));
 
-            $used[] = $person['name'];
+            $this->usedNames[] = $person['name'];
 
             return $person;
         };
 
-        $staff('admin@email.com', 'Karim Benjelloun', UserRole::ADMIN);
+        $login = $this->profile['logins'];
 
-        $this->agents[] = $staff('agent@email.com', 'Salma Idrissi', UserRole::CONFIRMATION_AGENT);
+        $staff(...$login['admin'], role: UserRole::ADMIN);
+
+        $this->agents[] = $staff(...$login['agent'], role: UserRole::CONFIRMATION_AGENT);
 
         foreach ([true, true, false] as $female) {
             $person = $colleague($female);
             $this->agents[] = $staff(MoroccanData::staffEmail($person), $person['name'], UserRole::CONFIRMATION_AGENT);
         }
 
-        $this->fulfilmentAgents[] = $staff('fulfilment@email.com', 'Ayoub Ouazzani', UserRole::FULFILMENT_AGENT);
+        $this->fulfilmentAgents[] = $staff(...$login['fulfilment'], role: UserRole::FULFILMENT_AGENT);
         $person = $colleague(false);
         $this->fulfilmentAgents[] = $staff(MoroccanData::staffEmail($person), $person['name'], UserRole::FULFILMENT_AGENT);
 
         // Our own delivery guys, one per city we deliver ourselves.
-        $guys = [
-            'Casablanca' => ['delivery@email.com', 'Abdelilah Chraibi', 25],
-            'Rabat' => [null, null, 25],
-            'Marrakech' => [null, null, 20],
-        ];
+        $first = true;
 
-        foreach ($guys as $city => [$email, $name, $rate]) {
+        foreach ($this->profile['delivery_cities'] as $city => $rate) {
+            [$email, $name] = $first ? $login['delivery'] : [null, null];
+            $first = false;
+
             if ($name === null) {
                 $person = $colleague(false);
                 [$email, $name] = [MoroccanData::staffEmail($person), $person['name']];
@@ -200,13 +335,19 @@ class FakerSeeder extends Seeder
         }
 
         // The video / static makers who work the Creatives module.
-        $this->creativesEditors[] = $staff('creatives@email.com', 'Hiba Lamrani', UserRole::CREATIVES_EDITOR);
+        $this->creativesEditors[] = $staff(...$login['creatives'], role: UserRole::CREATIVES_EDITOR);
         $person = $colleague(false);
         $this->creativesEditors[] = $staff(MoroccanData::staffEmail($person), $person['name'], UserRole::CREATIVES_EDITOR);
     }
 
     private function seedStores(Business $business): void
     {
+        if ($this->profile['manual_stores'] !== null) {
+            $this->seedManualStores($business);
+
+            return;
+        }
+
         $stores = [
             'Atlas Beauty' => EcomPlatform::SHOPIFY,
             'Bladi Shop' => EcomPlatform::YOUCAN,
@@ -233,6 +374,32 @@ class FakerSeeder extends Seeder
         }
     }
 
+    /**
+     * Manual stores, exactly as StoreController::storeManual() makes them:
+     * the "manual" platform, no domain or credentials, status manual.
+     */
+    private function seedManualStores(Business $business): void
+    {
+        $platform = EcommercePlatform::firstOrCreate(['slug' => 'manual'], ['name' => 'Manual']);
+
+        foreach ($this->profile['manual_stores'] as $name) {
+            $this->stores[] = Store::create([
+                'business_id' => $business->id,
+                'platform_id' => $platform->id,
+                'name' => $name,
+                'slug' => Str::slug($name),
+                'api_credentials' => '[]',
+                'connection_status' => StoreConnectionStatus::MANUAL,
+            ]);
+        }
+    }
+
+    /** True when the current business has no online shop at all. */
+    private function manualOnly(): bool
+    {
+        return $this->profile['manual_stores'] !== null;
+    }
+
     private function seedDeliveryAccounts(Business $business): void
     {
         $couriers = DeliveryCourrier::all();
@@ -250,12 +417,16 @@ class FakerSeeder extends Seeder
 
     private function seedProducts(Business $business): void
     {
-        $catalogue = MoroccanData::PRODUCTS;
+        $names = $this->profile['catalogue'];
+        $catalogue = $names === null
+            ? MoroccanData::PRODUCTS
+            : array_values(array_filter(MoroccanData::PRODUCTS, fn (array $item) => in_array($item['name'], $names, true)));
 
         foreach ($catalogue as $i => $item) {
             // A quarter of the catalogue is manual-only; the rest is
-            // synced from one of the stores.
-            $store = $i % 4 === 0 || $this->stores === [] ? null : $this->stores[$i % count($this->stores)];
+            // synced from one of the stores. A business with manual stores
+            // only has nothing to sync from: every product is manual.
+            $store = $this->manualOnly() || $i % 4 === 0 || $this->stores === [] ? null : $this->stores[$i % count($this->stores)];
             $isTest = str_starts_with($item['name'], 'Produit Test');
 
             $product = Product::factory()->create([
@@ -263,7 +434,7 @@ class FakerSeeder extends Seeder
                 'store_id' => $store?->id,
                 'external_product_id' => $store ? (string) (7100000 + $i) : null,
                 'name' => $item['name'],
-                'sku' => 'EF-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
+                'sku' => $this->profile['sku_prefix'].'-'.str_pad((string) ($i + 1), 3, '0', STR_PAD_LEFT),
                 'description' => 'Livraison partout au Maroc, paiement à la réception.',
                 'price' => $item['price'],
                 'inventory_quantity' => rand(20, 250),
@@ -345,7 +516,7 @@ class FakerSeeder extends Seeder
             ]);
         };
 
-        for ($i = 0; $i < 240; $i++) {
+        for ($i = 0; $i < $this->profile['customers']; $i++) {
             $this->customers[] = $makeCustomer();
         }
 
@@ -383,7 +554,7 @@ class FakerSeeder extends Seeder
     private function seedOrders(Business $business): void
     {
         $now = Carbon::now();
-        $totalOrders = 400;
+        $totalOrders = $this->profile['orders'];
         $codes = app(OrderCodeGenerator::class);
 
         // Orders still being called are recent; an order from last month
@@ -442,8 +613,15 @@ class FakerSeeder extends Seeder
             $customer = $this->pickCustomer();
             $isBlacklisted = (bool) $customer->is_blacklisted;
 
-            $fromStore = $this->stores !== [] && fake()->boolean(72);
-            $store = $fromStore ? fake()->randomElement($this->stores) : (fake()->boolean(50) && $this->stores !== [] ? fake()->randomElement($this->stores) : null);
+            if ($this->manualOnly()) {
+                // Typed in by hand for one of the brand's manual stores;
+                // the channel is where the customer reached it.
+                $fromStore = false;
+                $store = fake()->randomElement($this->stores);
+            } else {
+                $fromStore = $this->stores !== [] && fake()->boolean(72);
+                $store = $fromStore ? fake()->randomElement($this->stores) : (fake()->boolean(50) && $this->stores !== [] ? fake()->randomElement($this->stores) : null);
+            }
             $agent = fake()->randomElement($this->agents);
             $isTest = fake()->boolean(2);
 
@@ -994,30 +1172,29 @@ class FakerSeeder extends Seeder
 
         [$hiba, $second] = [$this->creativesEditors[0], $this->creativesEditors[1] ?? $this->creativesEditors[0]];
 
-        $briefs = [
-            ['Montre Connectée Ultra 8', 'single', ['https://casagadgets.ma/products/montre-connectee-ultra-8'], CreativeProductStatus::ACTIVE, [$hiba, $second],
-                'Montrer les notifications WhatsApp et le suivi sport. Public 20-35 ans.'],
-            ["Huile d'Argan Bio 100ml", 'single', ['https://atlasbeauty.ma/products/huile-argan-bio'], CreativeProductStatus::ACTIVE, [$hiba],
-                'Insister sur le 100% bio et l\'origine Souss. Avant / après cheveux.'],
-            ['Friteuse à Air 5L', 'single', ['https://dardeals.ma/products/friteuse-air-5l'], CreativeProductStatus::ACTIVE, [$second],
-                'Recettes marocaines sans huile : msemen, frites, poulet. Format cuisine réelle.'],
-            ['Pack Beauté Ghassoul & Argan', 'pack', ['https://atlasbeauty.ma/products/kit-ghassoul-savon-beldi', 'https://atlasbeauty.ma/products/huile-argan-bio'], CreativeProductStatus::ACTIVE, [$hiba, $second],
-                'Routine hammam à la maison, ambiance chaleureuse.'],
-            ['Mini Projecteur HD', 'single', ['https://casagadgets.ma/products/mini-projecteur-hd'], CreativeProductStatus::TESTING, [$hiba],
-                'Produit en test : 3 angles différents pour trouver le bon message.'],
-            ['Ceinture Amincissante', 'single', ['https://bladishop.ma/products/ceinture-amincissante'], CreativeProductStatus::INACTIVE, [$second],
-                null],
+        $briefs = $this->profile['creatives'];
+
+        // role => [status, kind, editors working it]
+        $roles = [
+            'hero' => [CreativeProductStatus::ACTIVE, 'single', [$hiba, $second]],
+            'second' => [CreativeProductStatus::ACTIVE, 'single', [$hiba]],
+            'third' => [CreativeProductStatus::ACTIVE, 'single', [$second]],
+            'pack' => [CreativeProductStatus::ACTIVE, 'pack', [$hiba, $second]],
+            'testing' => [CreativeProductStatus::TESTING, 'single', [$hiba]],
+            'inactive' => [CreativeProductStatus::INACTIVE, 'single', [$second]],
         ];
 
         $products = [];
 
-        foreach ($briefs as [$name, $kind, $links, $status, $editors, $description]) {
+        foreach ($roles as $role => [$status, $kind, $editors]) {
+            $brief = $briefs[$role];
+
             $product = CreativeProduct::create([
                 'business_id' => $business->id,
-                'name' => $name,
+                'name' => $brief['name'],
                 'kind' => $kind,
-                'links' => $links,
-                'description' => $description,
+                'links' => $brief['links'],
+                'description' => $brief['description'],
                 'status' => $status,
             ]);
 
@@ -1025,7 +1202,7 @@ class FakerSeeder extends Seeder
                 $product->editors()->syncWithoutDetaching([$editor->id => ['business_id' => $business->id]]);
             }
 
-            $products[$name] = [$product, $editors];
+            $products[$role] = [$product, $editors];
         }
 
         // History: validated work, newest first, never on the testing product.
@@ -1097,26 +1274,22 @@ class FakerSeeder extends Seeder
         }
 
         // The live queue, one request in each state the review board shows.
-        [$projector] = $products['Mini Projecteur HD'];
-        $this->creativeRequest($business, $projector, $hiba, [
+        [$testing] = $products['testing'];
+        $this->creativeRequest($business, $testing, $hiba, [
             'status' => ContentRequestStatus::SENT,
             'admin_note' => 'Test produit : on cherche l\'angle qui accroche le mieux.',
             'created_at' => Carbon::now()->subHours(20),
-        ], $this->creativeItems(3, 0, [
-            'Angle "cinéma à la maison" : salon le soir, lumières éteintes',
-            'Angle "cadeau" : unboxing rapide',
-            '',
-        ]));
+        ], $this->creativeItems(3, 0, $briefs['testing']['directions']));
 
-        [$fryer] = $products['Friteuse à Air 5L'];
-        $this->creativeRequest($business, $fryer, $second, [
+        [$third] = $products['third'];
+        $this->creativeRequest($business, $third, $second, [
             'status' => ContentRequestStatus::SENT,
-            'admin_note' => 'Les recettes du Ramadan marchent bien, on continue.',
+            'admin_note' => $briefs['third']['note'],
             'created_at' => Carbon::now()->subDays(2),
         ], $this->creativeItems(2, 2));
 
-        [$watch] = $products['Montre Connectée Ultra 8'];
-        $this->creativeRequest($business, $watch, $hiba, [
+        [$hero] = $products['hero'];
+        $this->creativeRequest($business, $hero, $hiba, [
             'status' => ContentRequestStatus::RETURNED,
             'drive_url' => $this->driveUrl(),
             'editor_note' => 'Deux versions de la vidéo 2, choisissez celle qui vous plaît.',
@@ -1124,27 +1297,27 @@ class FakerSeeder extends Seeder
             'created_at' => Carbon::now()->subDays(3),
         ], $this->creativeItems(3, 2));
 
-        [$argan] = $products["Huile d'Argan Bio 100ml"];
-        $this->creativeRequest($business, $argan, $hiba, [
+        [$secondProduct] = $products['second'];
+        $this->creativeRequest($business, $secondProduct, $hiba, [
             'status' => ContentRequestStatus::EDITS,
             'rev' => 2,
             'drive_url' => $this->driveUrl(),
             'direction_points' => [
                 'Le logo doit apparaître dès la première seconde',
                 'Sous-titres en darija, pas en arabe classique',
-                'Finir sur le prix : 149 MAD, livraison gratuite',
+                'Finir sur le prix : '.$briefs['second']['price'].' MAD, livraison gratuite',
             ],
             'returned_at' => Carbon::now()->subDays(2),
             'edits_requested_at' => Carbon::now()->subDay(),
             'created_at' => Carbon::now()->subDays(4),
         ], $this->creativeItems(2, 0));
 
-        [$pack] = $products['Pack Beauté Ghassoul & Argan'];
+        [$pack] = $products['pack'];
         $this->creativeRequest($business, $pack, $second, [
             'origin' => 'editor',
             'status' => ContentRequestStatus::RETURNED,
             'drive_url' => $this->driveUrl(),
-            'editor_note' => 'Push du jour : 2 vidéos routine hammam.',
+            'editor_note' => $briefs['pack']['note'],
             'returned_at' => Carbon::now()->subHours(6),
             'created_at' => Carbon::now()->subHours(6),
         ], $this->creativeItems(2, 0));
