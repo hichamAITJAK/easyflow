@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Enums\BusinessStatus;
 use App\Enums\CommissionPaymentMode;
+use App\Enums\ContentRequestStatus;
+use App\Enums\CreativeProductStatus;
 use App\Enums\DeliveryAccountStatus;
 use App\Enums\EcomPlatform;
 use App\Enums\OrderCancelReason;
@@ -16,7 +18,10 @@ use App\Models\AgentScope;
 use App\Models\Business;
 use App\Models\CommissionLedgerEntry;
 use App\Models\CommissionRule;
+use App\Models\ContentRequest;
+use App\Models\ContentRequestItem;
 use App\Models\CourierSettlement;
+use App\Models\CreativeProduct;
 use App\Models\Customer;
 use App\Models\CustomerBlacklistEntry;
 use App\Models\DailyStatsReason;
@@ -75,6 +80,9 @@ class FakerSeeder extends Seeder
     /** @var array<int, float> delivery guy id => his pay per delivered parcel */
     private array $deliveryGuyRates = [];
 
+    /** @var list<User> */
+    private array $creativesEditors = [];
+
     /** @var array<int, Store> */
     private array $stores = [];
 
@@ -125,6 +133,7 @@ class FakerSeeder extends Seeder
         $this->refreshCustomerCounts();
         $this->seedCommissions($business);
         $this->seedDeliveryGuyPay($business);
+        $this->seedCreatives($business);
         $this->seedCourierSettlements($business);
         $this->seedPerformanceTargets($business);
         $this->seedDailyStatsSummary($business);
@@ -132,8 +141,9 @@ class FakerSeeder extends Seeder
     }
 
     /**
-     * The fixed logins (admin@, agent@, fulfilment@, delivery@email.com,
-     * all "password") plus a few colleagues so team reports have variety.
+     * The fixed logins (admin@, agent@, fulfilment@, delivery@,
+     * creatives@email.com, all "password") plus a few colleagues so team
+     * reports have variety.
      */
     private function seedUsers(Business $business): void
     {
@@ -147,7 +157,7 @@ class FakerSeeder extends Seeder
             ...$extra,
         ]);
 
-        $used = ['Karim Benjelloun', 'Salma Idrissi', 'Ayoub Ouazzani', 'Abdelilah Chraibi'];
+        $used = ['Karim Benjelloun', 'Salma Idrissi', 'Ayoub Ouazzani', 'Abdelilah Chraibi', 'Hiba Lamrani'];
         $colleague = function (bool $female) use (&$used): array {
             do {
                 $person = MoroccanData::person($female);
@@ -188,6 +198,11 @@ class FakerSeeder extends Seeder
             $this->deliveryGuys[$city] = $guy;
             $this->deliveryGuyRates[$guy->id] = (float) $rate;
         }
+
+        // The video / static makers who work the Creatives module.
+        $this->creativesEditors[] = $staff('creatives@email.com', 'Hiba Lamrani', UserRole::CREATIVES_EDITOR);
+        $person = $colleague(false);
+        $this->creativesEditors[] = $staff(MoroccanData::staffEmail($person), $person['name'], UserRole::CREATIVES_EDITOR);
     }
 
     private function seedStores(Business $business): void
@@ -960,6 +975,248 @@ class FakerSeeder extends Seeder
                 $carried = (float) $settlement->balance_after;
             }
         }
+    }
+
+    /**
+     * The Creatives module, following the same rules ContentRequestService
+     * enforces: product briefs assigned to editors, a history of validated
+     * work that paid the editor through a 'creative' commission entry (the
+     * older ones already paid through an invoice), the products' counters
+     * kept in step with that history, and a live review queue in every
+     * state — sent, returned, sent back for edits, and an editor's own
+     * daily push on an active product.
+     */
+    private function seedCreatives(Business $business): void
+    {
+        if ($this->creativesEditors === []) {
+            return;
+        }
+
+        [$hiba, $second] = [$this->creativesEditors[0], $this->creativesEditors[1] ?? $this->creativesEditors[0]];
+
+        $briefs = [
+            ['Montre Connectée Ultra 8', 'single', ['https://casagadgets.ma/products/montre-connectee-ultra-8'], CreativeProductStatus::ACTIVE, [$hiba, $second],
+                'Montrer les notifications WhatsApp et le suivi sport. Public 20-35 ans.'],
+            ["Huile d'Argan Bio 100ml", 'single', ['https://atlasbeauty.ma/products/huile-argan-bio'], CreativeProductStatus::ACTIVE, [$hiba],
+                'Insister sur le 100% bio et l\'origine Souss. Avant / après cheveux.'],
+            ['Friteuse à Air 5L', 'single', ['https://dardeals.ma/products/friteuse-air-5l'], CreativeProductStatus::ACTIVE, [$second],
+                'Recettes marocaines sans huile : msemen, frites, poulet. Format cuisine réelle.'],
+            ['Pack Beauté Ghassoul & Argan', 'pack', ['https://atlasbeauty.ma/products/kit-ghassoul-savon-beldi', 'https://atlasbeauty.ma/products/huile-argan-bio'], CreativeProductStatus::ACTIVE, [$hiba, $second],
+                'Routine hammam à la maison, ambiance chaleureuse.'],
+            ['Mini Projecteur HD', 'single', ['https://casagadgets.ma/products/mini-projecteur-hd'], CreativeProductStatus::TESTING, [$hiba],
+                'Produit en test : 3 angles différents pour trouver le bon message.'],
+            ['Ceinture Amincissante', 'single', ['https://bladishop.ma/products/ceinture-amincissante'], CreativeProductStatus::INACTIVE, [$second],
+                null],
+        ];
+
+        $products = [];
+
+        foreach ($briefs as [$name, $kind, $links, $status, $editors, $description]) {
+            $product = CreativeProduct::create([
+                'business_id' => $business->id,
+                'name' => $name,
+                'kind' => $kind,
+                'links' => $links,
+                'description' => $description,
+                'status' => $status,
+            ]);
+
+            foreach ($editors as $editor) {
+                $product->editors()->syncWithoutDetaching([$editor->id => ['business_id' => $business->id]]);
+            }
+
+            $products[$name] = [$product, $editors];
+        }
+
+        // History: validated work, newest first, never on the testing product.
+        foreach ($products as [$product, $editors]) {
+            if ($product->status === CreativeProductStatus::TESTING) {
+                continue;
+            }
+
+            // An inactive product stopped getting work a while ago.
+            $window = $product->status === CreativeProductStatus::INACTIVE ? [45, 85] : [2, 75];
+
+            for ($i = 0, $n = rand(3, 5); $i < $n; $i++) {
+                $validatedAt = Carbon::now()->subDays(rand(...$window))->setTime(rand(10, 19), rand(0, 59));
+                $editor = $editors[array_rand($editors)];
+                $videos = rand(2, 5);
+                $statics = rand(0, 1) === 1 ? rand(2, 4) : 0;
+                $reworked = rand(1, 4) === 1;
+
+                $request = $this->creativeRequest($business, $product, $editor, [
+                    'origin' => $product->status === CreativeProductStatus::ACTIVE && rand(1, 3) === 1 ? 'editor' : 'admin',
+                    'status' => ContentRequestStatus::VALIDATED,
+                    'rev' => $reworked ? 2 : 1,
+                    'direction_points' => $reworked ? ['Raccourcir l\'intro à 3 secondes', 'Ajouter le prix à l\'écran'] : [],
+                    'drive_url' => $this->driveUrl(),
+                    'returned_at' => $validatedAt->copy()->subHours(rand(2, 20)),
+                    'edits_requested_at' => $reworked ? $validatedAt->copy()->subDays(1) : null,
+                    'validated_at' => $validatedAt,
+                    'created_at' => $validatedAt->copy()->subDays(rand(2, 5)),
+                ], $this->creativeItems($videos, $statics));
+
+                // Editor pay: 120 MAD a video, 40 MAD a static, written the way
+                // ContentRequestService::validate() writes it.
+                $amount = $videos * 120 + $statics * 40;
+                $entry = (new CommissionLedgerEntry)->forceFill([
+                    'business_id' => $business->id,
+                    'user_id' => $editor->id,
+                    'order_id' => null,
+                    'content_request_id' => $request->id,
+                    'amount' => $amount,
+                    'entry_type' => 'creative',
+                    'description' => $product->name.' · '.$request->load('items')->label(),
+                    'created_at' => $validatedAt,
+                ]);
+                $entry->save();
+
+                // Work older than a month has been paid, the way the admin's
+                // "Pay" button does it: one invoice per entry, marked paid.
+                if ($validatedAt->lt(Carbon::now()->subDays(30))) {
+                    $invoice = Invoice::create([
+                        'business_id' => $business->id,
+                        'user_id' => $editor->id,
+                        'invoice_number' => 'INV-'.$validatedAt->format('Ymd').'-'.Str::upper(Str::random(6)),
+                        'period_start' => $validatedAt->toDateString(),
+                        'period_end' => $validatedAt->toDateString(),
+                        'total_amount' => $amount,
+                        'status' => 'paid',
+                    ]);
+
+                    $entry->forceFill(['invoice_id' => $invoice->id])->save();
+                }
+
+                $product->works_count += $videos + $statics;
+                $product->last_push_at = $product->last_push_at === null || $validatedAt->gt($product->last_push_at)
+                    ? $validatedAt
+                    : $product->last_push_at;
+            }
+
+            $product->save();
+        }
+
+        // The live queue, one request in each state the review board shows.
+        [$projector] = $products['Mini Projecteur HD'];
+        $this->creativeRequest($business, $projector, $hiba, [
+            'status' => ContentRequestStatus::SENT,
+            'admin_note' => 'Test produit : on cherche l\'angle qui accroche le mieux.',
+            'created_at' => Carbon::now()->subHours(20),
+        ], $this->creativeItems(3, 0, [
+            'Angle "cinéma à la maison" : salon le soir, lumières éteintes',
+            'Angle "cadeau" : unboxing rapide',
+            '',
+        ]));
+
+        [$fryer] = $products['Friteuse à Air 5L'];
+        $this->creativeRequest($business, $fryer, $second, [
+            'status' => ContentRequestStatus::SENT,
+            'admin_note' => 'Les recettes du Ramadan marchent bien, on continue.',
+            'created_at' => Carbon::now()->subDays(2),
+        ], $this->creativeItems(2, 2));
+
+        [$watch] = $products['Montre Connectée Ultra 8'];
+        $this->creativeRequest($business, $watch, $hiba, [
+            'status' => ContentRequestStatus::RETURNED,
+            'drive_url' => $this->driveUrl(),
+            'editor_note' => 'Deux versions de la vidéo 2, choisissez celle qui vous plaît.',
+            'returned_at' => Carbon::now()->subHours(3),
+            'created_at' => Carbon::now()->subDays(3),
+        ], $this->creativeItems(3, 2));
+
+        [$argan] = $products["Huile d'Argan Bio 100ml"];
+        $this->creativeRequest($business, $argan, $hiba, [
+            'status' => ContentRequestStatus::EDITS,
+            'rev' => 2,
+            'drive_url' => $this->driveUrl(),
+            'direction_points' => [
+                'Le logo doit apparaître dès la première seconde',
+                'Sous-titres en darija, pas en arabe classique',
+                'Finir sur le prix : 149 MAD, livraison gratuite',
+            ],
+            'returned_at' => Carbon::now()->subDays(2),
+            'edits_requested_at' => Carbon::now()->subDay(),
+            'created_at' => Carbon::now()->subDays(4),
+        ], $this->creativeItems(2, 0));
+
+        [$pack] = $products['Pack Beauté Ghassoul & Argan'];
+        $this->creativeRequest($business, $pack, $second, [
+            'origin' => 'editor',
+            'status' => ContentRequestStatus::RETURNED,
+            'drive_url' => $this->driveUrl(),
+            'editor_note' => 'Push du jour : 2 vidéos routine hammam.',
+            'returned_at' => Carbon::now()->subHours(6),
+            'created_at' => Carbon::now()->subHours(6),
+        ], $this->creativeItems(2, 0));
+    }
+
+    /**
+     * One content request with its line items, timestamps forced to the
+     * demo timeline rather than "now".
+     *
+     * @param  array<string, mixed>  $attributes
+     * @param  list<array{type: string, count: int, directions: list<string>}>  $items
+     */
+    private function creativeRequest(Business $business, CreativeProduct $product, User $editor, array $attributes, array $items): ContentRequest
+    {
+        $createdAt = $attributes['created_at'] ?? Carbon::now();
+
+        $request = (new ContentRequest)->forceFill([
+            'business_id' => $business->id,
+            'creative_product_id' => $product->id,
+            'editor_id' => $editor->id,
+            'origin' => 'admin',
+            'rev' => 1,
+            'direction_points' => [],
+            ...$attributes,
+            'created_at' => $createdAt,
+            'updated_at' => $attributes['validated_at'] ?? $attributes['edits_requested_at'] ?? $attributes['returned_at'] ?? $createdAt,
+        ]);
+        $request->save();
+
+        foreach ($items as $item) {
+            ContentRequestItem::create(['content_request_id' => $request->id, ...$item]);
+        }
+
+        return $request;
+    }
+
+    /**
+     * Video and static lines; a direction per creative, an empty entry
+     * meaning "free style", as the request form stores them.
+     *
+     * @param  list<string>|null  $videoDirections
+     * @return list<array{type: string, count: int, directions: list<string>}>
+     */
+    private function creativeItems(int $videos, int $statics, ?array $videoDirections = null): array
+    {
+        $ideas = [
+            'Hook en 2 secondes : le problème du client',
+            'Témoignage face caméra',
+            'Démonstration produit en gros plan',
+            'Unboxing + réaction',
+            '',
+            '',
+        ];
+
+        $pick = fn (int $count) => array_map(fn () => $ideas[array_rand($ideas)], range(1, max(1, $count)));
+
+        $items = [];
+
+        if ($videos > 0) {
+            $items[] = ['type' => 'video', 'count' => $videos, 'directions' => array_slice($videoDirections ?? $pick($videos), 0, $videos)];
+        }
+
+        if ($statics > 0) {
+            $items[] = ['type' => 'static', 'count' => $statics, 'directions' => array_slice($pick($statics), 0, $statics)];
+        }
+
+        return $items;
+    }
+
+    private function driveUrl(): string
+    {
+        return 'https://drive.google.com/drive/folders/1'.Str::random(32);
     }
 
     private function seedCourierSettlements(Business $business): void
