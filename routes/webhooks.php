@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Webhooks\OnesstaWebhookController;
 use App\Http\Controllers\Webhooks\ShopifyComplianceWebhookController;
 use App\Http\Controllers\Webhooks\ShopifyWebhookController;
 use App\Http\Controllers\Webhooks\StoreepWebhookController;
@@ -61,3 +62,13 @@ Route::prefix('webhooks/shopify')->name('webhooks.shopify.')->middleware('thrott
     Route::post('/shop/redact', [ShopifyComplianceWebhookController::class, 'shopRedact'])->name('shop.redact');
     Route::post('/app/uninstalled', [ShopifyComplianceWebhookController::class, 'appUninstalled'])->name('app.uninstalled');
 });
+
+/*
+ * Onessta parcel status updates. One webhook on our partner account serves
+ * every tenant, so there is no {store} or account in the path — the
+ * controller finds the order by its tracking code and checks X-Signature
+ * against ONESSTA_WEBHOOK_SECRET.
+ */
+Route::post('/webhooks/onessta', [OnesstaWebhookController::class, 'handle'])
+    ->middleware('throttle:webhook-courier')
+    ->name('webhooks.onessta.receive');

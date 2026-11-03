@@ -100,6 +100,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Onessta
+    |--------------------------------------------------------------------------
+    |
+    | partner_token is EasyFlow's own partner Bearer token, sent on every
+    | call; each delivery account adds its client's Client-ID and API-Key.
+    | webhook_secret checks the X-Signature on status webhooks. client_id /
+    | api_key are optional and only sync the city list before any tenant
+    | has connected an account.
+    |
+    */
+    'onessta' => [
+        'partner_token' => env('ONESSTA_PARTNER_TOKEN'),
+        'webhook_secret' => env('ONESSTA_WEBHOOK_SECRET'),
+        'client_id' => env('ONESSTA_CLIENT_ID'),
+        'api_key' => env('ONESSTA_API_KEY'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Push Notifications (Expo)
     |--------------------------------------------------------------------------
     |

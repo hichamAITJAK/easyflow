@@ -13,6 +13,7 @@ use App\Http\Controllers\Concerns\ScopesAgentAccess;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AssignOrderRequest;
 use App\Http\Requests\BlacklistOrderRequest;
+use App\Http\Requests\ChangeRecipientRequest;
 use App\Http\Requests\CreateShipmentRequest;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
@@ -24,9 +25,11 @@ use App\Models\ProductOptionValue;
 use App\Models\ProductVariant;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\Connectivity\Onessta\OnesstaClient;
 use App\Services\Operations\Customers\CustomerService;
 use App\Services\Operations\Orders\OrderService;
 use App\Services\PostHogService;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -369,6 +372,43 @@ class OrderController extends Controller
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Shipment created.')]);
+
+        return back(fallback: route('orders.index'));
+    }
+
+    /**
+     * Change who receives an Onessta parcel after it shipped (name, phone,
+     * address, note). Onessta must accept first — it refuses refused or
+     * invoiced parcels — and its reason is shown as-is.
+     */
+    public function changeRecipient(ChangeRecipientRequest $request, Order $order): RedirectResponse
+    {
+        $user = $request->user();
+
+        abort_if($this->isScopedAgent($user) && $order->assigned_agent_id !== $user->id, 403);
+
+        $validated = $request->validated();
+
+        try {
+            $this->orders->changeRecipient($order, [
+                'customer_name' => $validated['customer_name'],
+                'customer_phone' => $validated['customer_phone'],
+                'customer_address' => $validated['customer_address'],
+                'parcel_note' => $validated['parcel_note'] ?? null,
+            ]);
+        } catch (InvalidArgumentException $e) {
+            abort(422, $e->getMessage());
+        } catch (ConnectionException) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => __('Could not reach Onessta — check your connection and try again.')]);
+
+            return back(fallback: route('orders.index'));
+        } catch (RequestException $e) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => OnesstaClient::errorMessage($e->response) ?? __('Onessta refused the change.')]);
+
+            return back(fallback: route('orders.index'));
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Recipient changed.')]);
 
         return back(fallback: route('orders.index'));
     }

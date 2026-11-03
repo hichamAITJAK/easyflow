@@ -11,6 +11,7 @@ use App\Models\Store;
 use App\Services\Operations\Couriers\AmeexService;
 use App\Services\Operations\Couriers\ColiixService;
 use App\Services\Operations\Couriers\ForceLogService;
+use App\Services\Operations\Couriers\OnesstaService;
 use App\Services\Operations\Couriers\OzonExpressService;
 use App\Services\Operations\Couriers\SenditService;
 use App\Services\Operations\EcomPlatforms\LightfunnelsService;
@@ -67,6 +68,7 @@ class IntegrationManagerService
             Courier::COLIIX => new ColiixService($account),
             Courier::FORCELOG => new ForceLogService($account),
             Courier::AMEEX => new AmeexService($account),
+            Courier::ONESSTA => new OnesstaService($account),
             default => throw new InvalidArgumentException("No courier service is available for [{$courier->value}] yet."),
         };
     }

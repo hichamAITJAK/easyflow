@@ -44,6 +44,12 @@ class DeliveryCourrierSeeder extends Seeder
                 'description' => 'Moroccan delivery courier offering nationwide COD parcel delivery.',
                 'logo' => '/assets/images/ameex_icon.png',
             ],
+            [
+                'name' => Courier::ONESSTA->value,
+                'slug' => Courier::ONESSTA->value,
+                'description' => 'Moroccan delivery courier offering nationwide COD parcel delivery.',
+                'logo' => '/assets/images/onessta_icon.png',
+            ],
         ];
 
         foreach ($couriers as $courier) {

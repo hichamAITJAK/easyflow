@@ -11,4 +11,5 @@ enum Courier: string
     case FORCELOG = 'FORCELOG';
     case CATHEDIS = 'Cathedis';
     case SPEEDAF = 'Speedaf Express';
+    case ONESSTA = 'Onessta';
 }

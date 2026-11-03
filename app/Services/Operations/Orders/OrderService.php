@@ -31,6 +31,7 @@ use App\Models\ProductVariant;
 use App\Models\Scopes\BusinessScope;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\Operations\Couriers\OnesstaService;
 use App\Services\Operations\IntegrationManagerService;
 use App\Support\PhoneNumber;
 use Illuminate\Http\Client\ConnectionException;
@@ -500,6 +501,47 @@ class OrderService
 
         $this->updateStatus($order, $actor, OrderConfirmationStatus::SUBMITTED_TO_COURIER);
         $this->updateDeliveryStatus($order, OrderDeliveryStatus::AWAITING_PICKUP, $actor);
+
+        return $order;
+    }
+
+    /**
+     * Change who receives a parcel already at Onessta (name, phone,
+     * address, note — never the city). The courier is told first, and the
+     * order is only updated once it accepts, so the two never disagree.
+     *
+     * @param  array{customer_name: string, customer_phone: string, customer_address: string, parcel_note?: ?string}  $data
+     *
+     * @throws InvalidArgumentException if the order isn't an Onessta parcel.
+     * @throws RequestException if Onessta refuses the change.
+     * @throws ConnectionException if Onessta can't be reached.
+     */
+    public function changeRecipient(Order $order, array $data): Order
+    {
+        $account = $order->deliveryAccount;
+        $courier = $account ? $this->manager->courierForAccount($account) : null;
+
+        if (! $courier instanceof OnesstaService || $order->courier_tracking_number === null) {
+            throw new InvalidArgumentException('Only an Onessta parcel can change recipient.');
+        }
+
+        $courier->changeRecipient(
+            $order->courier_tracking_number,
+            $data['customer_name'],
+            $data['customer_phone'],
+            $data['customer_address'],
+            $data['parcel_note'] ?? null,
+        );
+
+        $customerPhone = PhoneNumber::format($data['customer_phone']) ?? $data['customer_phone'];
+
+        $order->update([
+            'customer_name' => $data['customer_name'],
+            'customer_phone' => $customerPhone,
+            'customer_phone_hash' => hash('sha256', $customerPhone),
+            'customer_address' => $data['customer_address'],
+            'parcel_note' => $data['parcel_note'] ?? null,
+        ]);
 
         return $order;
     }

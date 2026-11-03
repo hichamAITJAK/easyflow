@@ -30,6 +30,7 @@ import { DataTableResetFiltersButton } from '@/components/data-table/data-table-
 import { DataTableViewOptions } from '@/components/data-table/data-table-view-options';
 import Heading from '@/components/heading';
 import { BlacklistOrderDialog } from '@/components/orders/blacklist-order-dialog';
+import { ChangeRecipientDialog } from '@/components/orders/change-recipient-dialog';
 import { CancelOrderDialog } from '@/components/orders/cancel-order-dialog';
 import { CreateShipmentDialog } from '@/components/orders/create-shipment-dialog';
 import type { DeliveryGuyOption } from '@/components/orders/create-shipment-dialog';
@@ -309,6 +310,7 @@ export default function OrdersIndex({
     const [shipmentOrder, setShipmentOrder] = useState<Order | null>(null);
     const [cancelOrder, setCancelOrder] = useState<Order | null>(null);
     const [blacklistOrder, setBlacklistOrder] = useState<Order | null>(null);
+    const [recipientOrder, setRecipientOrder] = useState<Order | null>(null);
     const [loadingOrders, setLoadingOrders] = useState(false);
     const [syncOpen, setSyncOpen] = useState(false);
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -506,6 +508,7 @@ export default function OrdersIndex({
                 onCancel: setCancelOrder,
                 onBlacklist: setBlacklistOrder,
                 onEdit: setEditOrder,
+                onChangeRecipient: setRecipientOrder,
                 onShowSamePhone: (order) => showSamePhoneRef.current(order),
                 filters,
                 routeUrl: ordersIndex().url,
@@ -1021,6 +1024,11 @@ export default function OrdersIndex({
                 open={blacklistOrder !== null}
                 onOpenChange={(open) => !open && setBlacklistOrder(null)}
                 order={blacklistOrder}
+            />
+            <ChangeRecipientDialog
+                open={recipientOrder !== null}
+                onOpenChange={(open) => !open && setRecipientOrder(null)}
+                order={recipientOrder}
             />
             <OrderBulkDeleteDialog
                 open={bulkDeleteOpen}

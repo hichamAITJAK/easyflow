@@ -243,6 +243,7 @@ Route::middleware(['auth', 'verified', 'can:access-tenant-app'])->group(function
         Route::patch('/{order}', [OrderController::class, 'update'])->name('update');
         Route::patch('/{order}/status', [OrderController::class, 'updateStatus'])->name('status');
         Route::post('/{order}/shipment', [OrderController::class, 'createShipment'])->name('shipment');
+        Route::post('/{order}/recipient', [OrderController::class, 'changeRecipient'])->name('recipient');
 
         // Confirmation agents blacklist a caller mid-call, so this sits on
         // its own gate rather than in the admin block below.

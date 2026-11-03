@@ -127,6 +127,14 @@ class AppServiceProvider extends ServiceProvider
          * someone hammering them.
          */
         RateLimiter::for('webhook-compliance', fn (Request $request) => Limit::perMinute(60)->by($request->ip()));
+
+        /*
+         * Courier status webhooks (Onessta) come from one partner webhook for
+         * every tenant, so there is no tenant to key on either. A courier
+         * flushes many parcels at once (a whole distribution run), hence the
+         * higher ceiling.
+         */
+        RateLimiter::for('webhook-courier', fn (Request $request) => Limit::perMinute(600)->by($request->ip()));
     }
 
     /**

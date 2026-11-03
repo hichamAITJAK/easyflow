@@ -375,6 +375,45 @@ export function ConnectCourierDialog({
                                     </>
                                 )}
 
+                                {courier.slug === 'Onessta' && (
+                                    <>
+                                        <Field>
+                                            <FieldLabel htmlFor="client_id">
+                                                {t('Onessta Client-ID')}
+                                            </FieldLabel>
+                                            <Input
+                                                id="client_id"
+                                                name="client_id"
+                                                required
+                                                autoComplete="off"
+                                            />
+                                            <FieldDescription>
+                                                {t(
+                                                    'In Onessta, open Profile → Identifiants API and generate your keys.',
+                                                )}
+                                            </FieldDescription>
+                                            <FieldError>
+                                                {errors.client_id}
+                                            </FieldError>
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel htmlFor="api_key">
+                                                {t('Onessta API-Key')}
+                                            </FieldLabel>
+                                            <Input
+                                                id="api_key"
+                                                name="api_key"
+                                                type="password"
+                                                required
+                                                autoComplete="off"
+                                            />
+                                            <FieldError>
+                                                {errors.api_key}
+                                            </FieldError>
+                                        </Field>
+                                    </>
+                                )}
+
                                 {courier.slug === 'FORCELOG' && (
                                     <Field>
                                         <FieldLabel htmlFor="api_key">

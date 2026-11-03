@@ -4,12 +4,16 @@ namespace App\Console\Commands;
 
 use App\DTOs\ForceLog\ForceLogCityDTO;
 use App\Enums\Courier;
+use App\Enums\DeliveryAccountStatus;
 use App\Models\DeleveryCourrierCity;
+use App\Models\DeliveryAccount;
 use App\Models\DeliveryCourrier;
 use App\Services\Connectivity\ForceLog\ForceLogClient;
+use App\Services\Connectivity\Onessta\OnesstaClient;
 use App\Services\Connectivity\OzonExpress\OzonExpressClient;
 use App\Services\Connectivity\Sendit\AuthService;
 use App\Services\Connectivity\Sendit\DistrictService;
+use App\Services\Operations\Couriers\OnesstaService;
 use Illuminate\Console\Command;
 use RuntimeException;
 
@@ -57,6 +61,7 @@ class SyncCourierCitiesCommand extends Command
                     Courier::COLIIX => $this->syncColiix(),
                     Courier::FORCELOG => $this->syncForceLog(),
                     Courier::AMEEX => $this->syncAmeex(),
+                    Courier::ONESSTA => $this->syncOnessta(),
                     default => throw new RuntimeException('no cities API is wired up for this courier yet'),
                 };
 
@@ -208,6 +213,46 @@ class SyncCourierCitiesCommand extends Command
         }
 
         return $count;
+    }
+
+    /**
+     * Fetch Onessta's cities and upsert them.
+     *
+     * Every call needs our partner token plus one client's Client-ID /
+     * API-Key. The ONESSTA_CLIENT_ID / ONESSTA_API_KEY pair is used when
+     * set (so the list exists before anyone connects); otherwise any
+     * connected Onessta account's keys do, since the list is the same for
+     * every client. Connecting an account refreshes it as well.
+     *
+     * @throws RuntimeException if no token or no client keys are available.
+     */
+    protected function syncOnessta(): int
+    {
+        $token = (string) config('services.onessta.partner_token');
+
+        if (! $token) {
+            throw new RuntimeException('the ONESSTA_PARTNER_TOKEN environment variable is not set');
+        }
+
+        $clientId = (string) config('services.onessta.client_id');
+        $apiKey = (string) config('services.onessta.api_key');
+
+        if (! $clientId || ! $apiKey) {
+            $account = DeliveryAccount::withoutGlobalScopes()
+                ->whereHas('courier', fn ($query) => $query->where('slug', Courier::ONESSTA->value))
+                ->where('status', DeliveryAccountStatus::ACTIVE)
+                ->first();
+
+            $credentials = $account ? (json_decode((string) $account->api_credentials, true) ?? []) : [];
+            $clientId = (string) ($credentials['client_id'] ?? '');
+            $apiKey = (string) ($credentials['api_key'] ?? '');
+        }
+
+        if (! $clientId || ! $apiKey) {
+            throw new RuntimeException('set ONESSTA_CLIENT_ID / ONESSTA_API_KEY, or connect an Onessta account first');
+        }
+
+        return OnesstaService::upsertCities((new OnesstaClient($token, $clientId, $apiKey))->getCities());
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Interfaces;
 use App\DTOs\Ameex\AmeexParcelDTO;
 use App\DTOs\Coliix\ColiixParcelDTO;
 use App\DTOs\ForceLog\ForceLogParcelDTO;
+use App\DTOs\Onessta\OnesstaParcelDTO;
 use App\DTOs\OzonExpress\OzonExpressParcelDTO;
 use App\DTOs\Sendit\SenditParcelDTO;
 use App\Enums\OrderDeliveryStatus;
@@ -33,7 +34,8 @@ interface DeliveryCourierInterface
     |OzonExpressParcelDTO
     |ColiixParcelDTO
     |ForceLogParcelDTO
-    |AmeexParcelDTO;
+    |AmeexParcelDTO
+    |OnesstaParcelDTO;
 
     /**
      * Translate this courier's own raw delivery/tracking status string into

@@ -37,8 +37,8 @@ class StoreDeliveryAccountRequest extends FormRequest
             'public_key' => [Rule::requiredIf($courierSlug === Courier::SENDIT->value), 'string'],
             'secret_key' => [Rule::requiredIf($courierSlug === Courier::SENDIT->value), 'string'],
             'ozon_id' => [Rule::requiredIf($courierSlug === Courier::OZONEXPRESS->value), 'string'],
-            'api_key' => [Rule::requiredIf(in_array($courierSlug, [Courier::OZONEXPRESS->value, Courier::COLIIX->value, Courier::FORCELOG->value, Courier::AMEEX->value], true)), 'string'],
-            'client_id' => [Rule::requiredIf($courierSlug === Courier::COLIIX->value), 'string'],
+            'api_key' => [Rule::requiredIf(in_array($courierSlug, [Courier::OZONEXPRESS->value, Courier::COLIIX->value, Courier::FORCELOG->value, Courier::AMEEX->value, Courier::ONESSTA->value], true)), 'string'],
+            'client_id' => [Rule::requiredIf(in_array($courierSlug, [Courier::COLIIX->value, Courier::ONESSTA->value], true)), 'string'],
             'api_id' => [Rule::requiredIf($courierSlug === Courier::AMEEX->value), 'string'],
         ];
     }
@@ -75,12 +75,13 @@ class StoreDeliveryAccountRequest extends FormRequest
             'public_key' => 'Sendit public key',
             'secret_key' => 'Sendit secret key',
             'ozon_id' => 'OzonExpress customer ID',
-            'client_id' => 'Coliix client ID',
+            'client_id' => $courierSlug === Courier::ONESSTA->value ? 'Onessta Client-ID' : 'Coliix client ID',
             'api_id' => 'Ameex API ID',
             'api_key' => match ($courierSlug) {
                 Courier::COLIIX->value => 'Coliix API key',
                 Courier::FORCELOG->value => 'ForceLog API key',
                 Courier::AMEEX->value => 'Ameex API key',
+                Courier::ONESSTA->value => 'Onessta API-Key',
                 default => 'OzonExpress API key',
             },
         ];

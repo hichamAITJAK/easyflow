@@ -46,6 +46,7 @@ class CourierController extends Controller
         Courier::COLIIX->value,
         Courier::FORCELOG->value,
         Courier::AMEEX->value,
+        Courier::ONESSTA->value,
     ];
 
     public function index(): Response

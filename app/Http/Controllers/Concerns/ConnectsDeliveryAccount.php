@@ -9,9 +9,11 @@ use App\Models\DeliveryCourrier;
 use App\Services\Connectivity\Ameex\AmeexClient;
 use App\Services\Connectivity\Coliix\ColiixClient;
 use App\Services\Connectivity\ForceLog\ForceLogClient;
+use App\Services\Connectivity\Onessta\OnesstaClient;
 use App\Services\Connectivity\OzonExpress\OzonExpressClient;
 use App\Services\Connectivity\Sendit\AuthService;
 use App\Services\Connectivity\Sendit\DistrictService;
+use App\Services\Operations\Couriers\OnesstaService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -90,6 +92,23 @@ trait ConnectsDeliveryAccount
                 $status = DeliveryAccountStatus::ACTIVE;
             } else {
                 return back()->withErrors(['api_key' => 'Those Ameex credentials were rejected. Double-check them and try again.']);
+            }
+        } elseif ($courier->slug === Courier::ONESSTA->value) {
+            $credentials = ['client_id' => $data['client_id'], 'api_key' => $data['api_key']];
+
+            // Onessta signs every call with our own partner token plus the
+            // client's Client-ID / API-Key. The city list is authenticated
+            // and read-only, so it proves the keys — and its answer
+            // refreshes the city list at the same time.
+            $client = new OnesstaClient((string) config('services.onessta.partner_token'), $data['client_id'], $data['api_key']);
+
+            try {
+                OnesstaService::upsertCities($client->getCities());
+                $status = DeliveryAccountStatus::ACTIVE;
+            } catch (ConnectionException) {
+                return back()->withErrors(['api_key' => __('Could not reach Onessta — check your connection and try again.')]);
+            } catch (RequestException) {
+                return back()->withErrors(['api_key' => __('Those Onessta credentials were rejected. Double-check them and try again.')]);
             }
         } elseif ($courier->slug === Courier::FORCELOG->value) {
             $credentials = ['api_key' => $data['api_key']];

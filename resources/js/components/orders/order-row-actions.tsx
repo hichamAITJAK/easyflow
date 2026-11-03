@@ -1,5 +1,6 @@
-import { Eye, Pencil, ShieldAlert, Trash2 } from 'lucide-react';
+import { Eye, Pencil, ShieldAlert, Trash2, UserPen } from 'lucide-react';
 import type { ComponentType } from 'react';
+import { canChangeRecipient } from '@/components/orders/change-recipient-dialog';
 import { useTranslation } from '@/hooks/use-translation';
 import type { Order } from '@/types';
 
@@ -29,6 +30,7 @@ export function orderRowActions({
     onDelete,
     onBlacklist,
     onEdit,
+    onChangeRecipient,
 }: {
     order: Order;
     isAdmin: boolean;
@@ -36,6 +38,7 @@ export function orderRowActions({
     onDelete: (order: Order) => void;
     onBlacklist?: (order: Order) => void;
     onEdit?: (order: Order) => void;
+    onChangeRecipient?: (order: Order) => void;
 }): OrderRowAction[] {
     const actions: OrderRowAction[] = [
         {
@@ -54,6 +57,15 @@ export function orderRowActions({
             label: 'Edit order',
             icon: Pencil,
             onSelect: () => onEdit(order),
+        });
+    }
+
+    if (onChangeRecipient && canChangeRecipient(order)) {
+        actions.push({
+            key: 'change-recipient',
+            label: 'Change recipient',
+            icon: UserPen,
+            onSelect: () => onChangeRecipient(order),
         });
     }
 

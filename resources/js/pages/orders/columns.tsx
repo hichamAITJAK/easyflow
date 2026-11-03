@@ -384,6 +384,7 @@ export function createColumns({
     onCancel,
     onBlacklist,
     onEdit,
+    onChangeRecipient,
     onShowSamePhone,
     filters,
     routeUrl,
@@ -398,6 +399,7 @@ export function createColumns({
     onCancel: (order: Order) => void;
     onBlacklist: (order: Order) => void;
     onEdit: (order: Order) => void;
+    onChangeRecipient: (order: Order) => void;
     /** Lists every order placed from this order's phone number. */
     onShowSamePhone: (order: Order) => void;
     filters: OrderFilters;
@@ -720,6 +722,7 @@ export function createColumns({
                     onDelete,
                     onBlacklist,
                     onEdit,
+                    onChangeRecipient,
                 });
 
                 return (
